@@ -32,9 +32,45 @@ struct NotchRootView: View {
         }
     }
 
-    var body: some View {
+    private var shape: NotchShape {
         NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
-            .fill(.black)
+    }
+
+    /// 1.0 at closed keeps the island pure black so it stays invisible
+    /// against the hardware notch (a Phase 1 acceptance criterion); the
+    /// material only reads through once the shape has grown past the real
+    /// cutout. Reduce Transparency pins it opaque in every state.
+    private var blackOverlayOpacity: Double {
+        if store.reduceTransparency {
+            return 1
+        }
+        switch store.state {
+        case .closed: return 1
+        case .compact: return 0.55
+        case .expanded: return 0.15
+        }
+    }
+
+    private var islandSurface: some View {
+        ZStack {
+            if !store.reduceTransparency {
+                // Soft outer bleed so the edge doesn't hard-cut against the
+                // wallpaper. Behind everything, low opacity, blurred.
+                shape
+                    .fill(.black)
+                    .blur(radius: 8)
+                    .opacity(0.35)
+                VisualEffectBackground()
+                    .clipShape(shape)
+            }
+            shape
+                .fill(.black)
+                .opacity(blackOverlayOpacity)
+        }
+    }
+
+    var body: some View {
+        islandSurface
             .frame(width: currentSize.width, height: currentSize.height)
             .overlay(alignment: .top) {
                 if store.state == .expanded {
@@ -47,7 +83,32 @@ struct NotchRootView: View {
                         .transition(.island)
                 }
             }
+            .overlay(alignment: .bottom) { chipBarDock }
             .frame(width: canvasWidth, height: NotchGeometry.expandedSize.height, alignment: .top)
+            .animation(Motion.resolved(Motion.layout), value: store.nowPlaying?.trackIdentity)
+            .animation(Motion.resolved(Motion.layout), value: store.nowPlaying == nil)
+    }
+
+    private var showChipBar: Bool {
+        store.state == .expanded && store.nowPlaying?.isPlaying == true
+    }
+
+    @ViewBuilder
+    private var chipBarDock: some View {
+        if showChipBar {
+            MoodChipBar()
+                .offset(y: NotchGeometry.chipBarHeight + NotchGeometry.chipBarGap)
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .top)
+                            .combined(with: .opacity)
+                            .animation(Motion.resolved(Motion.chipBarIn)),
+                        removal: .move(edge: .top)
+                            .combined(with: .opacity)
+                            .animation(Motion.resolved(Motion.chipBarOut))
+                    )
+                )
+        }
     }
 
     private var expandedContent: some View {
@@ -61,9 +122,14 @@ struct NotchRootView: View {
             topRow
                 .frame(height: store.closedSize.height)
             if let info = store.nowPlaying {
-                ExpandedNowPlayingView(info: info, artwork: store.nowPlayingArtwork, commands: store.nowPlayingCommands)
+                ExpandedMusicView(
+                    info: info,
+                    artwork: store.nowPlayingArtwork,
+                    commands: store.nowPlayingCommands,
+                    events: store.calendarEvents
+                )
             } else {
-                SignatureGlow()
+                ExpandedIdleView(events: store.calendarEvents)
             }
         }
         .padding(.horizontal, 12)
@@ -77,27 +143,5 @@ struct NotchRootView: View {
                 ExpandedBatteryRow(info: battery)
             }
         }
-    }
-}
-
-/// Personal touch shown in place of Now Playing when nothing's playing.
-/// The glow only pulses while this view exists in the hierarchy — expanded
-/// (hovering) and idle — so it never animates off-screen or while closed.
-private struct SignatureGlow: View {
-    @State private var isGlowing = false
-
-    private static let maroon = Color(red: 0.5, green: 0, blue: 0)
-
-    var body: some View {
-        Text("By Apurva")
-            .font(.system(.title3, design: .rounded).weight(.semibold))
-            .foregroundStyle(Self.maroon)
-            .shadow(color: Self.maroon, radius: isGlowing ? 14 : 4)
-            .frame(maxWidth: .infinity)
-            .onAppear {
-                withAnimation(Motion.resolved(Motion.pulse)) {
-                    isGlowing = true
-                }
-            }
     }
 }

@@ -7,4 +7,5 @@ enum Log {
     static let window = Logger(subsystem: subsystem, category: "window")
     static let battery = Logger(subsystem: subsystem, category: "battery")
     static let nowPlaying = Logger(subsystem: subsystem, category: "nowPlaying")
+    static let calendar = Logger(subsystem: subsystem, category: "calendar")
 }

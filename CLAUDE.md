@@ -72,7 +72,20 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   housing, compact view redesigned to battery%+art only). Build, 27/27
   tests, swiftformat, swiftlint all pass. Full detail:
   `.superpowers/sdd/notchy-phase2-live-activities/progress.md`.
-- **Next:** Phase 2 Task 10 — manual hardware checklist (10 items: idle
-  CPU, play/pause timing, charging-peek edge cases, hover expand/collapse,
-  playback controls, CPU under repeated hovering, Reduce Motion). Needs
-  the user's eyes on real hardware; not automatable.
+- **Phase 3 ("Content layer"):** Tasks 1-10 implemented (2026-09-16) —
+  NSVisualEffectView(.hudWindow) material + Reduce Transparency fallback,
+  EventKit CalendarService + pure CalendarEventMapper, geometry grown to
+  600×220 with chip-bar reservation, ExpandedIdleView/ExpandedMusicView/
+  EventRow/MoodChipBar, five new Motion tokens, album-art crossfade+
+  scale-pop on track change, threshold swipe gestures, hit-test union for
+  the detached chip bar. Build, 34/34 tests, swiftformat, swiftlint (0
+  errors) all pass. Spec: `docs/superpowers/specs/2026-09-16-notch-content-layer-design.md`.
+  Plan: `docs/superpowers/plans/2026-09-16-notch-content-layer.md`.
+- **Dropped:** system-notification mirroring — Notification Center's DB is
+  TCC-blocked without Full Disk Access (verified 2026-09-16 on macOS
+  26.6.2) and its schema is undocumented. Not worth the permission cost.
+- **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
+  Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
+  chip-bar gating, calendar permission-denied path, closed-state
+  invisibility regression guard). Both need the user's eyes on real
+  hardware; not automatable.

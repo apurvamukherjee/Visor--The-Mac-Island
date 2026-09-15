@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Notchy shows your upcoming events in the notch.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Apurva Mukherjee</string>
 </dict>

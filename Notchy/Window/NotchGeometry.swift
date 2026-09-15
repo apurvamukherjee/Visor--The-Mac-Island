@@ -11,9 +11,11 @@ protocol ScreenGeometryProviding {
 extension NSScreen: ScreenGeometryProviding {}
 
 enum NotchGeometry {
-    static let expandedSize = CGSize(width: 320, height: 120)
+    static let expandedSize = CGSize(width: 600, height: 220)
     static let fallbackClosedSize = CGSize(width: 200, height: 32)
     static let compactExtraWidth: CGFloat = 160
+    static let chipBarHeight: CGFloat = 36
+    static let chipBarGap: CGFloat = 8
 
     /// Notch bounding box from the real hardware cutout, or a centered
     /// pill-sized fallback on non-notched screens.
@@ -51,14 +53,20 @@ enum NotchGeometry {
         return CGRect(x: closed.midX - width / 2, y: closed.minY, width: width, height: closed.height)
     }
 
-    /// `expandedRect` widened to also contain `compactRect` — on real
-    /// hardware `compactRect` (closed width + 160pt of wings) can be wider
-    /// than `expandedSize`, so collapsing expanded→compact isn't a pure
-    /// shrink in both dimensions. Used for the panel/hosting-view canvas
-    /// while expanded or collapsing out of it, so the width-growing part
-    /// of that transition never gets clipped before the frame catches up.
+    /// `expandedRect` widened to also contain `compactRect`, then extended
+    /// downward to reserve the mood chip bar's strip. The panel is
+    /// click-through outside the shape, so an over-tall canvas costs nothing
+    /// visually — and it means neither collapsing out of expanded nor the
+    /// chip bar animating in ever has to grow the frame mid-animation, which
+    /// is what caused the expanded→compact jitter bug.
     static func expandedCanvasRect(for screen: ScreenGeometryProviding) -> CGRect {
-        expandedRect(for: screen).union(compactRect(for: screen))
+        let union = expandedRect(for: screen).union(compactRect(for: screen))
+        return CGRect(
+            x: union.minX,
+            y: union.minY - chipBarGap - chipBarHeight,
+            width: union.width,
+            height: union.height + chipBarGap + chipBarHeight
+        )
     }
 
     private static func fallbackRect(for screen: ScreenGeometryProviding) -> CGRect {

@@ -22,6 +22,8 @@
 | License | Decide up front (see §1.3) | GPL projects are the best references but can't be copied into an MIT app |
 | Distribution | **Offline `.dmg`, ad-hoc/unsigned** — personal use + sharing with friends manually. No App Store, no auto-update server. | No Apple Developer Program yet. Notarized signing stays a Phase 5 item (§8); revisit only if a paid dev account happens. |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
+| Island material | `NSVisualEffectView(.hudWindow)` under a state-driven black overlay | Closed must stay pure black to masquerade as the hardware notch; the material only reads through once the shape grows past the real cutout. Reduce Transparency falls back to solid fill |
+| Expanded size | 600×220 (was 320×120) | The two-column agenda is the point of the idle-expanded state and doesn't fit at 320pt. Accepts more menu-bar overlap while expanded, consistent with the existing overlap decision |
 | Expanded-state menu bar overlap | **Accepted** — the hover-expanded island may cover menu bar items, matching Alcove/NotchNook | Closed state must keep everything beside the notch clickable (dead pixels only); expanded is a deliberate, momentary overlay. A menu-bar-clear "shoulder" shape (`topRadius`, currently unused — see §2.5) is a **possible later refinement, not planned** |
 
 ---
@@ -288,6 +290,7 @@ Validate in Phase 1 that frame changes cause no flicker or content jump. **Fallb
 10. **One long-lived adapter process** for streaming. Commands via short invocations are fine (user-initiated only).
 11. **Stop on sleep, resume on wake.** Every service implements `stop()`.
 12. **Timers, if unavoidable:** set `tolerance` (≥ 10% of interval) so the OS can coalesce.
+13. **Calendar refreshes only on `.EKEventStoreChanged`** (and display wake). No polling, no periodic re-fetch.
 
 ```swift
 import ImageIO
@@ -337,7 +340,6 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 | Volume changes | CoreAudio property listeners | none |
 | Brightness changes | DisplayServices (private) / observed key events | varies |
 | Replace system HUD | `CGEventTap` for media keys | Accessibility |
-| Calendar | EventKit | Calendars |
 | File shelf | SwiftUI `.onDrop` / `.draggable` | none |
 | Timer | pure Swift | none |
 | Launch at login | `SMAppService.mainApp` | user toggle |
@@ -397,13 +399,20 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 ### Phase 3 — Polish
 - Numeric text transitions, symbol effects, haptics, Reduce Motion.
 - Swipe gestures on expanded media (next/previous).
+- Content layer: `NSVisualEffectView(.hudWindow)` material behind the shape with a
+  state-driven black overlay (closed stays pure black), soft edge bleed, and a
+  Reduce Transparency fallback to solid fill.
+- Calendar agenda via EventKit (**moved up from Phase 4**): `CalendarService`,
+  full-agenda idle-expanded layout, 2-event peek in the music-expanded split.
+- Mood/genre chip bar docked under the expanded island while playing (stub actions).
+- Expanded size grows to 600×220 to fit the two-column agenda.
 - Fullscreen handling, sleep/wake, multi-display, settings window, launch at login.
 - Settings/About area shows "by Apurva" once (see §0 Attribution). Power rules
   (§5.2) still apply here: nothing in that window may animate or tick while
   the settings window is closed.
 
 ### Phase 4 — Features
-- Timer, calendar next event, file shelf.
+- Timer, file shelf. (Calendar moved up to Phase 3.)
 
 ### Phase 5 — Advanced
 - HUD replacement (Accessibility), vendored adapter, Developer ID signing
