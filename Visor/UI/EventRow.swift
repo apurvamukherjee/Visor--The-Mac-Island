@@ -27,9 +27,12 @@ struct EventRow: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 6)
-        // Tinted fill keyed to the calendar's own colour, like the reference
-        // design — a bare left bar on black read as unfinished.
-        .background(barColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 5))
+        // Tinted fill keyed to the calendar's own colour — a bare left bar on
+        // black read as unfinished. Kept very low (0.14 lifted the chip into
+        // a visible grey-purple panel against the pure-black surface): the
+        // colour bar and the text carry the identity, the fill only has to
+        // hint at a container.
+        .background(barColor.opacity(0.07), in: RoundedRectangle(cornerRadius: 5))
     }
 
     private var barColor: Color {

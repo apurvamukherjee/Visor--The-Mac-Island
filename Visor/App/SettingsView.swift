@@ -6,6 +6,9 @@ import SwiftUI
 struct SettingsView: View {
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchAtLoginFailed = false
+    /// `@AppStorage`, not `@State`: the island reads the same key and has to
+    /// pick the change up while this window is still open.
+    @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
 
     private var launchAtLoginHint: String {
         LaunchAtLogin.isInstalled
@@ -47,6 +50,12 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+
+            Toggle("Vinyl mode", isOn: $vinylMode)
+
+            Text("Show a turning record instead of the album cover.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             Divider()
 

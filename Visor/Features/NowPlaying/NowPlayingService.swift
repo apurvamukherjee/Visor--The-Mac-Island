@@ -66,12 +66,13 @@ final class NowPlayingService: NotchService {
         clearTask = nil
         let artwork = artworkCache.image(for: info.trackIdentity, source: payload.artwork)
         let tint = artworkCache.tint(for: info.trackIdentity)
+        let bleed = artworkCache.bleed(for: info.trackIdentity)
         // The adapter re-emits on every position tick. Writing an identical
         // value still notifies @Observable, which re-renders the island for
         // nothing, so compare first.
         let artworkArrived = store.nowPlayingArtwork == nil && artwork != nil
         if info != store.nowPlaying || artworkArrived {
-            store.setNowPlaying(info, artwork: artwork, tint: tint)
+            store.setNowPlaying(info, artwork: artwork, tint: tint, bleed: bleed)
         }
         if info.isPlaying {
             store.activate(.nowPlaying)

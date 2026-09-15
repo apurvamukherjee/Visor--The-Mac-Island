@@ -24,7 +24,7 @@
 | Release history | Dated `.dmg` committed to `new-releases/` by `scripts/make-dmg.sh` | Downloadable straight from the GitHub file listing without needing the Releases UI or a tag. ~1MB per build; if the repo ever feels heavy, move the history to GitHub Releases and keep only the newest here |
 | Code signing | **Free Apple Development identity** (Xcode > Settings > Accounts, no paid program) | Not for distribution — for TCC. Permissions are bound to the code signature; ad-hoc signing changes the cdhash every build, so macOS re-asked for calendar access on every launch. A stable identity makes the grant stick. `DEVELOPMENT_TEAM` in project.yml |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
-| Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch) |
+| Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch). A panel-wide album wash was tried in Phase 5 and cut for the same reason — it read cheap and fought the black. The album colour now appears only as a halo behind the artwork; see §2.4b |
 | Space pinning | Private SkyLight space at absolute level 100 (`SkyLightPin`) | `.canJoinAllSpaces` only makes the window *present* on each desktop — it stays in the desktop layer, so a four-finger swipe drags it with the wallpaper. A space with a non-zero absolute level sits outside the desktop set like the menu bar, so desktops slide underneath. Level 100 is above every normal window but below the security agent (200) and screen lock (300). Every symbol is `dlsym`'d; if any lookup fails the app degrades to today's behaviour. Verified on macOS 26.6 — recheck each major release |
 | Expanded size | 400×186 idle / 400×168 playing | Measured 15" M4 Air: screen 1710×1107pt, cutout 185×33pt at x 763…948. The cutout is missing pixels, so the island's top-centre 185×33 is invisible — all expanded content starts below it (33 + 6 clearance) instead of each column dodging it. Height is per-layout: the panel frame keeps the taller (idle) size so the change is a shape morph, never a window resize mid-hover. Music's peek is one event instead of two, so it sits shorter and the island visibly compacts when playback starts. 400 wide is ~2.2x the cutout — the wide 560 read as a banner rather than an island |
 | Expanded clock/battery row | **Removed** | It cost 36pt of a 168pt island and pushed content past the shape's bottom edge onto the desktop. Time is already in the menu bar; battery lives in the compact wings |
@@ -144,6 +144,37 @@ extension AnyTransition {
 ```
 
 Blur is GPU work, but only for ~300 ms during transitions, then it's gone. Never leave a blur on a resting view.
+
+### 2.4b Album halo (Phase 5, 2026-09-16)
+
+A soft glow of the album's colour sits directly behind the artwork in the
+expanded music layout, so the cover reads as lit from behind rather than
+pasted onto a black panel.
+
+**This was originally a wash across the whole expanded panel and was cut back
+after live feedback (2026-09-16).** At panel scale a blurred cover reads as a
+cheap gradient smeared over the island and fights the black surface. Confined
+to the art it does the opposite, and — the point of the revision — the island
+surface goes back to **pure black in every state**, which is what lets it
+blend with the real hardware notch. The decision-table rule is therefore
+unconditional again.
+
+Constraints:
+
+1. **Behind the artwork only**, sized to the cover, never to the panel.
+2. **Masked by a radial gradient** so it fades to nothing well before its own
+   bounds. Without that it is a blurred square with a visible edge — which is
+   exactly how the panel-wide version failed.
+3. **Outside the card's clip**, or the glow is cropped back into the square it
+   exists to soften.
+4. **Opacity ceiling 0.55** over black, with `.plusLighter` so it adds light
+   rather than greying the surface.
+5. **Off entirely** under Reduce Transparency or Increase Contrast.
+6. **Static.** Crossfades on track change; never animates otherwise.
+
+Blurring once per track in `ArtworkCache` rather than with SwiftUI's `.blur()`
+remains load-bearing for §5.1: a live modifier re-rasterises every time the
+island changes state, and the island changes state constantly.
 
 ### 2.5 Shape
 
@@ -298,6 +329,45 @@ an equal value still fires an `@Observable` notification.
 **Rule this adds:** never animate a layout property in a loop. Animate
 transforms, or drop to `CALayer` and let the render server own it.
 
+### 5.1c Audit pass, 2026-09-16
+
+A whole-codebase sweep for bugs, waste and hot paths. Four findings, all
+fixed with no change to the UI or the interaction model:
+
+1. **A 2-second polling loop in `ScreenshotService`.** `scheduleDismiss`
+   re-armed on a `while` loop that woke every 2s to ask whether the island
+   was still expanded — a poll, for as long as the pointer stayed on the
+   island, in direct violation of rule 1. Replaced with
+   `withObservationTracking` on `store.state`: the collapse itself re-arms
+   the timer, and nothing runs while idle. The observation is
+   self-terminating (it stops re-arming once `store.screenshot` is nil), the
+   same pattern `NotchWindowController` already uses.
+2. **Double-clicks were swallowed before reaching controls.**
+   `NotchPanel.sendEvent` intercepts `leftMouseUp` with `clickCount == 2`
+   ahead of dispatch, so a double-tap on a transport button or the
+   screenshot chip's ✕ badge fired play/pause instead of the control. Now
+   the intercept checks `hostingView.hitTest` first and declines anything
+   over real content. `smartMagnify` still always toggles — a two-finger
+   tap has no control to land on.
+3. **Accessibility flags were IPC-queried from the render path.**
+   `Motion.reduceMotion`, `AmbientArtBleed.isPermitted` and
+   `PlaybackBars.resolvedTint` each read `NSWorkspace.accessibilityDisplay*`
+   on every evaluation — inside view bodies and inside `mouseMoved`. Each
+   read is a round-trip to the accessibility server. Cached in `Motion` and
+   refreshed on `accessibilityDisplayOptionsDidChangeNotification`, which is
+   the only event that can invalidate it.
+4. **Hover parallax re-rendered the island at the mouse's event rate.**
+   `mouseMoved` wrote `store.hoverPoint` on every event (~60-120/s) while
+   expanded, even when nothing read it — the idle agenda and the screenshot
+   chip have no tilted card. Now gated on the music card actually being on
+   screen, and quantised to a 0.02 normalised step, below which the ±12°
+   tilt is invisible.
+
+**Rules these add:** an observation is cheaper than a re-check loop, even a
+slow one — if you are sleeping to ask "has it changed yet", observe it
+instead. And never read an accessibility or defaults flag from a view body;
+cache it and refresh on its notification.
+
 ### 5.2 Rules
 
 1. **Event-driven only.** IOKit notifications, adapter stream, NotificationCenter. No polling loops.
@@ -313,7 +383,13 @@ transforms, or drop to `CALayer` and let the render server own it.
 11. **Stop on sleep, resume on wake.** Every service implements `stop()`.
 12. **Timers, if unavoidable:** set `tolerance` (≥ 10% of interval) so the OS can coalesce.
 13. **Calendar refreshes only on `.EKEventStoreChanged`** (and display wake). No polling, no periodic re-fetch.
-14. **No `NSVisualEffectView`, and no `blur()` on anything shape-shaped.** Live blur is continuously recomposited by the WindowServer, and a blur bleeds past its own silhouette — which breaks closed-state invisibility. Solid black costs nothing and can't leak.
+14. **Observe, don't re-check.** A loop that sleeps in order to ask whether
+    something changed is a poll no matter how long the sleep is. Use
+    `withObservationTracking` and let the change wake you (§5.1c).
+15. **Never read accessibility or defaults flags from a view body.** Each
+    read is IPC; cache the value and refresh it on its change notification
+    (§5.1c).
+16. **No `NSVisualEffectView`, and no `blur()` on anything shape-shaped.** Live blur is continuously recomposited by the WindowServer, and a blur bleeds past its own silhouette — which breaks closed-state invisibility. Solid black costs nothing and can't leak.
 
 ```swift
 import ImageIO

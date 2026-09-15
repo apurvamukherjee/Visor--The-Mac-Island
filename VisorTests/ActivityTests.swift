@@ -16,7 +16,7 @@ struct ActivityTests {
     func chargingPeekOutranksNowPlaying() {
         let activities: [ActivityKind: Activity] = [
             .nowPlaying: Activity(kind: .nowPlaying),
-            .charging: Activity(kind: .charging),
+            .charging: Activity(kind: .charging)
         ]
         #expect(resolveCurrentActivity(activities)?.kind == .charging)
     }
@@ -25,7 +25,7 @@ struct ActivityTests {
     func endingTheChargingPeekFallsBackToNowPlaying() {
         var activities: [ActivityKind: Activity] = [
             .nowPlaying: Activity(kind: .nowPlaying),
-            .charging: Activity(kind: .charging),
+            .charging: Activity(kind: .charging)
         ]
         activities.removeValue(forKey: .charging)
         #expect(resolveCurrentActivity(activities)?.kind == .nowPlaying)
@@ -36,7 +36,7 @@ struct ActivityTests {
         let activities: [ActivityKind: Activity] = [
             .nowPlaying: Activity(kind: .nowPlaying),
             .charging: Activity(kind: .charging),
-            .screenshot: Activity(kind: .screenshot),
+            .screenshot: Activity(kind: .screenshot)
         ]
         #expect(resolveCurrentActivity(activities)?.kind == .screenshot)
     }
@@ -46,7 +46,7 @@ struct ActivityTests {
         var activities: [ActivityKind: Activity] = [
             .nowPlaying: Activity(kind: .nowPlaying),
             .charging: Activity(kind: .charging),
-            .screenshot: Activity(kind: .screenshot),
+            .screenshot: Activity(kind: .screenshot)
         ]
         activities.removeValue(forKey: .screenshot)
         #expect(resolveCurrentActivity(activities)?.kind == .charging)

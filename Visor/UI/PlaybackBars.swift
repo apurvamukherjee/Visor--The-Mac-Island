@@ -23,7 +23,7 @@ struct PlaybackBars: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var resolvedTint: Color {
-        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? .white : (tint ?? .white)
+        Motion.flags.increaseContrast ? .white : (tint ?? .white)
     }
 
     var body: some View {

@@ -29,14 +29,21 @@ hdiutil create -volname Visor -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/
 # GitHub. dist/ is gitignored and gets overwritten; this one is permanent.
 VERSION="$(sed -n 's/.*MARKETING_VERSION: "\(.*\)".*/\1/p' project.yml)"
 [ -n "$VERSION" ] || VERSION="0.0"
-STAMP="$(date +%Y-%m-%d)"
+BUILD="$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)".*/\1/p' project.yml)"
+[ -n "$BUILD" ] || BUILD="1"
+# Seconds, not just the date: several builds a day is the normal case, and the
+# old -2/-3 suffix said which was later but not when either was cut. Seconds
+# rather than minutes because two builds of one commit inside the same minute
+# would otherwise resolve to the same permanent path.
+STAMP="$(date +%Y-%m-%d-%H%M%S)"
+COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo nogit)"
 mkdir -p "$RELEASES"
-RELEASE="$RELEASES/Visor-$VERSION-$STAMP.dmg"
-# Never clobber an earlier build from the same day — suffix instead.
+RELEASE="$RELEASES/Visor-$VERSION($BUILD)-$STAMP-$COMMIT.dmg"
+# These are permanent, and a release that is already on disk is history:
+# refuse rather than overwrite it.
 if [ -e "$RELEASE" ]; then
-    n=2
-    while [ -e "$RELEASES/Visor-$VERSION-$STAMP-$n.dmg" ]; do n=$((n + 1)); done
-    RELEASE="$RELEASES/Visor-$VERSION-$STAMP-$n.dmg"
+    echo "release already exists: $RELEASE" >&2
+    exit 1
 fi
 cp "$DMG" "$RELEASE"
 

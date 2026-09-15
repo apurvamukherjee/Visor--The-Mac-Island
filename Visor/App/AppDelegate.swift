@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var services: [any NotchService] = []
 
     func applicationDidFinishLaunching(_: Notification) {
+        Motion.startObservingAccessibility()
         guard let controller = NotchWindowController(store: store) else {
             Log.app.error("No screen available; Visor cannot display the island.")
             NSApp.terminate(nil)
@@ -21,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             BatteryService(store: store),
             NowPlayingService(store: store),
             CalendarService(store: store),
-            ScreenshotService(store: store),
+            ScreenshotService(store: store)
         ]
         services.forEach { $0.start() }
     }

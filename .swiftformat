@@ -3,3 +3,4 @@
 --maxwidth 120
 --self remove
 --importgrouping testable-bottom
+--commas inline

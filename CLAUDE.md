@@ -132,6 +132,40 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   island opens it and adopts the file. `AlbumColor` tints the playback bars in OKLab with a chroma
   floor and a lightness lift — the island surface stays pure black. Verified
   live: real screenshot → chip → dismiss, and idle CPU still 0.0%.
+- **Phase 5 ("Premium music", 2026-09-16):** album halo behind the artwork
+  (pre-blurred once in `ArtworkCache` via CIGaussianBlur, radial-masked,
+  `.plusLighter` at 0.55, off under Reduce Transparency/Increase Contrast) —
+  started as a panel-wide wash and was cut back after live feedback, so the
+  island surface stays pure black in every state; cursor parallax on the album card (±6°,
+  `.mouseMoved` on the existing NSTrackingArea, no global monitor); paused art
+  desaturates to 0.65 and scales to 0.96; vinyl mode as a **Settings toggle**
+  (off by default, not an art-less fallback) on CALayer with the spin removed
+  rather than paused. `make-dmg.sh` release names now carry version, build
+  number, HH:MM and short commit. Build, 46/46 tests, swiftformat, swiftlint
+  (0 serious) all pass. Plan:
+  `docs/superpowers/plans/2026-09-16-phase5-premium-music.md`.
+- **Cut from Phase 5:** progress-as-bottom-lip (B) — scoped, verified feasible
+  (the adapter exposes an elapsed/timestamp/rate anchor plus `setTime`, so it
+  needs no timer), dropped by choice before build. Cheap to revive.
+- **Audit pass (2026-09-16):** whole-codebase sweep for bugs, waste and hot
+  paths. Four fixes, no UI or UX change: (1) `ScreenshotService.scheduleDismiss`
+  was a 2s polling loop while the island stayed hovered — replaced with
+  `withObservationTracking` on `store.state`, self-terminating on
+  `store.screenshot == nil`; (2) `NotchPanel.sendEvent` swallowed every
+  double-click inside the silhouette, so double-tapping a transport button or
+  the chip's ✕ toggled play/pause instead — the intercept now declines when
+  `hostingView.hitTest` finds real content under the point; (3) accessibility
+  flags (`reduceMotion`/`reduceTransparency`/`increaseContrast`) were IPC-read
+  from view bodies and from `mouseMoved` — now cached in `Motion` and
+  refreshed on `accessibilityDisplayOptionsDidChangeNotification`;
+  (4) hover-parallax writes gated on the music card being on screen and
+  quantised to a 0.02 step, instead of re-rendering at the mouse event rate.
+  Also settled the long-standing lint conflict: `--commas inline` in
+  `.swiftformat` took swiftlint from 14 warnings to 2. Build, 49/49 tests,
+  swiftformat, swiftlint (2 warnings, 0 serious) all pass. Detail:
+  RESEARCH.md §5.1c.
+- **Known:** two `large_tuple` warnings in `AlbumColorTests` — an RGB triple
+  is the honest shape for a colour; left as is.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

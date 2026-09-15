@@ -40,9 +40,12 @@ final class NotchContentView: NSView {
         if let trackingArea {
             removeTrackingArea(trackingArea)
         }
+        // `.mouseMoved` is still event-driven — AppKit delivers it only while
+        // the cursor is inside this view, so nothing runs when the pointer is
+        // elsewhere on screen. This is not the global monitor §5.2.2 bans.
         let area = NSTrackingArea(
             rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
             owner: self,
             userInfo: nil
         )
@@ -97,6 +100,10 @@ final class NotchContentView: NSView {
         // gesture for anyone who has that turned off, or is using a mouse.
         case .smartMagnify, .leftMouseUp:
             guard let commands = store.nowPlayingCommands else { return false }
+            // A double-click that landed on a control belongs to that control.
+            // Swallowing it here turned a double-tap on the transport buttons
+            // or the screenshot chip's dismiss badge into a play/pause.
+            guard event.type == .smartMagnify || !isOverInteractiveContent(event) else { return false }
             commands.togglePlayPause()
             return true
         case .rightMouseUp:
@@ -107,12 +114,62 @@ final class NotchContentView: NSView {
         }
     }
 
+    /// True when the hosting view has a control under the point. SwiftUI
+    /// buttons land as their own subviews inside the hosting view, so anything
+    /// deeper than the hosting view itself is content that wants the click.
+    private func isOverInteractiveContent(_ event: NSEvent) -> Bool {
+        let local = hostingView.convert(event.locationInWindow, from: nil)
+        guard let hit = hostingView.hitTest(local) else { return false }
+        return hit !== hostingView
+    }
+
     override func mouseEntered(with _: NSEvent) {
         onMouseEntered?()
     }
 
     override func mouseExited(with _: NSEvent) {
+        store.hoverPoint = nil
         onMouseExited?()
+    }
+
+    /// Only meaningful while the expanded music card is on screen, so the
+    /// store write is skipped entirely otherwise — the cursor crossing the
+    /// closed island, the idle agenda or a screenshot chip would otherwise
+    /// re-render the island on every mouse move for a value nothing reads.
+    ///
+    /// Quantised to `hoverStep`: a tilt is a ±12° effect across the whole
+    /// card, so sub-percent cursor movements are invisible but each one was
+    /// costing a full view-graph pass at the mouse's event rate.
+    override func mouseMoved(with event: NSEvent) {
+        guard
+            store.state == .expanded,
+            store.nowPlaying != nil,
+            store.screenshot == nil,
+            !Motion.reduceMotion
+        else {
+            return
+        }
+        let local = convert(event.locationInWindow, from: nil)
+        let point = Self.normalized(local, in: islandRect)
+        guard Self.isSignificantMove(from: store.hoverPoint, to: point) else { return }
+        store.hoverPoint = point
+    }
+
+    /// Smallest cursor move worth re-rendering for, in normalised units.
+    private static let hoverStep: CGFloat = 0.02
+
+    static func isSignificantMove(from old: CGPoint?, to new: CGPoint) -> Bool {
+        guard let old else { return true }
+        return abs(old.x - new.x) >= hoverStep || abs(old.y - new.y) >= hoverStep
+    }
+
+    /// Cursor position as (-1...1) on both axes, centre-origin. Pure so the
+    /// clamping is testable without a window.
+    static func normalized(_ point: CGPoint, in rect: CGRect) -> CGPoint {
+        guard rect.width > 0, rect.height > 0 else { return .zero }
+        let offsetX = (point.x - rect.midX) / (rect.width / 2)
+        let offsetY = (point.y - rect.midY) / (rect.height / 2)
+        return CGPoint(x: min(max(offsetX, -1), 1), y: min(max(offsetY, -1), 1))
     }
 
     /// Click-through outside the shape's silhouette. Tested against the

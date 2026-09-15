@@ -18,7 +18,8 @@ struct CompactActivityView: View {
                     shot: shot,
                     height: 18,
                     onOpen: { open(shot) },
-                    onDismiss: { store.setScreenshot(nil) }
+                    onDismiss: { store.setScreenshot(nil) },
+                    onDropCompleted: { store.dismissScreenshot(shot) }
                 )
                 .transition(.scale(scale: 0.7).combined(with: .opacity))
             } else {

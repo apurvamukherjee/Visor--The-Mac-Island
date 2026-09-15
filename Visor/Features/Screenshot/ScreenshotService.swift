@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import ImageIO
+import Observation
 
 /// Catches screenshots as macOS writes them.
 ///
@@ -104,23 +105,46 @@ final class ScreenshotService: NotchService {
         }
     }
 
-    /// Restarted on every catch; re-arms rather than firing while the island
-    /// is open.
+    /// Restarted on every catch. If the island is open when the clock runs
+    /// out the catch is not pulled out from under the user — the timer is
+    /// simply not rescheduled, and the collapse itself re-arms it. A 2-second
+    /// re-check loop did the same job by waking the CPU for as long as the
+    /// pointer stayed on the island; observation costs nothing while idle.
     private func scheduleDismiss() {
         dismissTask?.cancel()
         dismissTask = Task { [weak self] in
-            var remaining = Self.visibleFor
-            while !Task.isCancelled {
-                try? await Task.sleep(for: remaining, tolerance: .milliseconds(500))
-                guard !Task.isCancelled, let self else { return }
-                guard store.state == .expanded else { break }
-                remaining = Self.hoverGrace
+            try? await Task.sleep(for: Self.visibleFor, tolerance: .milliseconds(500))
+            guard !Task.isCancelled, let self else { return }
+            dismissTask = nil
+            if store.state == .expanded {
+                waitForCollapse()
+            } else {
+                dismiss()
             }
-            self?.dismiss()
         }
     }
 
-    func dismiss() {
+    /// Fires once, when the island next leaves the expanded state.
+    private func waitForCollapse() {
+        withObservationTracking {
+            _ = store.state
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, self.store.screenshot != nil else { return }
+                guard self.store.state != .expanded else {
+                    self.waitForCollapse()
+                    return
+                }
+                self.dismissTask = Task { [weak self] in
+                    try? await Task.sleep(for: Self.hoverGrace, tolerance: .milliseconds(250))
+                    guard !Task.isCancelled else { return }
+                    self?.dismiss()
+                }
+            }
+        }
+    }
+
+    private func dismiss() {
         dismissTask?.cancel()
         dismissTask = nil
         store.setScreenshot(nil)
@@ -161,7 +185,7 @@ final class ScreenshotService: NotchService {
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceThumbnailMaxPixelSize: thumbnailPixels,
                 kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceShouldCacheImmediately: true,
+                kCGImageSourceShouldCacheImmediately: true
             ]
             return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
         }.value

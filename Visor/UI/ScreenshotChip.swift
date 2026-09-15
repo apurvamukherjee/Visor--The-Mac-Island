@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// A caught screenshot, offered for as long as it lasts. Two sizes: a chip
 /// for the compact wing and a preview for the expanded state.
@@ -8,6 +9,10 @@ struct ScreenshotChip: View {
     var showsLabel = false
     var onOpen: () -> Void
     var onDismiss: () -> Void
+    /// Called once a receiver has taken the file. Separate from `onDismiss`
+    /// because it fires from a provider that can outlive this chip, so the
+    /// handler has to check the catch is still the current one.
+    var onDropCompleted: () -> Void
 
     @State private var isHovering = false
 
@@ -33,7 +38,27 @@ struct ScreenshotChip: View {
                 onOpen()
             }
         }
-        .draggable(shot.url)
+        // `.onDrag`, not `.draggable`: the catch has done its job once the
+        // file is somewhere else, and the provider's `loadHandler` is the
+        // hook that tells us a receiver actually took it. `.draggable` leaves
+        // the chip sitting in the notch afterwards with nothing left to do.
+        .onDrag {
+            let provider = NSItemProvider()
+            provider.suggestedName = shot.url.lastPathComponent
+            provider.registerFileRepresentation(
+                forTypeIdentifier: UTType.fileURL.identifier,
+                fileOptions: .openInPlace,
+                visibility: .all
+            ) { completion in
+                completion(shot.url, true, nil)
+                // The receiver has the file; the notch no longer needs to
+                // offer it. A cancelled drag never reaches here, so the chip
+                // survives to be tried again.
+                Task { @MainActor in onDropCompleted() }
+                return nil
+            }
+            return provider
+        }
     }
 
     /// iOS's close badge: only while the pointer is over the chip, so the

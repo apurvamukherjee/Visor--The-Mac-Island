@@ -25,7 +25,7 @@ struct CalendarEventMapperTests {
     func upcomingDropsEventsThatHaveAlreadyEnded() {
         let events = [
             Self.event(id: "past", startOffset: -7200),
-            Self.event(id: "future", startOffset: 3600),
+            Self.event(id: "future", startOffset: 3600)
         ]
         let result = CalendarEventMapper.upcoming(events, now: Self.now, limit: 10)
         #expect(result.map(\.id) == ["future"])
@@ -44,7 +44,7 @@ struct CalendarEventMapperTests {
         let events = [
             Self.event(id: "third", startOffset: 10800),
             Self.event(id: "first", startOffset: 600),
-            Self.event(id: "second", startOffset: 3600),
+            Self.event(id: "second", startOffset: 3600)
         ]
         let result = CalendarEventMapper.upcoming(events, now: Self.now, limit: 2)
         #expect(result.map(\.id) == ["first", "second"])

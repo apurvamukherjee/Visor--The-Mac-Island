@@ -101,7 +101,8 @@ struct NotchRootView: View {
                     NSWorkspace.shared.open(shot.url)
                     store.setScreenshot(nil)
                 },
-                onDismiss: { store.setScreenshot(nil) }
+                onDismiss: { store.setScreenshot(nil) },
+                onDropCompleted: { store.dismissScreenshot(shot) }
             )
             .frame(maxWidth: .infinity, alignment: .leading)
         } else if let info = store.nowPlaying {
@@ -110,7 +111,9 @@ struct NotchRootView: View {
                 artwork: store.nowPlayingArtwork,
                 tint: store.nowPlayingTint,
                 commands: store.nowPlayingCommands,
-                events: store.calendarEvents
+                events: store.calendarEvents,
+                hoverPoint: store.hoverPoint,
+                bleed: store.nowPlayingBleed
             )
         } else {
             ExpandedIdleView(events: store.calendarEvents)

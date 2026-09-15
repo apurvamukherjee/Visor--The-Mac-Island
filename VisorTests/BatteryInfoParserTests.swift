@@ -7,7 +7,7 @@ struct BatteryInfoParserTests {
     func parsesPercentageAndChargingState() {
         let description: [String: Any] = [
             kIOPSCurrentCapacityKey as String: 72,
-            kIOPSIsChargingKey as String: true,
+            kIOPSIsChargingKey as String: true
         ]
         let info = BatteryInfoParser.parse(description)
         #expect(info == BatteryInfo(percentage: 72, isCharging: true))

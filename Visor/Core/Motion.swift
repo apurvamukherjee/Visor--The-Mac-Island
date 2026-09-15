@@ -30,8 +30,49 @@ enum Motion {
     /// title/artist swap — the new track's text rises into place
     static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
 
+    /// Cached, not queried per read. These are read from view bodies and from
+    /// `mouseMoved`, and each raw access is an IPC round-trip into the
+    /// accessibility server — enough to show up in the render path. macOS
+    /// posts a notification when any of them changes, which is the only time
+    /// the cache can go stale.
+    private nonisolated(unsafe) static var cachedFlags = AccessibilityFlags.current
+    private nonisolated(unsafe) static var observer: NSObjectProtocol?
+
+    struct AccessibilityFlags {
+        var reduceMotion: Bool
+        var reduceTransparency: Bool
+        var increaseContrast: Bool
+
+        static var current: AccessibilityFlags {
+            let workspace = NSWorkspace.shared
+            return AccessibilityFlags(
+                reduceMotion: workspace.accessibilityDisplayShouldReduceMotion,
+                reduceTransparency: workspace.accessibilityDisplayShouldReduceTransparency,
+                increaseContrast: workspace.accessibilityDisplayShouldIncreaseContrast
+            )
+        }
+    }
+
+    static var flags: AccessibilityFlags {
+        cachedFlags
+    }
+
     static var reduceMotion: Bool {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        cachedFlags.reduceMotion
+    }
+
+    /// Called once at launch. Without it the cache is still correct for the
+    /// life of the process — it just stops tracking a mid-session change.
+    @MainActor
+    static func startObservingAccessibility() {
+        guard observer == nil else { return }
+        observer = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            cachedFlags = AccessibilityFlags.current
+        }
     }
 
     static func resolved(_ animation: Animation) -> Animation {
