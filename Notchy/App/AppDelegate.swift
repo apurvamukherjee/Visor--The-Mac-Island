@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = NotchStore()
     private var windowController: NotchWindowController?
+    private let settingsWindow = SettingsWindowController()
     private var batteryService: BatteryService?
     private var nowPlayingService: NowPlayingService?
     private var calendarService: CalendarService?
@@ -14,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
+        controller.onShowSettings = { [weak self] in self?.settingsWindow.show() }
         windowController = controller
         controller.start()
 

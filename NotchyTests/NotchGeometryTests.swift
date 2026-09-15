@@ -16,10 +16,9 @@ struct NotchGeometryTests {
 
         // Reported cutout is 200x32 at x 656; the hardware trim narrows and
         // lengthens it, keeping it centred on the same midpoint.
-        let trim = NotchGeometry.calibration
-        #expect(rect.width == 200 - trim.widthInset)
-        #expect(rect.height == 32 + trim.heightOffset)
-        #expect(rect.midX == 756 + trim.horizontalOffset)
+        #expect(rect.width == 200 - NotchGeometry.closedWidthInset)
+        #expect(rect.height == 32 + NotchGeometry.closedHeightOffset)
+        #expect(rect.midX == 756 + NotchGeometry.closedHorizontalOffset)
         #expect(rect.maxY == 982)
     }
 
@@ -91,8 +90,8 @@ struct NotchGeometryTests {
         #expect(canvas.width >= expanded.width)
         #expect(canvas.width >= NotchGeometry.compactRect(for: screen).width)
         #expect(canvas.height == expanded.height)
-        #expect(expanded.height == max(NotchGeometry.expandedIdleSize.height, NotchGeometry.expandedMusicSize.height))
-        #expect(NotchGeometry.expandedMusicSize.height < NotchGeometry.expandedIdleSize.height)
+        #expect(expanded.height == NotchGeometry.expandedSize(hasNowPlaying: false).height)
+        #expect(NotchGeometry.expandedSize(hasNowPlaying: true).height < expanded.height)
         #expect(canvas.maxY == expanded.maxY)
     }
 }

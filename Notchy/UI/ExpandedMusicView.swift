@@ -83,6 +83,7 @@ struct ExpandedMusicView: View {
         DragGesture(minimumDistance: 20)
             .onEnded { value in
                 guard abs(value.translation.width) > Self.swipeThreshold else { return }
+                Haptics.selection()
                 if value.translation.width < 0 {
                     commands?.next()
                 } else {
@@ -99,6 +100,14 @@ struct ExpandedMusicView: View {
             .frame(width: Self.artworkSide, height: Self.artworkSide)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
+            // Added after the rotation so the bars stay flat while the card
+            // turns, and scrimmed so they read against pale artwork.
+            .overlay(alignment: .bottomTrailing) {
+                PlaybackBars(isPlaying: info.isPlaying, height: 13)
+                    .padding(5)
+                    .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 7))
+                    .padding(4)
+            }
             .onAppear { shownArtwork = artwork }
             .onChange(of: info.trackIdentity) { flip(to: artwork) }
     }
@@ -132,11 +141,18 @@ struct ExpandedMusicView: View {
 
     private var controls: some View {
         HStack(spacing: 8) {
-            transportButton("backward.fill", size: 16) { commands?.previous() }
+            transportButton("backward.fill", size: 16) {
+                Haptics.selection()
+                commands?.previous()
+            }
             transportButton(info.isPlaying ? "pause.fill" : "play.fill", size: 22) {
+                Haptics.toggle()
                 commands?.togglePlayPause()
             }
-            transportButton("forward.fill", size: 16) { commands?.next() }
+            transportButton("forward.fill", size: 16) {
+                Haptics.selection()
+                commands?.next()
+            }
         }
         .foregroundStyle(.white)
         .buttonStyle(.plain)

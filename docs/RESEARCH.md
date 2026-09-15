@@ -401,14 +401,19 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 
 ### Phase 3 — Polish
 - Numeric text transitions, symbol effects, haptics, Reduce Motion.
-- Swipe gestures on expanded media (next/previous).
+- Swipe gestures on expanded media (next/previous) — plus trackpad two-finger
+  swipe and two-finger double tap (`smartMagnify`) on the panel view.
 - Content layer: pure-black, hard-edged island surface (a translucent material and a
   blurred bleed were both tried and reverted — see §0).
 - Calendar agenda via EventKit (**moved up from Phase 4**): `CalendarService`,
-  full-agenda idle-expanded layout, 2-event peek in the music-expanded split.
+  full-agenda idle-expanded layout, 1-event peek in the music-expanded split
+  (2 was what forced the island to stay tall while playing).
 - ~~Mood/genre chip bar docked under the expanded island while playing~~ — removed 2026-09-16: stub actions that did nothing, and its canvas reserve made the hosting view taller than the island, which pushed the whole island 22pt below the notch.
-- Expanded size grows to 600×220 to fit the two-column agenda.
+- Expanded size: settled at 400×186 idle / 400×168 playing (see §0). 600×220 and 560-wide were both tried and read as a banner rather than an island.
 - Fullscreen handling, sleep/wake, multi-display, settings window, launch at login.
+- Playback bars on the artwork and in the compact wing — decorative, not a
+  spectrum analyser (macOS exposes no other app's audio). Core Animation runs
+  the loop on the render server, and it exists only while playing.
 - Settings/About area shows "by Apurva" once (see §0 Attribution). Power rules
   (§5.2) still apply here: nothing in that window may animate or tick while
   the settings window is closed.

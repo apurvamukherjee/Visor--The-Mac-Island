@@ -25,7 +25,7 @@ final class NowPlayingService: NotchService {
         }
         store.setNowPlayingCommands(
             NotchStore.NowPlayingCommands(
-                togglePlayPause: { [weak self] in self?.mediaController.togglePlayPause() },
+                togglePlayPause: { [weak self] in self?.togglePlayPause() },
                 next: { [weak self] in self?.mediaController.nextTrack() },
                 previous: { [weak self] in self?.mediaController.previousTrack() }
             )
@@ -40,6 +40,23 @@ final class NowPlayingService: NotchService {
         store.setNowPlayingCommands(nil)
         store.setNowPlaying(nil)
         store.deactivate(.nowPlaying)
+    }
+
+    /// Explicit play/pause rather than the adapter's `toggle_play_pause`:
+    /// the toggle is one command for two meanings, and players disagree about
+    /// what it does when their own state has drifted. We already know whether
+    /// the track is playing, so we say which one we want.
+    private func togglePlayPause() {
+        guard let info = store.nowPlaying else {
+            mediaController.togglePlayPause()
+            return
+        }
+        Log.nowPlaying.debug("Transport: \(info.isPlaying ? "pause" : "play")")
+        if info.isPlaying {
+            mediaController.pause()
+        } else {
+            mediaController.play()
+        }
     }
 
     private func handle(_ trackInfo: TrackInfo?) {

@@ -1,5 +1,7 @@
 excluded:
   - .build
+  - build
+  - dist
   - Notchy.xcodeproj
 
 opt_in_rules:

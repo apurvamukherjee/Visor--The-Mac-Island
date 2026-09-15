@@ -8,11 +8,12 @@ import SwiftUI
 /// rapid re-hover retargets the animation mid-flight.
 @MainActor
 final class NotchWindowController {
+    var onShowSettings: (() -> Void)?
+
     private let store: NotchStore
     private let panel: NotchPanel
     private let contentView: NotchContentView
     private let canvasSize: CGSize
-    private let skyLight = SkyLightPin()
     private var generation = 0
     private var isHovering = false
     private var isDisplayAsleep = false
@@ -39,6 +40,7 @@ final class NotchWindowController {
         panel.contentView = contentView
         store.setClosedSize(closedRect.size)
         repositionHostingView(for: closedRect.width)
+        contentView.onShowSettings = { [weak self] in self?.onShowSettings?() }
         contentView.onMouseEntered = { [weak self] in self?.handleMouseEntered() }
         contentView.onMouseExited = { [weak self] in self?.handleMouseExited() }
     }
@@ -46,7 +48,7 @@ final class NotchWindowController {
     func start() {
         panel.orderFrontRegardless()
         // After ordering front: `windowNumber` isn't valid until then.
-        skyLight.pin(panel)
+        SkyLightPin.pin(panel)
         registerActivityObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -79,7 +81,6 @@ final class NotchWindowController {
     }
 
     func stop() {
-        skyLight.unpin()
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         if let screenObserver {
@@ -132,6 +133,10 @@ final class NotchWindowController {
         let canvasRect = NotchGeometry.expandedCanvasRect(for: screen)
         panel.setFrame(canvasRect, display: true)
         repositionHostingView(for: canvasRect.width)
+        // Only on the way open: the hover-intent delay has already filtered
+        // out cursors merely passing over the notch, and buzzing on every
+        // collapse as well would make the gesture feel chattery.
+        Haptics.shapeChange()
         withAnimation(Motion.resolved(Motion.open)) {
             store.setState(.expanded)
         }

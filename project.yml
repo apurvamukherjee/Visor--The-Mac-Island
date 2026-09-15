@@ -25,6 +25,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.notchy
         CODE_SIGN_ENTITLEMENTS: Notchy.entitlements
         GENERATE_INFOPLIST_FILE: YES
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
     info:
       path: Generated-Info.plist
       properties:

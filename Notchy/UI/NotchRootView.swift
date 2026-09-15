@@ -6,7 +6,7 @@ struct NotchRootView: View {
 
     private var currentSize: CGSize {
         switch store.state {
-        case .expanded: store.nowPlaying == nil ? NotchGeometry.expandedIdleSize : NotchGeometry.expandedMusicSize
+        case .expanded: NotchGeometry.expandedSize(hasNowPlaying: store.nowPlaying != nil)
         case .compact: compactSize
         case .closed: store.closedSize
         }

@@ -17,6 +17,7 @@ final class NotchContentView: NSView {
 
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
+    var onShowSettings: (() -> Void)?
 
     override var isFlipped: Bool {
         true
@@ -74,6 +75,7 @@ final class NotchContentView: NSView {
         case .ended, .cancelled:
             defer { scrollOffset = 0 }
             guard abs(scrollOffset) > Self.swipeThreshold else { return }
+            Haptics.selection()
             if scrollOffset < 0 {
                 commands.next()
             } else {
@@ -84,13 +86,25 @@ final class NotchContentView: NSView {
         }
     }
 
-    /// Two-finger double tap — the system's `smartMagnify` gesture, which is
-    /// exactly that on a trackpad.
-    override func smartMagnify(with event: NSEvent) {
-        guard let commands = store.nowPlayingCommands else {
-            return super.smartMagnify(with: event)
+    /// Called by `NotchPanel.sendEvent` before AppKit hands the event to the
+    /// hosting view. Returns true when handled, so the panel can swallow it.
+    /// Ignores anything outside the island's silhouette — the panel's frame
+    /// is wider than what's drawn.
+    func handleInterceptedEvent(_ event: NSEvent) -> Bool {
+        guard hitTest(event.locationInWindow) != nil else { return false }
+        switch event.type {
+        case .smartMagnify:
+            guard let commands = store.nowPlayingCommands else { return false }
+            Haptics.toggle()
+            commands.togglePlayPause()
+            return true
+        case .rightMouseUp:
+            Haptics.toggle()
+            onShowSettings?()
+            return true
+        default:
+            return false
         }
-        commands.togglePlayPause()
     }
 
     override func mouseEntered(with _: NSEvent) {
@@ -123,12 +137,9 @@ final class NotchContentView: NSView {
     /// layout, or the strip below the shorter island would swallow clicks
     /// meant for whatever is behind it.
     private var islandRect: CGRect {
-        let height = switch store.state {
-        case .expanded: store.nowPlaying == nil
-            ? NotchGeometry.expandedIdleSize.height
-            : NotchGeometry.expandedMusicSize.height
-        case .compact, .closed: NotchGeometry.expandedSize.height
-        }
+        let height = store.state == .expanded
+            ? NotchGeometry.expandedSize(hasNowPlaying: store.nowPlaying != nil).height
+            : NotchGeometry.expandedSize.height
         return CGRect(x: 0, y: 0, width: bounds.width, height: height)
     }
 }

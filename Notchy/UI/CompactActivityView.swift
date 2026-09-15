@@ -16,6 +16,9 @@ struct CompactActivityView: View {
                     .frame(width: 16, height: 16)
                     .clipShape(RoundedRectangle(cornerRadius: 3))
             }
+            if let info = store.nowPlaying {
+                PlaybackBars(isPlaying: info.isPlaying, height: 11)
+            }
             Spacer(minLength: 0)
             if let battery = store.battery {
                 batteryGlyph(battery)
@@ -35,6 +38,9 @@ struct CompactActivityView: View {
                 .foregroundStyle(info.isCharging ? .yellow : .white)
             Text("\(info.percentage)%")
                 .font(.system(.caption2, design: .rounded).monospacedDigit())
+                // Digits roll rather than pop when the charge moves.
+                .contentTransition(.numericText(value: Double(info.percentage)))
+                .animation(Motion.resolved(Motion.textSwap), value: info.percentage)
         }
     }
 }

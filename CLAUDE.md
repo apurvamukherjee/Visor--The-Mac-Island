@@ -97,6 +97,12 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   track change, two-finger double tap = play/pause) on the panel view;
   `SkyLightPin` moves the panel into a private SkyLight space so desktop
   swipes slide underneath it instead of dragging it along.
+- **Phase 3 completion (2026-09-16):** Settings window (version, "by Apurva"
+  per §0 attribution, launch-at-login via SMAppService, gesture crib sheet,
+  quit) opened by right-clicking the island — an accessory app has no menu
+  bar; haptics on both trackpad gestures; `.numericText()` on the battery
+  percentage; `PlaybackBars` beat animation. `scripts/make-dmg.sh` builds a
+  local ad-hoc `dist/Notchy.dmg` (no sharing, no App Store — §0).
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

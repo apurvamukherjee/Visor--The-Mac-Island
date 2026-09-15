@@ -35,10 +35,17 @@ enum NotchGeometry {
     /// which is the least the transport row fits in at full 38x34 targets.
     static let expandedIdleSize = CGSize(width: 400, height: 186)
     static let expandedMusicSize = CGSize(width: 400, height: 168)
-    static let expandedSize = CGSize(
-        width: max(expandedIdleSize.width, expandedMusicSize.width),
-        height: max(expandedIdleSize.height, expandedMusicSize.height)
-    )
+    /// What the panel frame is sized to: the taller layout, so neither state
+    /// has to resize the window.
+    static let expandedSize = CGSize(width: 400, height: max(expandedIdleSize.height, expandedMusicSize.height))
+
+    /// The island the user actually sees, which is shorter while something
+    /// is playing. Both the SwiftUI shape and the click-through hit test read
+    /// it from here — two copies of this branch would drift apart.
+    static func expandedSize(hasNowPlaying: Bool) -> CGSize {
+        hasNowPlaying ? expandedMusicSize : expandedIdleSize
+    }
+
     static let fallbackClosedSize = CGSize(width: 200, height: 32)
     static let compactExtraWidth: CGFloat = 160
 
@@ -50,21 +57,19 @@ enum NotchGeometry {
     /// exactly what the OS reports.
     ///
     /// Units are points: on a 2x display 0.5 is one physical pixel, which is
-    /// the finest useful adjustment. Positive `widthInset` narrows the shape
-    /// (split evenly across both sides); positive `heightOffset` extends it
-    /// further down, since the top edge stays welded to the screen edge.
-    struct Calibration {
-        var widthInset: CGFloat
-        var heightOffset: CGFloat
-        var horizontalOffset: CGFloat
-    }
+    /// the finest useful adjustment. Tuned against a 15" M4 MacBook Air by
+    /// eye — adjust here, nowhere else, and only against real hardware.
+    ///
+    /// Narrows the shape, split evenly across both sides.
+    static let closedWidthInset: CGFloat = 1
+    /// Extends it further down; the top edge stays welded to the screen edge.
+    static let closedHeightOffset: CGFloat = 1
+    /// Nudges it sideways. The reported cutout midX is already half a point
+    /// off the screen's, so this one earns its place even at 0.
+    static let closedHorizontalOffset: CGFloat = 0
 
-    /// Measured against a 15" M4 MacBook Air by eye — adjust here, nowhere
-    /// else, and only against the real hardware.
-    static let calibration = Calibration(widthInset: 1, heightOffset: 1, horizontalOffset: 0)
-
-    /// Notch bounding box from the real hardware cutout, trimmed by
-    /// `calibration`, or a centered pill-sized fallback on non-notched
+    /// Notch bounding box from the real hardware cutout, trimmed by the
+    /// calibration above, or a centered pill-sized fallback on non-notched
     /// screens (which has no cutout to match, so it takes no trim).
     static func closedRect(for screen: ScreenGeometryProviding) -> CGRect {
         let reportedHeight = screen.safeAreaInsets.top
@@ -76,10 +81,10 @@ enum NotchGeometry {
         else {
             return fallbackRect(for: screen)
         }
-        let width = right.minX - left.maxX - calibration.widthInset
-        let height = reportedHeight + calibration.heightOffset
+        let width = right.minX - left.maxX - closedWidthInset
+        let height = reportedHeight + closedHeightOffset
         return CGRect(
-            x: left.maxX + calibration.widthInset / 2 + calibration.horizontalOffset,
+            x: left.maxX + closedWidthInset / 2 + closedHorizontalOffset,
             y: screen.frame.maxY - height,
             width: width,
             height: height
