@@ -12,6 +12,9 @@ enum Motion {
     static let contentIn = Animation.smooth(duration: 0.28).delay(0.08)
     /// content removal (always faster than the shape)
     static let contentOut = Animation.smooth(duration: 0.14)
+    /// idle-expanded signature glow — repeats only while its view exists
+    /// (expanded + no now-playing activity), so it never ticks off-screen.
+    static let pulse = Animation.easeInOut(duration: 1.4).repeatForever(autoreverses: true)
 
     static func resolved(_ animation: Animation) -> Animation {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion

@@ -61,6 +61,8 @@ struct NotchRootView: View {
                 .frame(height: store.closedSize.height)
             if let info = store.nowPlaying {
                 ExpandedNowPlayingView(info: info, artwork: store.nowPlayingArtwork, commands: store.nowPlayingCommands)
+            } else {
+                SignatureGlow()
             }
         }
         .padding(.horizontal, 12)
@@ -74,5 +76,27 @@ struct NotchRootView: View {
                 ExpandedBatteryRow(info: battery)
             }
         }
+    }
+}
+
+/// Personal touch shown in place of Now Playing when nothing's playing.
+/// The glow only pulses while this view exists in the hierarchy — expanded
+/// (hovering) and idle — so it never animates off-screen or while closed.
+private struct SignatureGlow: View {
+    @State private var isGlowing = false
+
+    private static let maroon = Color(red: 0.5, green: 0, blue: 0)
+
+    var body: some View {
+        Text("By Apurva")
+            .font(.system(.title3, design: .rounded).weight(.semibold))
+            .foregroundStyle(Self.maroon)
+            .shadow(color: Self.maroon, radius: isGlowing ? 14 : 4)
+            .frame(maxWidth: .infinity)
+            .onAppear {
+                withAnimation(Motion.resolved(Motion.pulse)) {
+                    isGlowing = true
+                }
+            }
     }
 }

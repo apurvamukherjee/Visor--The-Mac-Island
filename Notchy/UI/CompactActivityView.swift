@@ -22,6 +22,11 @@ struct CompactActivityView: View {
             }
         }
         .foregroundStyle(.white)
+        // NotchShape's bottom corners round away with radius compactBottomRadius —
+        // at x=0/width exactly, the shape's fill stops short of the full height,
+        // so edge-flush content pokes outside it. Inset past the curve to stay
+        // inside the fill at any vertical position.
+        .padding(.horizontal, NotchShape.compactBottomRadius + 2)
     }
 
     private func batteryGlyph(_ info: BatteryInfo) -> some View {
