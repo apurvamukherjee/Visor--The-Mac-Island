@@ -1,0 +1,19 @@
+excluded:
+  - .build
+  - Notchy.xcodeproj
+
+opt_in_rules:
+  - force_unwrapping
+
+line_length: 120
+force_unwrapping: error
+force_try: error
+
+custom_rules:
+  no_print:
+    name: "No print()"
+    regex: '(^|[^\w.])print\('
+    match_kinds:
+      - identifier
+    message: "Use Log (os.Logger) instead of print()."
+    severity: error
