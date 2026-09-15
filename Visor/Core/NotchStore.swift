@@ -12,6 +12,10 @@ enum NotchState: Equatable, Sendable {
 @Observable
 @MainActor
 final class NotchStore {
+    struct ScreenshotCommands {
+        let adopt: (URL) -> Void
+    }
+
     struct NowPlayingCommands {
         let togglePlayPause: () -> Void
         let next: () -> Void
@@ -22,6 +26,10 @@ final class NotchStore {
     var closedSize: CGSize = .zero
     var battery: BatteryInfo?
     var nowPlayingCommands: NowPlayingCommands?
+    var screenshotCommands: ScreenshotCommands?
+    /// True while a file is being dragged over the island. The window
+    /// controller watches it so the island opens to meet the drag.
+    var isDropTargeted = false
     var calendarEvents: [CalendarEvent] = []
 
     /// These three keep their setters because the setters do something:
@@ -59,6 +67,7 @@ final class NotchStore {
     }
 
     func setScreenshot(_ shot: ScreenshotCatch?) {
+        guard shot != screenshot else { return }
         screenshot = shot
         if shot == nil {
             deactivate(.screenshot)

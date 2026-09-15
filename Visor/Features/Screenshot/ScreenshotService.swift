@@ -18,7 +18,7 @@ final class ScreenshotService: NotchService {
     /// macOS writes the file and then renames it, so one screenshot produces a
     /// burst of directory events. Coalesce them.
     private static let debounce: Duration = .milliseconds(150)
-    private static let visibleFor: Duration = .seconds(8)
+    private static let visibleFor: Duration = .seconds(60)
     /// While the island is open the user is looking at the catch, so the
     /// countdown restarts instead of pulling it out from under them.
     private static let hoverGrace: Duration = .seconds(2)
@@ -46,6 +46,9 @@ final class ScreenshotService: NotchService {
         source.setCancelHandler { close(descriptor) }
         source.resume()
         self.source = source
+        store.screenshotCommands = NotchStore.ScreenshotCommands(
+            adopt: { [weak self] url in self?.adopt(url) }
+        )
     }
 
     func stop() {
@@ -55,6 +58,7 @@ final class ScreenshotService: NotchService {
         dismissTask = nil
         source?.cancel()
         source = nil
+        store.screenshotCommands = nil
         store.setScreenshot(nil)
     }
 
@@ -73,6 +77,25 @@ final class ScreenshotService: NotchService {
         guard url != store.screenshot?.url else { return }
         lastSeen = .now
 
+        present(url)
+    }
+
+    /// A file dragged onto the island. Same presentation as a screenshot the
+    /// system just wrote — once it is in the notch there is no difference.
+    func adopt(_ url: URL) {
+        let isImage = (try? url.resourceValues(forKeys: [.contentTypeKey]))?
+            .contentType?.conforms(to: .image) ?? false
+        guard isImage else {
+            Log.screenshot.notice("Ignoring dropped non-image")
+            return
+        }
+        // A dropped file is usually older than the mark; move the mark past it
+        // so the folder watcher doesn't re-announce it as a fresh capture.
+        lastSeen = .now
+        present(url)
+    }
+
+    private func present(_ url: URL) {
         Task { [weak self] in
             let thumbnail = await Self.thumbnail(for: url)
             guard let self, !Task.isCancelled else { return }

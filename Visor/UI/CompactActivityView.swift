@@ -14,8 +14,13 @@ struct CompactActivityView: View {
     var body: some View {
         HStack {
             if let shot = store.screenshot {
-                ScreenshotChip(shot: shot, height: 18) { open(shot) }
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                ScreenshotChip(
+                    shot: shot,
+                    height: 18,
+                    onOpen: { open(shot) },
+                    onDismiss: { store.setScreenshot(nil) }
+                )
+                .transition(.scale(scale: 0.7).combined(with: .opacity))
             } else {
                 if let artwork = store.nowPlayingArtwork {
                     Image(decorative: artwork, scale: 1)

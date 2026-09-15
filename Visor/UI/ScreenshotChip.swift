@@ -7,6 +7,9 @@ struct ScreenshotChip: View {
     var height: CGFloat
     var showsLabel = false
     var onOpen: () -> Void
+    var onDismiss: () -> Void
+
+    @State private var isHovering = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -33,6 +36,20 @@ struct ScreenshotChip: View {
         .draggable(shot.url)
     }
 
+    /// iOS's close badge: only while the pointer is over the chip, so the
+    /// compact wing stays clean at a glance.
+    private var dismissBadge: some View {
+        Button(action: onDismiss) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: max(12, height * 0.28)))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .black.opacity(0.65))
+        }
+        .buttonStyle(.plain)
+        .offset(x: 5, y: -5)
+        .transition(.scale(scale: 0.5).combined(with: .opacity))
+    }
+
     private var thumbnail: some View {
         Group {
             if let image = shot.thumbnail {
@@ -53,6 +70,14 @@ struct ScreenshotChip: View {
             RoundedRectangle(cornerRadius: height * 0.2)
                 .strokeBorder(.white.opacity(0.25), lineWidth: 0.5)
         )
+        .overlay(alignment: .topTrailing) {
+            if isHovering {
+                dismissBadge
+            }
+        }
+        .onHover { hovering in
+            withAnimation(Motion.resolved(Motion.contentIn)) { isHovering = hovering }
+        }
     }
 
     private var exists: Bool {

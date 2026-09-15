@@ -21,6 +21,7 @@
 | Min macOS | 14.0 (Sonoma) | `@Observable`, `withAnimation` completions, `.spring(duration:bounce:)` |
 | License | Decide up front (see §1.3) | GPL projects are the best references but can't be copied into an MIT app |
 | Distribution | **Offline `.dmg`, ad-hoc/unsigned** — personal use + sharing with friends manually. No App Store, no auto-update server. | No Apple Developer Program yet. Notarized signing stays a Phase 5 item (§8); revisit only if a paid dev account happens. |
+| Release history | Dated `.dmg` committed to `new-releases/` by `scripts/make-dmg.sh` | Downloadable straight from the GitHub file listing without needing the Releases UI or a tag. ~1MB per build; if the repo ever feels heavy, move the history to GitHub Releases and keep only the newest here |
 | Code signing | **Free Apple Development identity** (Xcode > Settings > Accounts, no paid program) | Not for distribution — for TCC. Permissions are bound to the code signature; ad-hoc signing changes the cdhash every build, so macOS re-asked for calendar access on every launch. A stable identity makes the grant stick. `DEVELOPMENT_TEAM` in project.yml |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
 | Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch) |
@@ -438,10 +439,14 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
   the settings window is closed.
 
 ### Phase 4 — Features
+- **Drop target (done 2026-09-16):** dragging an image onto the island opens it
+  (`isDropTargeted` observed by the window controller) and adopts the file as the
+  current catch. The highlight is the shape's own outline stroked and clipped back to
+  itself — nothing paints outside the silhouette.
 - **Screenshot catcher (done 2026-09-16):** `DispatchSource` on the folder from
   `com.apple.screencapture location` — event-driven, no timer. New images become a
   `ScreenshotCatch` shown as a chip in the compact wing, draggable out, click to open,
-  auto-dismissed after 8s with the countdown re-armed while the island is open.
+  auto-dismissed after 60s with the countdown re-armed while the island is open, or instantly via an iOS-style dismiss badge.
 - **Album tint (done 2026-09-16):** the playback bars take the cover's colour, the way
   iOS tints its waveform. The island *surface* is never tinted — that is what Apple
   avoids and what this project reverted a material and a blurred bleed to protect.

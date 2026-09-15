@@ -10,14 +10,19 @@ Not hovering? It sits in the notch itself: album art, live playback bars, batter
 
 ![Visor in its compact state, album art and playback bars on the left, battery on the right](docs/screenshots/compact.png)
 
+Take a screenshot anywhere on the system and it slides into the notch — drag it straight into any app, click to open it, or flick it away.
+
+![A caught screenshot waiting in the notch as a draggable thumbnail](docs/screenshots/screenshot-catch.png)
+
 ---
 
 ## What it does
 
 - **Now Playing** — artwork, title, artist and transport for whatever's playing, in any app. The album cover flips like a card when the track changes.
 - **Your day** — the next events from your calendars, colour-matched to the calendar they came from.
+- **Screenshot catcher** — every screenshot lands in the notch for a minute. Drag it into Slack or Figma, click to open, or dismiss it with the ✕. Drag an image *onto* the notch and it opens to take it.
 - **Battery** — percentage in the wing, and a bolt that bounces the moment you plug in.
-- **Playback bars** — four capsules bouncing in staggered phase while the music plays, and they stop dead when it pauses.
+- **Playback bars** — four capsules bouncing in staggered phase while the music plays, and they stop dead when it pauses. They take the album's colour, the way the iPhone tints its waveform — and stay white when the cover has no colour worth borrowing.
 
 ## How it feels
 
@@ -45,12 +50,24 @@ The rules that get it there:
 | Two-finger swipe | Previous / next track |
 | Double-click | Play / pause |
 | Right-click | Settings |
+| Drag an image onto it | The notch opens and takes it |
+| Drag the thumbnail out | Drops the screenshot into any app |
 
 ## Requirements
 
 - A MacBook with a notch, on Apple silicon
 - macOS 14 or later
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+
+## Download
+
+Built disk images live in [`new-releases/`](new-releases), newest at the bottom — grab the latest `.dmg`, open it, and drag Visor to Applications.
+
+Builds are ad-hoc signed, so macOS quarantines a downloaded image. After copying it across:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Visor.app
+```
 
 ## Build
 

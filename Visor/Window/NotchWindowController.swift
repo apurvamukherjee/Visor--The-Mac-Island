@@ -49,6 +49,7 @@ final class NotchWindowController {
         panel.orderFrontRegardless()
         // After ordering front: `windowNumber` isn't valid until then.
         SkyLightPin.pin(panel)
+        registerDropObservation()
         registerActivityObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -193,6 +194,30 @@ final class NotchWindowController {
             _ = store.currentActivity
         } onChange: { [weak self] in
             Task { @MainActor in self?.handleActivityChange() }
+        }
+    }
+
+    /// A drag heading for the notch should be met, not waited out — the
+    /// island opens the moment it becomes a drop target and closes again when
+    /// the drag leaves or lands.
+    private func registerDropObservation() {
+        withObservationTracking {
+            _ = store.isDropTargeted
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleDropTargetChange() }
+        }
+    }
+
+    private func handleDropTargetChange() {
+        registerDropObservation()
+        guard !isDisplayAsleep else { return }
+        if store.isDropTargeted {
+            hoverIntentTask?.cancel()
+            hoverIntentTask = nil
+            guard store.state != .expanded else { return }
+            expand()
+        } else if !isHovering, store.state == .expanded {
+            collapseFromExpanded()
         }
     }
 

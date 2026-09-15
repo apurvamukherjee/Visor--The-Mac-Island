@@ -36,7 +36,17 @@ struct NotchRootView: View {
     /// *past* its shape, so it smeared a dark halo onto real screen either
     /// side of the notch). Nothing may paint outside the silhouette.
     private var islandSurface: some View {
-        shape.fill(.black)
+        shape
+            .fill(.black)
+            // Nothing paints outside the silhouette: the ring is the shape's
+            // own outline, clipped back to the shape so only its inner half
+            // survives. Not a glow around the island.
+            .overlay {
+                shape
+                    .stroke(.white.opacity(store.isDropTargeted ? 0.55 : 0), lineWidth: 3)
+                    .clipShape(shape)
+            }
+            .animation(Motion.resolved(Motion.contentIn), value: store.isDropTargeted)
     }
 
     var body: some View {
@@ -59,6 +69,15 @@ struct NotchRootView: View {
                 }
             }
             .frame(width: canvasWidth, height: NotchGeometry.expandedSize.height, alignment: .top)
+            // Drop an image on the notch and it becomes the current catch —
+            // the same thing a fresh screenshot becomes.
+            .dropDestination(for: URL.self) { urls, _ in
+                guard let url = urls.first else { return false }
+                store.screenshotCommands?.adopt(url)
+                return true
+            } isTargeted: { targeted in
+                store.isDropTargeted = targeted
+            }
             // NSHostingView centres its root view in its bounds; if the canvas
             // is ever taller than the island, that drops the island below the
             // notch. Pin it to the top.
@@ -74,10 +93,16 @@ struct NotchRootView: View {
     @ViewBuilder
     private var expandedContent: some View {
         if let shot = store.screenshot {
-            ScreenshotChip(shot: shot, height: 72, showsLabel: true) {
-                NSWorkspace.shared.open(shot.url)
-                store.setScreenshot(nil)
-            }
+            ScreenshotChip(
+                shot: shot,
+                height: 72,
+                showsLabel: true,
+                onOpen: {
+                    NSWorkspace.shared.open(shot.url)
+                    store.setScreenshot(nil)
+                },
+                onDismiss: { store.setScreenshot(nil) }
+            )
             .frame(maxWidth: .infinity, alignment: .leading)
         } else if let info = store.nowPlaying {
             ExpandedMusicView(

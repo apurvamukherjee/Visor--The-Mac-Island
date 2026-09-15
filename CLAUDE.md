@@ -127,8 +127,9 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
 - **Phase 4 (2026-09-16):** screenshot catcher + album tint, built from
   `docs/superpowers/plans/2026-09-16-screenshot-catcher-ambient-tint.md`.
   `ScreenshotService` watches the screenshot folder with a `DispatchSource`
-  (no timer); catches show as a draggable chip, auto-dismiss at 8s, re-armed
-  while hovered. `AlbumColor` tints the playback bars in OKLab with a chroma
+  (no timer); catches show as a draggable chip with an iOS-style dismiss badge,
+  auto-dismiss at 60s, re-armed while hovered. Dragging an image onto the
+  island opens it and adopts the file. `AlbumColor` tints the playback bars in OKLab with a chroma
   floor and a lightness lift — the island surface stays pure black. Verified
   live: real screenshot → chip → dismiss, and idle CPU still 0.0%.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
