@@ -52,6 +52,24 @@ struct NotchGeometryTests {
         #expect(expanded.maxY == closed.maxY)
         #expect(expanded.size == NotchGeometry.expandedSize)
     }
+
+    @Test
+    func compactRectSharesClosedRectTopEdgeAndCenterAndAddsWingWidth() {
+        let screen = FakeScreen(
+            frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
+            safeAreaInsets: NSEdgeInsets(top: 32, left: 0, bottom: 0, right: 0),
+            auxiliaryTopLeftArea: CGRect(x: 0, y: 950, width: 656, height: 32),
+            auxiliaryTopRightArea: CGRect(x: 856, y: 950, width: 656, height: 32)
+        )
+
+        let closed = NotchGeometry.closedRect(for: screen)
+        let compact = NotchGeometry.compactRect(for: screen)
+
+        #expect(compact.midX == closed.midX)
+        #expect(compact.minY == closed.minY)
+        #expect(compact.height == closed.height)
+        #expect(compact.width == closed.width + NotchGeometry.compactExtraWidth)
+    }
 }
 
 private struct FakeScreen: ScreenGeometryProviding {

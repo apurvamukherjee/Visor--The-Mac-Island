@@ -10,6 +10,8 @@ struct NotchShape: Shape {
     static let closedBottomRadius: CGFloat = 12
     static let expandedTopRadius: CGFloat = 16
     static let expandedBottomRadius: CGFloat = 28
+    static let compactTopRadius: CGFloat = 6
+    static let compactBottomRadius: CGFloat = 14
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
         get { AnimatablePair(topRadius, bottomRadius) }

@@ -76,4 +76,14 @@ struct NotchShapeTests {
         #expect(path.contains(CGPoint(x: bottomRightCenter.x + 15, y: bottomRightCenter.y + 15)))
         #expect(!path.contains(CGPoint(x: bottomRightCenter.x + 25, y: bottomRightCenter.y + 25)))
     }
+
+    @Test
+    func compactRadiiStayWithinAShortWideRect() {
+        let rect = CGRect(x: 0, y: 0, width: 360, height: 32)
+        let shape = NotchShape(topRadius: NotchShape.compactTopRadius, bottomRadius: NotchShape.compactBottomRadius)
+
+        let bounds = shape.path(in: rect).boundingRect
+
+        #expect(rect.insetBy(dx: -Self.arcApproximationTolerance, dy: -Self.arcApproximationTolerance).contains(bounds))
+    }
 }

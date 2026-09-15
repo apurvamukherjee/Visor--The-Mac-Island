@@ -12,6 +12,8 @@ final class NotchWindowController {
     private let panel: NotchPanel
     private let contentView: NotchContentView
     private var generation = 0
+    private var isHovering = false
+    private var isDisplayAsleep = false
     private var hoverIntentTask: Task<Void, Never>?
     private var screenObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
@@ -28,12 +30,13 @@ final class NotchWindowController {
         panel.contentView = contentView
         store.setClosedSize(closedRect.size)
         repositionHostingView(for: closedRect.width)
-        contentView.onMouseEntered = { [weak self] in self?.scheduleExpand() }
-        contentView.onMouseExited = { [weak self] in self?.scheduleCollapse() }
+        contentView.onMouseEntered = { [weak self] in self?.handleMouseEntered() }
+        contentView.onMouseExited = { [weak self] in self?.handleMouseExited() }
     }
 
     func start() {
         panel.orderFrontRegardless()
+        registerActivityObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -46,14 +49,14 @@ final class NotchWindowController {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.handleScreenChange() }
+            Task { @MainActor in self?.handleDisplaySleep() }
         }
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.screensDidWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.handleScreenChange() }
+            Task { @MainActor in self?.handleDisplayWake() }
         }
     }
 
@@ -69,6 +72,16 @@ final class NotchWindowController {
         panel.orderOut(nil)
     }
 
+    private func handleMouseEntered() {
+        isHovering = true
+        scheduleExpand()
+    }
+
+    private func handleMouseExited() {
+        isHovering = false
+        scheduleCollapse()
+    }
+
     private func scheduleExpand() {
         hoverIntentTask?.cancel()
         hoverIntentTask = Task { [weak self] in
@@ -81,7 +94,7 @@ final class NotchWindowController {
     private func scheduleCollapse() {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
-        collapse()
+        collapseFromExpanded()
     }
 
     private func expand() {
@@ -95,31 +108,78 @@ final class NotchWindowController {
         }
     }
 
-    private func collapse() {
+    private func collapseFromExpanded() {
+        generation += 1
+        let gen = generation
+        let target: NotchState = store.currentActivity != nil ? .compact : .closed
+        withAnimation(
+            Motion.resolved(Motion.close),
+            completionCriteria: .logicallyComplete
+        ) {
+            store.setState(target)
+        } completion: { [weak self] in
+            guard let self, gen == generation else { return }
+            finishShrink(to: target)
+        }
+    }
+
+    private func finishShrink(to target: NotchState) {
+        guard let screen = Self.targetScreen() else { return }
+        let rect = target == .compact ? NotchGeometry.compactRect(for: screen) : NotchGeometry.closedRect(for: screen)
+        panel.setFrame(rect, display: true)
+        if target == .closed {
+            store.setClosedSize(rect.size)
+        }
+        repositionHostingView(for: rect.width)
+    }
+
+    private func enterCompact() {
+        guard let screen = Self.targetScreen() else { return }
+        generation += 1
+        let rect = NotchGeometry.compactRect(for: screen)
+        panel.setFrame(rect, display: true)
+        repositionHostingView(for: rect.width)
+        withAnimation(Motion.resolved(Motion.morph)) {
+            store.setState(.compact)
+        }
+    }
+
+    private func exitCompact() {
         generation += 1
         let gen = generation
         withAnimation(
-            Motion.resolved(Motion.close),
+            Motion.resolved(Motion.morph),
             completionCriteria: .logicallyComplete
         ) {
             store.setState(.closed)
         } completion: { [weak self] in
             guard let self, gen == generation else { return }
-            finishCollapse()
+            finishShrink(to: .closed)
         }
     }
 
-    private func finishCollapse() {
-        guard let screen = Self.targetScreen() else { return }
-        let closedRect = NotchGeometry.closedRect(for: screen)
-        panel.setFrame(closedRect, display: true)
-        store.setClosedSize(closedRect.size)
-        repositionHostingView(for: closedRect.width)
+    private func registerActivityObservation() {
+        withObservationTracking {
+            _ = store.currentActivity
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleActivityChange() }
+        }
+    }
+
+    private func handleActivityChange() {
+        registerActivityObservation()
+        guard !isHovering, !isDisplayAsleep, store.state != .expanded else { return }
+        switch (store.state, store.currentActivity != nil) {
+        case (.closed, true): enterCompact()
+        case (.compact, false): exitCompact()
+        default: break
+        }
     }
 
     /// Shared by screen-parameter changes, sleep, and wake: cancel any
     /// pending hover intent, snap closed with no animation, resync geometry.
     private func handleScreenChange() {
+        isHovering = false
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         generation += 1
@@ -129,6 +189,17 @@ final class NotchWindowController {
         panel.setFrame(closedRect, display: true)
         store.setClosedSize(closedRect.size)
         repositionHostingView(for: closedRect.width)
+    }
+
+    private func handleDisplaySleep() {
+        isDisplayAsleep = true
+        handleScreenChange()
+    }
+
+    private func handleDisplayWake() {
+        isDisplayAsleep = false
+        handleScreenChange()
+        handleActivityChange()
     }
 
     private func repositionHostingView(for frameWidth: CGFloat) {

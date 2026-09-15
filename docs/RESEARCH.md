@@ -38,6 +38,7 @@
 | **Lakr233/NotchDrop** | MIT | File shelf, AirDrop, menu-bar-manager compatibility, minimal architecture | Small, readable, permissive. |
 | **MrKai77/DynamicNotchKit** | MIT | Notch window management, **compact state** (iOS-style leading/trailing), continuous-corner shape, stretchy expansion, hover haptics, configurable transitions | Swift 6 concurrency, DocC docs. Best code to read for the window + shape layer. |
 | **ungive/mediaremote-adapter** (+ `media-control` CLI) | BSD-3 | Now Playing on macOS 15.4+ | The dependency you actually need. |
+| **ejbills/mediaremote-adapter** | MIT | Swift-package wrapper over the same perl-bridge technique, prebuilt binary target | What Notchy actually depends on — see §7.3 |
 | **Lakr233/MSDisplayLink** | MIT | Display-link driver for AppKit | Only if you ever need per-frame custom drawing (you probably won't). |
 | **GetStream/swiftui-spring-animations** | Check repo | Worked examples of spring parameters | Good for tuning. |
 
@@ -372,7 +373,7 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 
 ### 7.3 Swift packages
 
-- **Phase 1–3: none.** Everything needed is in the SDK.
+- **Phase 1–2:** none, except `ejbills/mediaremote-adapter` (MIT-compatible fork of `ungive/mediaremote-adapter`, pinned by commit) for Now Playing — adopted in Phase 2 instead of vendoring the raw adapter, since it ships a prebuilt binary and needs no local cmake/C++ build.
 - Later: KeyboardShortcuts (MIT), Sparkle (auto-updates).
 - Avoid pulling in DynamicNotchKit as a dependency; read it, don't depend on it (you need control of hit-testing and timing).
 

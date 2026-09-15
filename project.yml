@@ -7,10 +7,17 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+packages:
+  MediaRemoteAdapter:
+    url: https://github.com/ejbills/mediaremote-adapter.git
+    revision: 5b6afde3f501a3da567e23bf7f23d562938a1809
 targets:
   Notchy:
     type: application
     platform: macOS
+    dependencies:
+      - package: MediaRemoteAdapter
+        embed: true
     sources:
       - path: Notchy
     settings:
@@ -30,6 +37,7 @@ targets:
       - path: NotchyTests
     dependencies:
       - target: Notchy
+      - package: MediaRemoteAdapter
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
