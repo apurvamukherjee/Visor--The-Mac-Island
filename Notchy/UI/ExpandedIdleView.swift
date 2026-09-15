@@ -43,7 +43,7 @@ struct ExpandedIdleView: View {
     }
 
     private var overflow: Int {
-        CalendarEventMapper.overflowCount(total: events.count, shown: shown.count)
+        events.count - shown.count
     }
 
     private var overflowRow: some View {

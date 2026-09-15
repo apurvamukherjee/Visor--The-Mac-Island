@@ -23,12 +23,10 @@ final class NowPlayingService: NotchService {
         mediaController.onDecodingError = { error, _ in
             Log.nowPlaying.error("Decoding error: \(error.localizedDescription)")
         }
-        store.setNowPlayingCommands(
-            NotchStore.NowPlayingCommands(
-                togglePlayPause: { [weak self] in self?.togglePlayPause() },
-                next: { [weak self] in self?.mediaController.nextTrack() },
-                previous: { [weak self] in self?.mediaController.previousTrack() }
-            )
+        store.nowPlayingCommands = NotchStore.NowPlayingCommands(
+            togglePlayPause: { [weak self] in self?.togglePlayPause() },
+            next: { [weak self] in self?.mediaController.nextTrack() },
+            previous: { [weak self] in self?.mediaController.previousTrack() }
         )
         mediaController.startListening()
     }
@@ -37,7 +35,7 @@ final class NowPlayingService: NotchService {
         clearTask?.cancel()
         clearTask = nil
         mediaController.stopListening()
-        store.setNowPlayingCommands(nil)
+        store.nowPlayingCommands = nil
         store.setNowPlaying(nil)
         store.deactivate(.nowPlaying)
     }

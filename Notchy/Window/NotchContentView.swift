@@ -13,7 +13,7 @@ final class NotchContentView: NSView {
     /// Points of two-finger travel before a scroll counts as a track change.
     /// Low enough to flick, high enough that a stray scroll over the notch
     /// on the way to the menu bar doesn't skip a song.
-    private static let swipeThreshold: CGFloat = 40
+    static let swipeThreshold: CGFloat = 40
 
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
@@ -123,12 +123,12 @@ final class NotchContentView: NSView {
     /// (closed/compact/expanded), matching NotchRootView's radii.
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: nil)
-        let (topRadius, bottomRadius): (CGFloat, CGFloat) = switch store.state {
-        case .expanded: (NotchShape.expandedTopRadius, NotchShape.expandedBottomRadius)
-        case .compact: (NotchShape.compactTopRadius, NotchShape.compactBottomRadius)
-        case .closed: (NotchShape.closedTopRadius, NotchShape.closedBottomRadius)
+        let bottomRadius: CGFloat = switch store.state {
+        case .expanded: NotchShape.expandedBottomRadius
+        case .compact: NotchShape.compactBottomRadius
+        case .closed: NotchShape.closedBottomRadius
         }
-        let shape = NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
+        let shape = NotchShape(bottomRadius: bottomRadius)
         return shape.path(in: islandRect).contains(local) ? super.hitTest(point) : nil
     }
 

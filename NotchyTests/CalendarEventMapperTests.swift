@@ -17,7 +17,7 @@ struct CalendarEventMapperTests {
             start: now.addingTimeInterval(startOffset),
             end: now.addingTimeInterval(startOffset + duration),
             isAllDay: isAllDay,
-            colorHex: nil
+            color: nil
         )
     }
 
@@ -55,16 +55,5 @@ struct CalendarEventMapperTests {
         let events = [Self.event(id: "allday", startOffset: -3600, duration: 86400, isAllDay: true)]
         let result = CalendarEventMapper.upcoming(events, now: Self.now, limit: 10)
         #expect(result.map(\.id) == ["allday"])
-    }
-
-    @Test
-    func overflowCountIsZeroWhenEverythingIsShown() {
-        #expect(CalendarEventMapper.overflowCount(total: 3, shown: 4) == 0)
-        #expect(CalendarEventMapper.overflowCount(total: 4, shown: 4) == 0)
-    }
-
-    @Test
-    func overflowCountReportsTheRemainder() {
-        #expect(CalendarEventMapper.overflowCount(total: 7, shown: 4) == 3)
     }
 }

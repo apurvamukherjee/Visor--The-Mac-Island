@@ -5,9 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = NotchStore()
     private var windowController: NotchWindowController?
     private let settingsWindow = SettingsWindowController()
-    private var batteryService: BatteryService?
-    private var nowPlayingService: NowPlayingService?
-    private var calendarService: CalendarService?
+    private var services: [any NotchService] = []
 
     func applicationDidFinishLaunching(_: Notification) {
         guard let controller = NotchWindowController(store: store) else {
@@ -19,23 +17,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController = controller
         controller.start()
 
-        let battery = BatteryService(store: store)
-        battery.start()
-        batteryService = battery
-
-        let nowPlaying = NowPlayingService(store: store)
-        nowPlaying.start()
-        nowPlayingService = nowPlaying
-
-        let calendar = CalendarService(store: store)
-        calendar.start()
-        calendarService = calendar
+        services = [
+            BatteryService(store: store),
+            NowPlayingService(store: store),
+            CalendarService(store: store),
+        ]
+        services.forEach { $0.start() }
     }
 
     func applicationWillTerminate(_: Notification) {
         windowController?.stop()
-        batteryService?.stop()
-        nowPlayingService?.stop()
-        calendarService?.stop()
+        services.forEach { $0.stop() }
     }
 }

@@ -16,7 +16,6 @@ struct ExpandedMusicView: View {
     /// The face currently on screen, which lags `artwork` by half a flip.
     @State private var shownArtwork: CGImage?
     @State private var flipAngle = 0.0
-    private static let swipeThreshold: CGFloat = 50
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -82,7 +81,7 @@ struct ExpandedMusicView: View {
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
             .onEnded { value in
-                guard abs(value.translation.width) > Self.swipeThreshold else { return }
+                guard abs(value.translation.width) > NotchContentView.swipeThreshold else { return }
                 Haptics.selection()
                 if value.translation.width < 0 {
                     commands?.next()

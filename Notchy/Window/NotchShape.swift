@@ -3,30 +3,22 @@ import SwiftUI
 /// One continuous shape for every notch state. The top edge is flush with
 /// the screen's top edge — bottom corners round normally.
 struct NotchShape: Shape {
-    var topRadius: CGFloat
     var bottomRadius: CGFloat
 
-    static let closedTopRadius: CGFloat = 6
     static let closedBottomRadius: CGFloat = 12
-    static let expandedTopRadius: CGFloat = 16
     static let expandedBottomRadius: CGFloat = 28
-    static let compactTopRadius: CGFloat = 6
     static let compactBottomRadius: CGFloat = 14
 
-    var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get { AnimatablePair(topRadius, bottomRadius) }
-        set {
-            topRadius = newValue.first
-            bottomRadius = newValue.second
-        }
+    var animatableData: CGFloat {
+        get { bottomRadius }
+        set { bottomRadius = newValue }
     }
 
-    /// `topRadius` is tracked and animated (RESEARCH.md §2.5 wants an
-    /// outward-flaring shoulder eventually) but not yet drawn: any curve
-    /// that removes material at the true top corner shows background
-    /// through a gap exactly where the shape should meet the bezel flush.
-    /// ponytail: flush top is the correct, safe default until the flare is
-    /// reshaped to add material outward instead of carving the corner away.
+    /// The top edge is flush, with no radius at all: any curve that removes
+    /// material at the true top corner shows background through a gap exactly
+    /// where the shape should meet the bezel. RESEARCH.md §2.5 wants an
+    /// outward-flaring shoulder eventually — that has to *add* material
+    /// outward, so it will not be a corner radius when it arrives.
     func path(in rect: CGRect) -> Path {
         let width = rect.width
         let height = rect.height

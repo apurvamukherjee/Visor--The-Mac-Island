@@ -8,6 +8,10 @@ BUILD_DIR="build/dmg"
 STAGE="$BUILD_DIR/stage"
 DMG="dist/Notchy.dmg"
 
+# The .xcodeproj is generated, not tracked, so a clean checkout has none.
+command -v xcodegen >/dev/null || { echo "xcodegen not installed: brew install xcodegen" >&2; exit 1; }
+xcodegen generate
+
 xcodebuild -scheme Notchy -configuration Release -derivedDataPath "$BUILD_DIR/dd" build
 
 APP="$BUILD_DIR/dd/Build/Products/Release/Notchy.app"

@@ -16,14 +16,6 @@ struct NotchRootView: View {
         CGSize(width: store.closedSize.width + NotchGeometry.compactExtraWidth, height: store.closedSize.height)
     }
 
-    private var topRadius: CGFloat {
-        switch store.state {
-        case .expanded: NotchShape.expandedTopRadius
-        case .compact: NotchShape.compactTopRadius
-        case .closed: NotchShape.closedTopRadius
-        }
-    }
-
     private var bottomRadius: CGFloat {
         switch store.state {
         case .expanded: NotchShape.expandedBottomRadius
@@ -33,7 +25,7 @@ struct NotchRootView: View {
     }
 
     private var shape: NotchShape {
-        NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
+        NotchShape(bottomRadius: bottomRadius)
     }
 
     /// Pure black, hard-edged, in every state. Two things were tried here and
@@ -52,6 +44,8 @@ struct NotchRootView: View {
             .overlay(alignment: .top) {
                 if store.state == .expanded {
                     expandedContent
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 10)
                         // Everything clears the camera housing in one place.
                         // The cutout hides the island's top-centre 185x33pt,
                         // so per-column clearance just moved the bug around.
@@ -85,12 +79,8 @@ struct NotchRootView: View {
                 commands: store.nowPlayingCommands,
                 events: store.calendarEvents
             )
-            .padding(.horizontal, 14)
-            .padding(.bottom, 10)
         } else {
             ExpandedIdleView(events: store.calendarEvents)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
         }
     }
 }

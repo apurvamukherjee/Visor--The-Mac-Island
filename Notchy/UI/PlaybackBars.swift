@@ -12,6 +12,11 @@ struct PlaybackBars: View {
     var isPlaying: Bool
     var height: CGFloat = 12
 
+    /// Environment, not a one-shot read of `Motion.reduceMotion`: the system
+    /// setting can be switched on mid-track, and the bars are the only
+    /// unbounded animation in the app — they have to stop when it is.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var isBouncing = false
 
     private static let barCount = 4
@@ -30,10 +35,13 @@ struct PlaybackBars: View {
             }
         }
         .frame(height: height)
-        .onAppear { isBouncing = isPlaying && !Motion.reduceMotion }
-        .onChange(of: isPlaying) { _, playing in
-            isBouncing = playing && !Motion.reduceMotion
-        }
+        .onAppear { updateBounce() }
+        .onChange(of: isPlaying) { _, _ in updateBounce() }
+        .onChange(of: reduceMotion) { _, _ in updateBounce() }
+    }
+
+    private func updateBounce() {
+        isBouncing = isPlaying && !reduceMotion
     }
 
     /// Bars at rest sit at staggered heights rather than flat, so a paused

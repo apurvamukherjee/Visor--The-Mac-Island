@@ -103,6 +103,19 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   bar; haptics on both trackpad gestures; `.numericText()` on the battery
   percentage; `PlaybackBars` beat animation. `scripts/make-dmg.sh` builds a
   local ad-hoc `dist/Notchy.dmg` (no sharing, no App Store — §0).
+- **Cleanup pass (2026-09-16):** −133 lines net. Activity model down to the
+  two kinds anything produces (`.timer`/`.hud` return with their features);
+  `Activity.expiresAt` dropped — `BatteryService.peekTask` was already the
+  only clock that fires; `NotchShape.topRadius` dropped (never drawn);
+  calendar colour carried as `Color` instead of a hex round-trip; store
+  pass-through setters are plain vars; `AppDelegate` drives `[any
+  NotchService]`. Codex findings fixed: `make-dmg.sh` now runs `xcodegen`
+  first, and `PlaybackBars` reads Reduce Motion from the environment so it
+  stops mid-track.
+- **Calendar permission loop:** caused by ad-hoc signing — TCC keys grants to
+  the code signature, and every build has a new cdhash. Fix is a stable
+  identity: `scripts/make-signing-cert.sh` (one-time, then set
+  `CODE_SIGN_IDENTITY` in project.yml).
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

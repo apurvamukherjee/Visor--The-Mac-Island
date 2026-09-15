@@ -11,7 +11,7 @@ struct NotchShapeTests {
     @Test
     func pathBoundingBoxStaysWithinRect() {
         let rect = CGRect(x: 0, y: 0, width: 200, height: 32)
-        let shape = NotchShape(topRadius: NotchShape.closedTopRadius, bottomRadius: NotchShape.closedBottomRadius)
+        let shape = NotchShape(bottomRadius: NotchShape.closedBottomRadius)
 
         let bounds = shape.path(in: rect).boundingRect
 
@@ -20,17 +20,16 @@ struct NotchShapeTests {
 
     @Test
     func animatableDataRoundTrips() {
-        var shape = NotchShape(topRadius: 6, bottomRadius: 12)
-        shape.animatableData = AnimatablePair(16, 28)
+        var shape = NotchShape(bottomRadius: 12)
+        shape.animatableData = 28
 
-        #expect(shape.topRadius == 16)
         #expect(shape.bottomRadius == 28)
     }
 
     @Test
     func radiiClampSoPathStaysWithinASmallRect() {
         let rect = CGRect(x: 0, y: 0, width: 40, height: 10)
-        let shape = NotchShape(topRadius: 100, bottomRadius: 100)
+        let shape = NotchShape(bottomRadius: 100)
 
         let bounds = shape.path(in: rect).boundingRect
 
@@ -44,7 +43,7 @@ struct NotchShapeTests {
     @Test
     func topEdgeIsFlushWithNoCutoutAtTheCorners() {
         let rect = CGRect(x: 0, y: 0, width: 320, height: 120)
-        let shape = NotchShape(topRadius: NotchShape.expandedTopRadius, bottomRadius: NotchShape.expandedBottomRadius)
+        let shape = NotchShape(bottomRadius: NotchShape.expandedBottomRadius)
         let path = shape.path(in: rect)
 
         #expect(path.contains(CGPoint(x: 0.5, y: 0.5)))
@@ -56,7 +55,7 @@ struct NotchShapeTests {
     func bottomCornersAreCleanConvexRoundsWithNoHole() {
         let rect = CGRect(x: 0, y: 0, width: 320, height: 120)
         let bottom = NotchShape.expandedBottomRadius
-        let shape = NotchShape(topRadius: NotchShape.expandedTopRadius, bottomRadius: bottom)
+        let shape = NotchShape(bottomRadius: bottom)
         let path = shape.path(in: rect)
 
         let bottomRightCenter = CGPoint(x: rect.maxX - bottom, y: rect.maxY - bottom)
@@ -80,7 +79,7 @@ struct NotchShapeTests {
     @Test
     func compactRadiiStayWithinAShortWideRect() {
         let rect = CGRect(x: 0, y: 0, width: 360, height: 32)
-        let shape = NotchShape(topRadius: NotchShape.compactTopRadius, bottomRadius: NotchShape.compactBottomRadius)
+        let shape = NotchShape(bottomRadius: NotchShape.compactBottomRadius)
 
         let bounds = shape.path(in: rect).boundingRect
 

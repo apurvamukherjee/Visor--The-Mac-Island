@@ -11,17 +11,17 @@ struct NotchStoreTests {
     }
 
     @Test
-    func setStateUpdatesState() {
+    func stateIsWritable() {
         let store = NotchStore()
-        store.setState(.expanded)
+        store.state = .expanded
         #expect(store.state == .expanded)
     }
 
     @Test
-    func setClosedSizeUpdatesClosedSize() {
+    func closedSizeIsWritable() {
         let store = NotchStore()
         let size = CGSize(width: 180, height: 30)
-        store.setClosedSize(size)
+        store.closedSize = size
         #expect(store.closedSize == size)
     }
 }

@@ -38,7 +38,7 @@ final class NotchWindowController {
             canvasSize: canvasSize
         )
         panel.contentView = contentView
-        store.setClosedSize(closedRect.size)
+        store.closedSize = closedRect.size
         repositionHostingView(for: closedRect.width)
         contentView.onShowSettings = { [weak self] in self?.onShowSettings?() }
         contentView.onMouseEntered = { [weak self] in self?.handleMouseEntered() }
@@ -105,7 +105,9 @@ final class NotchWindowController {
 
     private func handleMouseExited() {
         isHovering = false
-        scheduleCollapse()
+        hoverIntentTask?.cancel()
+        hoverIntentTask = nil
+        collapseFromExpanded()
     }
 
     private func scheduleExpand() {
@@ -115,12 +117,6 @@ final class NotchWindowController {
             guard !Task.isCancelled else { return }
             self?.expand()
         }
-    }
-
-    private func scheduleCollapse() {
-        hoverIntentTask?.cancel()
-        hoverIntentTask = nil
-        collapseFromExpanded()
     }
 
     private func expand() {
@@ -138,7 +134,7 @@ final class NotchWindowController {
         // collapse as well would make the gesture feel chattery.
         Haptics.shapeChange()
         withAnimation(Motion.resolved(Motion.open)) {
-            store.setState(.expanded)
+            store.state = .expanded
         }
     }
 
@@ -150,7 +146,7 @@ final class NotchWindowController {
             Motion.resolved(Motion.close),
             completionCriteria: .logicallyComplete
         ) {
-            store.setState(target)
+            store.state = target
         } completion: { [weak self] in
             guard let self, gen == generation else { return }
             finishShrink(to: target)
@@ -162,7 +158,7 @@ final class NotchWindowController {
         let rect = target == .compact ? NotchGeometry.compactRect(for: screen) : NotchGeometry.closedRect(for: screen)
         panel.setFrame(rect, display: true)
         if target == .closed {
-            store.setClosedSize(rect.size)
+            store.closedSize = rect.size
         }
         repositionHostingView(for: rect.width)
     }
@@ -174,7 +170,7 @@ final class NotchWindowController {
         panel.setFrame(rect, display: true)
         repositionHostingView(for: rect.width)
         withAnimation(Motion.resolved(Motion.morph)) {
-            store.setState(.compact)
+            store.state = .compact
         }
     }
 
@@ -185,7 +181,7 @@ final class NotchWindowController {
             Motion.resolved(Motion.morph),
             completionCriteria: .logicallyComplete
         ) {
-            store.setState(.closed)
+            store.state = .closed
         } completion: { [weak self] in
             guard let self, gen == generation else { return }
             finishShrink(to: .closed)
@@ -217,11 +213,11 @@ final class NotchWindowController {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         generation += 1
-        store.setState(.closed)
+        store.state = .closed
         guard let screen = Self.targetScreen() else { return }
         let closedRect = NotchGeometry.closedRect(for: screen)
         panel.setFrame(closedRect, display: true)
-        store.setClosedSize(closedRect.size)
+        store.closedSize = closedRect.size
         repositionHostingView(for: closedRect.width)
     }
 

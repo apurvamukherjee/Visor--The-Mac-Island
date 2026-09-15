@@ -17,49 +17,33 @@ final class NotchStore {
         let previous: () -> Void
     }
 
-    private(set) var state: NotchState = .closed
-    private(set) var closedSize: CGSize = .zero
+    var state: NotchState = .closed
+    var closedSize: CGSize = .zero
+    var battery: BatteryInfo?
+    var nowPlayingCommands: NowPlayingCommands?
+    var calendarEvents: [CalendarEvent] = []
+
+    /// These three keep their setters because the setters do something:
+    /// `activate`/`deactivate` own the dictionary's shape, and `setNowPlaying`
+    /// keeps the track and its artwork in step.
     private(set) var activities: [ActivityKind: Activity] = [:]
-    private(set) var battery: BatteryInfo?
     private(set) var nowPlaying: NowPlayingInfo?
     private(set) var nowPlayingArtwork: CGImage?
-    private(set) var nowPlayingCommands: NowPlayingCommands?
-    private(set) var calendarEvents: [CalendarEvent] = []
 
     var currentActivity: Activity? {
         resolveCurrentActivity(activities)
     }
 
-    func setState(_ newState: NotchState) {
-        state = newState
-    }
-
-    func setClosedSize(_ size: CGSize) {
-        closedSize = size
-    }
-
-    func activate(_ kind: ActivityKind, expiresAt: Date? = nil) {
-        activities[kind] = Activity(kind: kind, expiresAt: expiresAt)
+    func activate(_ kind: ActivityKind) {
+        activities[kind] = Activity(kind: kind)
     }
 
     func deactivate(_ kind: ActivityKind) {
         activities.removeValue(forKey: kind)
     }
 
-    func setBattery(_ info: BatteryInfo) {
-        battery = info
-    }
-
     func setNowPlaying(_ info: NowPlayingInfo?, artwork: CGImage? = nil) {
         nowPlaying = info
         nowPlayingArtwork = artwork
-    }
-
-    func setNowPlayingCommands(_ commands: NowPlayingCommands?) {
-        nowPlayingCommands = commands
-    }
-
-    func setCalendarEvents(_ events: [CalendarEvent]) {
-        calendarEvents = events
     }
 }

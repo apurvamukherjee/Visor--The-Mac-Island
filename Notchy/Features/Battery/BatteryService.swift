@@ -54,7 +54,7 @@ final class BatteryService: NotchService {
             Log.battery.error("Could not read power source info.")
             return
         }
-        store.setBattery(info)
+        store.battery = info
         if let wasCharging, info.isCharging, !wasCharging {
             schedulePeek()
         }
@@ -62,7 +62,7 @@ final class BatteryService: NotchService {
     }
 
     private func schedulePeek() {
-        store.activate(.charging, expiresAt: .now.addingTimeInterval(Self.peekDuration))
+        store.activate(.charging)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(250))

@@ -1,5 +1,5 @@
-import AppKit
 import EventKit
+import SwiftUI
 
 @MainActor
 final class CalendarService: NotchService {
@@ -28,11 +28,16 @@ final class CalendarService: NotchService {
             NotificationCenter.default.removeObserver(observer)
         }
         observer = nil
-        store.setCalendarEvents([])
+        store.calendarEvents = []
     }
 
     private func requestAccessAndRefresh() async {
-        switch EKEventStore.authorizationStatus(for: .event) {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        // A grant that keeps reverting to notDetermined means the app's code
+        // signature changed, not that the user revoked it — see
+        // scripts/make-signing-cert.sh.
+        Log.calendar.info("Calendar authorization status: \(status.rawValue)")
+        switch status {
         case .fullAccess:
             hasAccess = true
         case .notDetermined:
@@ -54,7 +59,7 @@ final class CalendarService: NotchService {
 
     private func refresh() {
         guard hasAccess else {
-            store.setCalendarEvents([])
+            store.calendarEvents = []
             return
         }
         let calendar = Calendar.current
@@ -65,7 +70,7 @@ final class CalendarService: NotchService {
         }
         let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
         let events = eventStore.events(matching: predicate).map(Self.convert)
-        store.setCalendarEvents(events)
+        store.calendarEvents = events
     }
 
     private static func convert(_ event: EKEvent) -> CalendarEvent {
@@ -75,15 +80,7 @@ final class CalendarService: NotchService {
             start: event.startDate,
             end: event.endDate,
             isAllDay: event.isAllDay,
-            colorHex: event.calendar?.color.flatMap(hex)
+            color: event.calendar?.color.map(Color.init(nsColor:))
         )
-    }
-
-    private static func hex(_ color: NSColor) -> String? {
-        guard let rgb = color.usingColorSpace(.sRGB) else { return nil }
-        let red = Int((rgb.redComponent * 255).rounded())
-        let green = Int((rgb.greenComponent * 255).rounded())
-        let blue = Int((rgb.blueComponent * 255).rounded())
-        return String(format: "#%02X%02X%02X", red, green, blue)
     }
 }
