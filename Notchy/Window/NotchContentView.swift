@@ -16,11 +16,11 @@ final class NotchContentView: NSView {
         true
     }
 
-    init(store: NotchStore, rootView: NotchRootView) {
+    init(store: NotchStore, rootView: NotchRootView, canvasSize: CGSize) {
         self.store = store
         hostingView = NSHostingView(rootView: rootView)
         super.init(frame: .zero)
-        hostingView.frame.size = NotchGeometry.expandedSize
+        hostingView.frame.size = canvasSize
         addSubview(hostingView)
     }
 

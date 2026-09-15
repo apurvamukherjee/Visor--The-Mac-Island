@@ -51,6 +51,16 @@ enum NotchGeometry {
         return CGRect(x: closed.midX - width / 2, y: closed.minY, width: width, height: closed.height)
     }
 
+    /// `expandedRect` widened to also contain `compactRect` — on real
+    /// hardware `compactRect` (closed width + 160pt of wings) can be wider
+    /// than `expandedSize`, so collapsing expanded→compact isn't a pure
+    /// shrink in both dimensions. Used for the panel/hosting-view canvas
+    /// while expanded or collapsing out of it, so the width-growing part
+    /// of that transition never gets clipped before the frame catches up.
+    static func expandedCanvasRect(for screen: ScreenGeometryProviding) -> CGRect {
+        expandedRect(for: screen).union(compactRect(for: screen))
+    }
+
     private static func fallbackRect(for screen: ScreenGeometryProviding) -> CGRect {
         let size = fallbackClosedSize
         return CGRect(

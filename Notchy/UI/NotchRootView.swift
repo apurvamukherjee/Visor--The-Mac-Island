@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotchRootView: View {
     var store: NotchStore
+    var canvasWidth: CGFloat
 
     private var currentSize: CGSize {
         switch store.state {
@@ -46,7 +47,7 @@ struct NotchRootView: View {
                         .transition(.island)
                 }
             }
-            .frame(width: NotchGeometry.expandedSize.width, height: NotchGeometry.expandedSize.height, alignment: .top)
+            .frame(width: canvasWidth, height: NotchGeometry.expandedSize.height, alignment: .top)
     }
 
     private var expandedContent: some View {

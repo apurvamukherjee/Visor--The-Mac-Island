@@ -11,6 +11,7 @@ final class NotchWindowController {
     private let store: NotchStore
     private let panel: NotchPanel
     private let contentView: NotchContentView
+    private let canvasSize: CGSize
     private var generation = 0
     private var isHovering = false
     private var isDisplayAsleep = false
@@ -25,8 +26,14 @@ final class NotchWindowController {
         guard let screen = Self.targetScreen() else { return nil }
         self.store = store
         let closedRect = NotchGeometry.closedRect(for: screen)
+        let canvasSize = NotchGeometry.expandedCanvasRect(for: screen).size
+        self.canvasSize = canvasSize
         panel = NotchPanel(contentRect: closedRect)
-        contentView = NotchContentView(store: store, rootView: NotchRootView(store: store))
+        contentView = NotchContentView(
+            store: store,
+            rootView: NotchRootView(store: store, canvasWidth: canvasSize.width),
+            canvasSize: canvasSize
+        )
         panel.contentView = contentView
         store.setClosedSize(closedRect.size)
         repositionHostingView(for: closedRect.width)
@@ -100,9 +107,13 @@ final class NotchWindowController {
     private func expand() {
         guard let screen = Self.targetScreen() else { return }
         generation += 1
-        let expandedRect = NotchGeometry.expandedRect(for: screen)
-        panel.setFrame(expandedRect, display: true)
-        repositionHostingView(for: expandedRect.width)
+        // Widened to expandedCanvasRect (not just expandedRect) so that
+        // collapsing back out — which can grow wider before it gets
+        // shorter, since compact may exceed expandedSize's width — never
+        // needs to widen the frame mid-animation. See collapseFromExpanded.
+        let canvasRect = NotchGeometry.expandedCanvasRect(for: screen)
+        panel.setFrame(canvasRect, display: true)
+        repositionHostingView(for: canvasRect.width)
         withAnimation(Motion.resolved(Motion.open)) {
             store.setState(.expanded)
         }
@@ -204,7 +215,7 @@ final class NotchWindowController {
 
     private func repositionHostingView(for frameWidth: CGFloat) {
         contentView.hostingView.frame.origin = CGPoint(
-            x: (frameWidth - NotchGeometry.expandedSize.width) / 2,
+            x: (frameWidth - canvasSize.width) / 2,
             y: 0
         )
     }
