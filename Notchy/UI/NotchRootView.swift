@@ -36,37 +36,14 @@ struct NotchRootView: View {
         NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
     }
 
-    /// 1.0 at closed keeps the island pure black so it stays invisible
-    /// against the hardware notch (a Phase 1 acceptance criterion); the
-    /// material only reads through once the shape has grown past the real
-    /// cutout. Reduce Transparency pins it opaque in every state.
-    private var blackOverlayOpacity: Double {
-        if store.reduceTransparency {
-            return 1
-        }
-        switch store.state {
-        case .closed: return 1
-        case .compact: return 0.55
-        case .expanded: return 0.15
-        }
-    }
-
+    /// Pure black, hard-edged, in every state. Two things were tried here and
+    /// both broke the closed state's "invisible against the hardware notch"
+    /// rule: an `NSVisualEffectView` material (washed the surface out to grey
+    /// against a bright wallpaper) and a blurred outer bleed (a blur extends
+    /// *past* its shape, so it smeared a dark halo onto real screen either
+    /// side of the notch). Nothing may paint outside the silhouette.
     private var islandSurface: some View {
-        ZStack {
-            if !store.reduceTransparency {
-                // Soft outer bleed so the edge doesn't hard-cut against the
-                // wallpaper. Behind everything, low opacity, blurred.
-                shape
-                    .fill(.black)
-                    .blur(radius: 8)
-                    .opacity(0.35)
-                VisualEffectBackground()
-                    .clipShape(shape)
-            }
-            shape
-                .fill(.black)
-                .opacity(blackOverlayOpacity)
-        }
+        shape.fill(.black)
     }
 
     var body: some View {
@@ -111,37 +88,25 @@ struct NotchRootView: View {
         }
     }
 
+    /// No clock/battery row here any more: the agenda and music columns need
+    /// the full height, and a row of their own pushed the content past the
+    /// shape's bottom edge. Time is already in the menu bar, and battery
+    /// lives in the compact wings.
+    @ViewBuilder
     private var expandedContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // topRow's height matches store.closedSize.height (the real
-            // hardware safe area) so Clock/Battery flank the camera housing
-            // instead of sitting below a blank gap the width of the whole
-            // shape — the Spacer between them keeps both clear of the
-            // housing horizontally, same as the housing itself keeps them
-            // clear vertically.
-            topRow
-                .frame(height: store.closedSize.height)
-            if let info = store.nowPlaying {
-                ExpandedMusicView(
-                    info: info,
-                    artwork: store.nowPlayingArtwork,
-                    commands: store.nowPlayingCommands,
-                    events: store.calendarEvents
-                )
-            } else {
-                ExpandedIdleView(events: store.calendarEvents)
-            }
-        }
-        .padding(.horizontal, 12)
-    }
-
-    private var topRow: some View {
-        HStack {
-            ClockPlaceholderView()
-            Spacer(minLength: 0)
-            if let battery = store.battery {
-                ExpandedBatteryRow(info: battery)
-            }
+        if let info = store.nowPlaying {
+            ExpandedMusicView(
+                info: info,
+                artwork: store.nowPlayingArtwork,
+                commands: store.nowPlayingCommands,
+                events: store.calendarEvents
+            )
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
+        } else {
+            ExpandedIdleView(events: store.calendarEvents, housingHeight: store.closedSize.height)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 10)
         }
     }
 }

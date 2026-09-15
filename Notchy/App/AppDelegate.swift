@@ -7,7 +7,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var batteryService: BatteryService?
     private var nowPlayingService: NowPlayingService?
     private var calendarService: CalendarService?
-    private var accessibilityObserver: AccessibilityObserver?
 
     func applicationDidFinishLaunching(_: Notification) {
         guard let controller = NotchWindowController(store: store) else {
@@ -17,10 +16,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windowController = controller
         controller.start()
-
-        let accessibility = AccessibilityObserver(store: store)
-        accessibility.start()
-        accessibilityObserver = accessibility
 
         let battery = BatteryService(store: store)
         battery.start()
@@ -40,6 +35,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         batteryService?.stop()
         nowPlayingService?.stop()
         calendarService?.stop()
-        accessibilityObserver?.stop()
     }
 }

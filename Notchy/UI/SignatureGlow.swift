@@ -10,7 +10,7 @@ struct SignatureGlow: View {
 
     var body: some View {
         Text("By Apurva")
-            .font(.system(.title3, design: .rounded).weight(.semibold))
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(Self.maroon)
             .shadow(color: Self.maroon, radius: isGlowing ? 14 : 4)
             .onAppear {

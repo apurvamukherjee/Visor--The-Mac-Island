@@ -4,23 +4,32 @@ struct EventRow: View {
     let event: CalendarEvent
 
     var body: some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(barColor)
-                .frame(width: 3)
-            VStack(alignment: .leading, spacing: 1) {
+        HStack(spacing: 7) {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 2,
+                bottomLeadingRadius: 2,
+                bottomTrailingRadius: 2,
+                topTrailingRadius: 2
+            )
+            .fill(barColor)
+            .frame(width: 3)
+            VStack(alignment: .leading, spacing: 0) {
                 Text(event.title)
-                    .font(.system(.caption, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(barColor)
                     .lineLimit(1)
                 Text(timeLabel)
-                    .font(.system(.caption2, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(barColor.opacity(0.75))
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 30)
+        .padding(.vertical, 5)
+        .padding(.horizontal, 6)
+        // Tinted fill keyed to the calendar's own colour, like the reference
+        // design — a bare left bar on black read as unfinished.
+        .background(barColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 5))
     }
 
     private var barColor: Color {

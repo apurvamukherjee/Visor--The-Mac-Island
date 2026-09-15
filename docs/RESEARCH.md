@@ -22,8 +22,9 @@
 | License | Decide up front (see §1.3) | GPL projects are the best references but can't be copied into an MIT app |
 | Distribution | **Offline `.dmg`, ad-hoc/unsigned** — personal use + sharing with friends manually. No App Store, no auto-update server. | No Apple Developer Program yet. Notarized signing stays a Phase 5 item (§8); revisit only if a paid dev account happens. |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
-| Island material | `NSVisualEffectView(.hudWindow)` under a state-driven black overlay | Closed must stay pure black to masquerade as the hardware notch; the material only reads through once the shape grows past the real cutout. Reduce Transparency falls back to solid fill |
-| Expanded size | 600×220 (was 320×120) | The two-column agenda is the point of the idle-expanded state and doesn't fit at 320pt. Accepts more menu-bar overlap while expanded, consistent with the existing overlap decision |
+| Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch) |
+| Expanded size | 560×168 (was 320×120) | The two-column agenda doesn't fit at 320pt. 600×220 left a dead band; 180 still overflowed once measured against real content. 168 matches the tallest column (idle left ≈148pt) with slack |
+| Expanded clock/battery row | **Removed** | It cost 36pt of a 168pt island and pushed content past the shape's bottom edge onto the desktop. Time is already in the menu bar; battery lives in the compact wings |
 | Expanded-state menu bar overlap | **Accepted** — the hover-expanded island may cover menu bar items, matching Alcove/NotchNook | Closed state must keep everything beside the notch clickable (dead pixels only); expanded is a deliberate, momentary overlay. A menu-bar-clear "shoulder" shape (`topRadius`, currently unused — see §2.5) is a **possible later refinement, not planned** |
 
 ---
@@ -291,6 +292,7 @@ Validate in Phase 1 that frame changes cause no flicker or content jump. **Fallb
 11. **Stop on sleep, resume on wake.** Every service implements `stop()`.
 12. **Timers, if unavoidable:** set `tolerance` (≥ 10% of interval) so the OS can coalesce.
 13. **Calendar refreshes only on `.EKEventStoreChanged`** (and display wake). No polling, no periodic re-fetch.
+14. **No `NSVisualEffectView`, and no `blur()` on anything shape-shaped.** Live blur is continuously recomposited by the WindowServer, and a blur bleeds past its own silhouette — which breaks closed-state invisibility. Solid black costs nothing and can't leak.
 
 ```swift
 import ImageIO
@@ -399,9 +401,8 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 ### Phase 3 — Polish
 - Numeric text transitions, symbol effects, haptics, Reduce Motion.
 - Swipe gestures on expanded media (next/previous).
-- Content layer: `NSVisualEffectView(.hudWindow)` material behind the shape with a
-  state-driven black overlay (closed stays pure black), soft edge bleed, and a
-  Reduce Transparency fallback to solid fill.
+- Content layer: pure-black, hard-edged island surface (a translucent material and a
+  blurred bleed were both tried and reverted — see §0).
 - Calendar agenda via EventKit (**moved up from Phase 4**): `CalendarService`,
   full-agenda idle-expanded layout, 2-event peek in the music-expanded split.
 - Mood/genre chip bar docked under the expanded island while playing (stub actions).

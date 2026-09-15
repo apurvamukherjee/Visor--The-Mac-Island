@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Expanded with something playing: music on the left, a trimmed calendar
-/// peek on the right. The calendar shrinks to make room — it never
+/// Expanded with something playing: music on the left, date + a trimmed
+/// calendar peek on the right. The calendar shrinks to make room — it never
 /// disappears.
 struct ExpandedMusicView: View {
     let info: NowPlayingInfo
@@ -13,34 +13,34 @@ struct ExpandedMusicView: View {
     private static let swipeThreshold: CGFloat = 50
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             musicColumn
-            Divider().overlay(.white.opacity(0.15))
+            Divider().overlay(.white.opacity(0.12))
             calendarColumn
         }
         .foregroundStyle(.white)
     }
 
     private var musicColumn: some View {
-        HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             artworkView
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(info.title)
-                    .font(.system(.callout, design: .rounded).weight(.medium))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .lineLimit(1)
                 if let artist = info.artist {
                     Text(artist)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.55))
                         .lineLimit(1)
                 }
-                controls.padding(.top, 4)
             }
+            // Text crossfades on track change; it never flips or rotates.
+            .id(info.trackIdentity)
+            .transition(.opacity.animation(Motion.resolved(Motion.textSwap)))
+            controls
             Spacer(minLength: 0)
         }
-        // Text crossfades on track change; it never flips or rotates.
-        .id(info.trackIdentity)
-        .transition(.opacity.animation(Motion.resolved(Motion.textSwap)))
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .gesture(swipe)
@@ -66,11 +66,11 @@ struct ExpandedMusicView: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Rectangle().fill(.white.opacity(0.15))
+                Rectangle().fill(.white.opacity(0.12))
             }
         }
-        .frame(width: 52, height: 52)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(width: 54, height: 54)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         // Crossfade + scale-pop, not a 3D flip: at this size a Y-axis flip's
         // foreshortened mid-frames span a handful of pixels and read as a
         // flicker. See the spec's §9.2.
@@ -85,24 +85,32 @@ struct ExpandedMusicView: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 14) {
-            Button { commands?.previous() } label: { Image(systemName: "backward.fill") }
+        HStack(spacing: 22) {
+            Button { commands?.previous() } label: {
+                Image(systemName: "backward.fill").font(.system(size: 15))
+            }
             Button { commands?.togglePlayPause() } label: {
                 Image(systemName: info.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 17))
                     .contentTransition(.symbolEffect(.replace))
             }
-            Button { commands?.next() } label: { Image(systemName: "forward.fill") }
+            Button { commands?.next() } label: {
+                Image(systemName: "forward.fill").font(.system(size: 15))
+            }
         }
-        .font(.caption)
+        .foregroundStyle(.white)
         .buttonStyle(.plain)
+        .padding(.top, 2)
     }
 
     private var calendarColumn: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
+            DateBlock(alignment: .trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             ForEach(peek) { EventRow(event: $0) }
             Spacer(minLength: 0)
         }
-        .frame(width: 200, alignment: .leading)
+        .frame(width: 210, alignment: .leading)
     }
 
     private var peek: [CalendarEvent] {

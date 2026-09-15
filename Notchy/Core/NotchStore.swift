@@ -1,4 +1,3 @@
-import AppKit
 import CoreGraphics
 import Foundation
 import Observation
@@ -25,7 +24,6 @@ final class NotchStore {
     private(set) var nowPlaying: NowPlayingInfo?
     private(set) var nowPlayingArtwork: CGImage?
     private(set) var nowPlayingCommands: NowPlayingCommands?
-    private(set) var reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
     private(set) var calendarEvents: [CalendarEvent] = []
 
     var currentActivity: Activity? {
@@ -59,10 +57,6 @@ final class NotchStore {
 
     func setNowPlayingCommands(_ commands: NowPlayingCommands?) {
         nowPlayingCommands = commands
-    }
-
-    func setReduceTransparency(_ reduce: Bool) {
-        reduceTransparency = reduce
     }
 
     func setCalendarEvents(_ events: [CalendarEvent]) {

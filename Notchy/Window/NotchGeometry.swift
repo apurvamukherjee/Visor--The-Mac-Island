@@ -11,7 +11,13 @@ protocol ScreenGeometryProviding {
 extension NSScreen: ScreenGeometryProviding {}
 
 enum NotchGeometry {
-    static let expandedSize = CGSize(width: 600, height: 220)
+    /// Sized to what the content actually measures, with a little slack: the
+    /// music column comes to ~134pt (art 54 + title/artist 34 + controls 24 +
+    /// spacing + bottom padding) and the idle view's right column to ~144pt
+    /// (camera-housing clearance 32 + two event chips + the signature).
+    /// Too tall leaves a dead band; too short and the content spills past the
+    /// shape's bottom edge onto the desktop, which is what 180pt did.
+    static let expandedSize = CGSize(width: 560, height: 168)
     static let fallbackClosedSize = CGSize(width: 200, height: 32)
     static let compactExtraWidth: CGFloat = 160
     static let chipBarHeight: CGFloat = 36
