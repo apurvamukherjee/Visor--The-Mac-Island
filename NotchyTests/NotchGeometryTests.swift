@@ -72,7 +72,7 @@ struct NotchGeometryTests {
     }
 
     @Test
-    func expandedCanvasReservesRoomForTheChipBarBelowTheIsland() {
+    func expandedCanvasContainsBothExpandedAndCompact() {
         let screen = FakeScreen(
             frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
             safeAreaInsets: NSEdgeInsets(top: 32, left: 0, bottom: 0, right: 0),
@@ -83,13 +83,13 @@ struct NotchGeometryTests {
         let expanded = NotchGeometry.expandedRect(for: screen)
         let canvas = NotchGeometry.expandedCanvasRect(for: screen)
 
-        // Canvas must be at least as wide as both expanded and compact...
+        // Canvas must contain both, so no state change ever grows the frame
+        // mid-animation, and it must not exceed the island's height.
         #expect(canvas.width >= expanded.width)
         #expect(canvas.width >= NotchGeometry.compactRect(for: screen).width)
-        // ...and taller than the island by exactly the chip bar's gap + height,
-        // so the chip bar animates in inside an already-large-enough frame.
-        #expect(canvas.height == expanded.height + NotchGeometry.chipBarGap + NotchGeometry.chipBarHeight)
-        // Canvas shares the island's top edge — it only grows downward.
+        #expect(canvas.height == expanded.height)
+        #expect(expanded.height == max(NotchGeometry.expandedIdleSize.height, NotchGeometry.expandedMusicSize.height))
+        #expect(NotchGeometry.expandedMusicSize.height < NotchGeometry.expandedIdleSize.height)
         #expect(canvas.maxY == expanded.maxY)
     }
 }

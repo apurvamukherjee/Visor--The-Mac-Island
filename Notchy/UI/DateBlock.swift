@@ -13,7 +13,7 @@ struct DateBlock: View {
                 .foregroundStyle(Color(red: 1, green: 0.23, blue: 0.35))
                 .textCase(.uppercase)
             Text(Date.now, format: .dateTime.day())
-                .font(.system(size: 40, weight: .semibold, design: .rounded))
+                .font(.system(size: 34, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
     }

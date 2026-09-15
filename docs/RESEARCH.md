@@ -23,7 +23,7 @@
 | Distribution | **Offline `.dmg`, ad-hoc/unsigned** — personal use + sharing with friends manually. No App Store, no auto-update server. | No Apple Developer Program yet. Notarized signing stays a Phase 5 item (§8); revisit only if a paid dev account happens. |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
 | Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch) |
-| Expanded size | 560×168 (was 320×120) | The two-column agenda doesn't fit at 320pt. 600×220 left a dead band; 180 still overflowed once measured against real content. 168 matches the tallest column (idle left ≈148pt) with slack |
+| Expanded size | 400×186 idle / 400×168 playing | Measured 15" M4 Air: screen 1710×1107pt, cutout 185×33pt at x 763…948. The cutout is missing pixels, so the island's top-centre 185×33 is invisible — all expanded content starts below it (33 + 6 clearance) instead of each column dodging it. Height is per-layout: the panel frame keeps the taller (idle) size so the change is a shape morph, never a window resize mid-hover. Music's peek is one event instead of two, so it sits shorter and the island visibly compacts when playback starts. 400 wide is ~2.2x the cutout — the wide 560 read as a banner rather than an island |
 | Expanded clock/battery row | **Removed** | It cost 36pt of a 168pt island and pushed content past the shape's bottom edge onto the desktop. Time is already in the menu bar; battery lives in the compact wings |
 | Expanded-state menu bar overlap | **Accepted** — the hover-expanded island may cover menu bar items, matching Alcove/NotchNook | Closed state must keep everything beside the notch clickable (dead pixels only); expanded is a deliberate, momentary overlay. A menu-bar-clear "shoulder" shape (`topRadius`, currently unused — see §2.5) is a **possible later refinement, not planned** |
 
@@ -405,7 +405,7 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
   blurred bleed were both tried and reverted — see §0).
 - Calendar agenda via EventKit (**moved up from Phase 4**): `CalendarService`,
   full-agenda idle-expanded layout, 2-event peek in the music-expanded split.
-- Mood/genre chip bar docked under the expanded island while playing (stub actions).
+- ~~Mood/genre chip bar docked under the expanded island while playing~~ — removed 2026-09-16: stub actions that did nothing, and its canvas reserve made the hosting view taller than the island, which pushed the whole island 22pt below the notch.
 - Expanded size grows to 600×220 to fit the two-column agenda.
 - Fullscreen handling, sleep/wake, multi-display, settings window, launch at login.
 - Settings/About area shows "by Apurva" once (see §0 Attribution). Power rules

@@ -11,17 +11,36 @@ protocol ScreenGeometryProviding {
 extension NSScreen: ScreenGeometryProviding {}
 
 enum NotchGeometry {
-    /// Sized to what the content actually measures, with a little slack: the
-    /// music column comes to ~134pt (art 54 + title/artist 34 + controls 24 +
-    /// spacing + bottom padding) and the idle view's right column to ~144pt
-    /// (camera-housing clearance 32 + two event chips + the signature).
-    /// Too tall leaves a dead band; too short and the content spills past the
-    /// shape's bottom edge onto the desktop, which is what 180pt did.
-    static let expandedSize = CGSize(width: 560, height: 168)
+    /// Measured on a 15" M4 MacBook Air: screen 1710x1107pt, menu bar and
+    /// `safeAreaInsets.top` both 33pt, cutout 185x33pt at x 763...948 (its
+    /// midX is 855.5 against a screen midX of 855.0 — the island follows the
+    /// cutout, not the screen, which is why every rect here centres on
+    /// `closedRect.midX`).
+    ///
+    /// The cutout is *missing pixels*, not black ones: anything drawn in the
+    /// top `closedRect.height` of the island's centre 185pt is hidden behind
+    /// the camera housing. Rather than thread that dead band through every
+    /// column, all expanded content starts below it — see NotchRootView.
+    ///
+    /// Heights are that clearance (33 + 6) plus the tallest column each
+    /// layout measures plus 10pt of bottom padding. Idle's is the date block
+    /// (46) + two event chips (80) + spacing; music's peek is one chip, so it
+    /// comes out shorter — the island visibly compacts when playback starts.
+    /// The panel frame uses `expandedSize` (the taller of the two) so the
+    /// height change is a SwiftUI shape morph, never a window resize
+    /// mid-hover.
+    ///
+    /// 400 wide is roughly 2.2x the cutout, matching the proportion asked for
+    /// — it splits into a ~150pt agenda column and ~220pt of music column,
+    /// which is the least the transport row fits in at full 38x34 targets.
+    static let expandedIdleSize = CGSize(width: 400, height: 186)
+    static let expandedMusicSize = CGSize(width: 400, height: 168)
+    static let expandedSize = CGSize(
+        width: max(expandedIdleSize.width, expandedMusicSize.width),
+        height: max(expandedIdleSize.height, expandedMusicSize.height)
+    )
     static let fallbackClosedSize = CGSize(width: 200, height: 32)
     static let compactExtraWidth: CGFloat = 160
-    static let chipBarHeight: CGFloat = 36
-    static let chipBarGap: CGFloat = 8
 
     /// Notch bounding box from the real hardware cutout, or a centered
     /// pill-sized fallback on non-notched screens.
@@ -59,20 +78,13 @@ enum NotchGeometry {
         return CGRect(x: closed.midX - width / 2, y: closed.minY, width: width, height: closed.height)
     }
 
-    /// `expandedRect` widened to also contain `compactRect`, then extended
-    /// downward to reserve the mood chip bar's strip. The panel is
-    /// click-through outside the shape, so an over-tall canvas costs nothing
-    /// visually — and it means neither collapsing out of expanded nor the
-    /// chip bar animating in ever has to grow the frame mid-animation, which
-    /// is what caused the expanded→compact jitter bug.
+    /// `expandedRect` widened to also contain `compactRect`. The panel is
+    /// click-through outside the shape, so an over-wide canvas costs nothing
+    /// visually — and it means collapsing out of expanded, which can grow
+    /// wider before it gets shorter, never has to widen the frame
+    /// mid-animation. That was the expanded→compact jitter bug.
     static func expandedCanvasRect(for screen: ScreenGeometryProviding) -> CGRect {
-        let union = expandedRect(for: screen).union(compactRect(for: screen))
-        return CGRect(
-            x: union.minX,
-            y: union.minY - chipBarGap - chipBarHeight,
-            width: union.width,
-            height: union.height + chipBarGap + chipBarHeight
-        )
+        expandedRect(for: screen).union(compactRect(for: screen))
     }
 
     private static func fallbackRect(for screen: ScreenGeometryProviding) -> CGRect {

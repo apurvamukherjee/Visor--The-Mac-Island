@@ -12,25 +12,25 @@ enum Motion {
     static let contentIn = Animation.smooth(duration: 0.28).delay(0.08)
     /// content removal (always faster than the shape)
     static let contentOut = Animation.smooth(duration: 0.14)
-    /// idle-expanded signature glow — repeats only while its view exists
-    /// (expanded + no now-playing activity), so it never ticks off-screen.
-    static let pulse = Animation.easeInOut(duration: 1.4).repeatForever(autoreverses: true)
     /// idle ↔ music expanded column redistribution — one coordinated layout
     /// change, not two sequential ones
     static let layout = Animation.spring(duration: 0.40, bounce: 0.18)
-    /// album art crossfade + scale-pop on track change
+    /// album art crossfade + scale-pop, used when Reduce Motion rules the
+    /// flip out
     static let artSwap = Animation.spring(duration: 0.30, bounce: 0.20)
-    /// title/artist crossfade — opacity only, text never transforms
-    static let textSwap = Animation.easeInOut(duration: 0.15)
-    /// chip bar entrance, staggered to arrive after the play-state settles
-    static let chipBarIn = Animation.spring(duration: 0.40, bounce: 0.22).delay(0.12)
-    /// chip bar exit — a reverse of the entrance, never a plain fade-out
-    static let chipBarOut = Animation.spring(duration: 0.28, bounce: 0.0)
+    /// first half of the album-art flip: accelerating into the edge-on frame
+    static let artFlipOut = Animation.easeIn(duration: 0.16)
+    /// second half: the new face swinging out with a little overshoot
+    static let artFlipIn = Animation.spring(duration: 0.26, bounce: 0.28)
+    /// title/artist swap — the new track's text rises into place
+    static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
+
+    static var reduceMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
 
     static func resolved(_ animation: Animation) -> Animation {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-            ? .easeOut(duration: 0.15)
-            : animation
+        reduceMotion ? .easeOut(duration: 0.15) : animation
     }
 }
 

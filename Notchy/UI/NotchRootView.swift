@@ -6,7 +6,7 @@ struct NotchRootView: View {
 
     private var currentSize: CGSize {
         switch store.state {
-        case .expanded: NotchGeometry.expandedSize
+        case .expanded: store.nowPlaying == nil ? NotchGeometry.expandedIdleSize : NotchGeometry.expandedMusicSize
         case .compact: compactSize
         case .closed: store.closedSize
         }
@@ -52,7 +52,10 @@ struct NotchRootView: View {
             .overlay(alignment: .top) {
                 if store.state == .expanded {
                     expandedContent
-                        .padding(.top, 4)
+                        // Everything clears the camera housing in one place.
+                        // The cutout hides the island's top-centre 185x33pt,
+                        // so per-column clearance just moved the bug around.
+                        .padding(.top, store.closedSize.height + 6)
                         .transition(.island)
                 } else if store.state == .compact, store.currentActivity != nil {
                     CompactActivityView(store: store)
@@ -60,32 +63,13 @@ struct NotchRootView: View {
                         .transition(.island)
                 }
             }
-            .overlay(alignment: .bottom) { chipBarDock }
             .frame(width: canvasWidth, height: NotchGeometry.expandedSize.height, alignment: .top)
+            // NSHostingView centres its root view in its bounds; if the canvas
+            // is ever taller than the island, that drops the island below the
+            // notch. Pin it to the top.
+            .frame(maxHeight: .infinity, alignment: .top)
             .animation(Motion.resolved(Motion.layout), value: store.nowPlaying?.trackIdentity)
             .animation(Motion.resolved(Motion.layout), value: store.nowPlaying == nil)
-    }
-
-    private var showChipBar: Bool {
-        store.state == .expanded && store.nowPlaying?.isPlaying == true
-    }
-
-    @ViewBuilder
-    private var chipBarDock: some View {
-        if showChipBar {
-            MoodChipBar()
-                .offset(y: NotchGeometry.chipBarHeight + NotchGeometry.chipBarGap)
-                .transition(
-                    .asymmetric(
-                        insertion: .move(edge: .top)
-                            .combined(with: .opacity)
-                            .animation(Motion.resolved(Motion.chipBarIn)),
-                        removal: .move(edge: .top)
-                            .combined(with: .opacity)
-                            .animation(Motion.resolved(Motion.chipBarOut))
-                    )
-                )
-        }
     }
 
     /// No clock/battery row here any more: the agenda and music columns need
@@ -104,7 +88,7 @@ struct NotchRootView: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 10)
         } else {
-            ExpandedIdleView(events: store.calendarEvents, housingHeight: store.closedSize.height)
+            ExpandedIdleView(events: store.calendarEvents)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 10)
         }

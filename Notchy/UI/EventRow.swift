@@ -25,7 +25,7 @@ struct EventRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, 4)
         .padding(.horizontal, 6)
         // Tinted fill keyed to the calendar's own colour, like the reference
         // design — a bare left bar on black read as unfinished.

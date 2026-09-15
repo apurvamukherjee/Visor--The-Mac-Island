@@ -17,6 +17,7 @@ final class NotchWindowController {
     private var isDisplayAsleep = false
     private var hoverIntentTask: Task<Void, Never>?
     private var screenObserver: NSObjectProtocol?
+    private var spaceObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
 
@@ -51,6 +52,13 @@ final class NotchWindowController {
         ) { [weak self] _ in
             Task { @MainActor in self?.handleScreenChange() }
         }
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.handleSpaceChange() }
+        }
         sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.screensDidSleepNotification,
             object: nil,
@@ -70,10 +78,16 @@ final class NotchWindowController {
     func stop() {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
-        for observer in [screenObserver, sleepObserver, wakeObserver].compactMap(\.self) {
-            NotificationCenter.default.removeObserver(observer)
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+        }
+        // These three come from the workspace centre, not the default one —
+        // removing them from the wrong centre leaked them.
+        for observer in [spaceObserver, sleepObserver, wakeObserver].compactMap(\.self) {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
         screenObserver = nil
+        spaceObserver = nil
         sleepObserver = nil
         wakeObserver = nil
         panel.orderOut(nil)
@@ -200,6 +214,22 @@ final class NotchWindowController {
         panel.setFrame(closedRect, display: true)
         store.setClosedSize(closedRect.size)
         repositionHostingView(for: closedRect.width)
+    }
+
+    /// A Space switch can leave the panel behind the new Space's windows or
+    /// at a stale frame. Re-assert both for whatever state we're in — unlike
+    /// `handleScreenChange`, this keeps the current state, so a live compact
+    /// activity survives the switch instead of snapping closed.
+    private func handleSpaceChange() {
+        guard let screen = Self.targetScreen() else { return }
+        let rect = switch store.state {
+        case .expanded: NotchGeometry.expandedCanvasRect(for: screen)
+        case .compact: NotchGeometry.compactRect(for: screen)
+        case .closed: NotchGeometry.closedRect(for: screen)
+        }
+        panel.setFrame(rect, display: true)
+        repositionHostingView(for: rect.width)
+        panel.orderFrontRegardless()
     }
 
     private func handleDisplaySleep() {

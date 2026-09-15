@@ -84,6 +84,15 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
 - **Dropped:** system-notification mirroring — Notification Center's DB is
   TCC-blocked without Full Disk Access (verified 2026-09-16 on macOS
   26.6.2) and its schema is undocumented. Not worth the permission cost.
+- **Layout pass (2026-09-16):** island was rendering 22pt low (NSHostingView
+  centred a 176pt root in a 220pt canvas); mood chip bar and "By Apurva"
+  signature removed; between-track nil debounced 900ms in NowPlayingService so
+  a skip no longer flashes the idle/calendar layout; expanded resized to
+  400×186 idle / 400×168 playing (per-layout height, panel frame keeps the
+  taller one so it morphs instead of resizing) with a single camera-housing
+  clearance; music peek trimmed to one event; transport row given 38×34
+  targets under the art + title; `hidesOnDeactivate` disabled so the panel
+  survives a Space switch (NSPanel defaults it to true).
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

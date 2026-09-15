@@ -4,13 +4,8 @@ import SwiftUI
 /// block leading the left column.
 struct ExpandedIdleView: View {
     let events: [CalendarEvent]
-    /// Height of the real camera housing. The left column opens with the
-    /// narrow date block, which sits clear of the housing on its own, but the
-    /// right column's first chip is wide enough to run under it — so that
-    /// column starts below the housing instead.
-    let housingHeight: CGFloat
 
-    private static let shownLimit = 4
+    private static let shownLimit = 3
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -27,10 +22,7 @@ struct ExpandedIdleView: View {
                     overflowRow
                 }
                 Spacer(minLength: 0)
-                SignatureGlow()
-                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding(.top, housingHeight)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -40,13 +32,14 @@ struct ExpandedIdleView: View {
     }
 
     /// The date block occupies the left column's first slot, so the split is
-    /// deliberately uneven — fewer events on the left, not half and half.
+    /// deliberately uneven — fewer events on the left, not half and half. At
+    /// 400pt wide each column is ~190, so one chip fits beside the date.
     private var leftColumn: [CalendarEvent] {
-        Array(shown.prefix(2))
+        Array(shown.prefix(1))
     }
 
     private var rightColumn: [CalendarEvent] {
-        Array(shown.dropFirst(2))
+        Array(shown.dropFirst(1))
     }
 
     private var overflow: Int {

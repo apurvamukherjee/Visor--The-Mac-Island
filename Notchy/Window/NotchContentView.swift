@@ -8,6 +8,12 @@ final class NotchContentView: NSView {
     let hostingView: NSHostingView<NotchRootView>
     private let store: NotchStore
     private var trackingArea: NSTrackingArea?
+    private var scrollOffset: CGFloat = 0
+
+    /// Points of two-finger travel before a scroll counts as a track change.
+    /// Low enough to flick, high enough that a stray scroll over the notch
+    /// on the way to the menu bar doesn't skip a song.
+    private static let swipeThreshold: CGFloat = 40
 
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
@@ -43,6 +49,50 @@ final class NotchContentView: NSView {
         trackingArea = area
     }
 
+    /// Two-finger swipe = track change. Trackpad scrolls only (`hasPrecise
+    /// ScrollingDeltas`); a mouse wheel's coarse clicks would fire on the
+    /// slightest nudge. Events only reach here when the cursor is inside the
+    /// silhouette, since `hitTest` rejects everything else — no global
+    /// monitor, nothing running while the island isn't under the pointer.
+    override func scrollWheel(with event: NSEvent) {
+        guard
+            let commands = store.nowPlayingCommands,
+            event.hasPreciseScrollingDeltas
+        else {
+            return super.scrollWheel(with: event)
+        }
+        // Normalise away the "natural scrolling" setting so the gesture
+        // always follows the fingers: negative means they moved left.
+        let delta = event.isDirectionInvertedFromDevice
+            ? event.scrollingDeltaX
+            : -event.scrollingDeltaX
+        switch event.phase {
+        case .began:
+            scrollOffset = 0
+        case .changed:
+            scrollOffset += delta
+        case .ended, .cancelled:
+            defer { scrollOffset = 0 }
+            guard abs(scrollOffset) > Self.swipeThreshold else { return }
+            if scrollOffset < 0 {
+                commands.next()
+            } else {
+                commands.previous()
+            }
+        default:
+            break
+        }
+    }
+
+    /// Two-finger double tap — the system's `smartMagnify` gesture, which is
+    /// exactly that on a trackpad.
+    override func smartMagnify(with event: NSEvent) {
+        guard let commands = store.nowPlayingCommands else {
+            return super.smartMagnify(with: event)
+        }
+        commands.togglePlayPause()
+    }
+
     override func mouseEntered(with _: NSEvent) {
         onMouseEntered?()
     }
@@ -57,10 +107,6 @@ final class NotchContentView: NSView {
     /// ~300-400ms animation window; upgrade to interpolated radii if that
     /// sliver ever matters in practice). Switches over all three states
     /// (closed/compact/expanded), matching NotchRootView's radii.
-    ///
-    /// The mood chip bar is docked *below* the shape with a gap, so it falls
-    /// outside that silhouette — without the union below, the chips would
-    /// render but be unclickable.
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: nil)
         let (topRadius, bottomRadius): (CGFloat, CGFloat) = switch store.state {
@@ -69,35 +115,20 @@ final class NotchContentView: NSView {
         case .closed: (NotchShape.closedTopRadius, NotchShape.closedBottomRadius)
         }
         let shape = NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
-        if shape.path(in: islandRect).contains(local) {
-            return super.hitTest(point)
-        }
-        if chipBarIsVisible, chipBarRect.contains(local) {
-            return super.hitTest(point)
-        }
-        return nil
+        return shape.path(in: islandRect).contains(local) ? super.hitTest(point) : nil
     }
 
-    /// The canvas reserves vertical room for the chip bar, so the island's
-    /// own rect is the top slice of `bounds` — building the shape path
-    /// against the full `bounds` would stretch the silhouette downward.
+    /// The canvas is sized for the tallest expanded layout, so the silhouette
+    /// is the top slice of `bounds` — and the slice shrinks with the music
+    /// layout, or the strip below the shorter island would swallow clicks
+    /// meant for whatever is behind it.
     private var islandRect: CGRect {
-        CGRect(x: 0, y: 0, width: bounds.width, height: NotchGeometry.expandedSize.height)
-    }
-
-    private var chipBarIsVisible: Bool {
-        store.state == .expanded && store.nowPlaying?.isPlaying == true
-    }
-
-    /// `isFlipped` is true, so local y grows downward — the chip bar sits at
-    /// a *larger* y than the island. This is the opposite convention from
-    /// NotchGeometry's bottom-left screen space; don't conflate them.
-    private var chipBarRect: CGRect {
-        CGRect(
-            x: 0,
-            y: NotchGeometry.expandedSize.height + NotchGeometry.chipBarGap,
-            width: bounds.width,
-            height: NotchGeometry.chipBarHeight
-        )
+        let height = switch store.state {
+        case .expanded: store.nowPlaying == nil
+            ? NotchGeometry.expandedIdleSize.height
+            : NotchGeometry.expandedMusicSize.height
+        case .compact, .closed: NotchGeometry.expandedSize.height
+        }
+        return CGRect(x: 0, y: 0, width: bounds.width, height: height)
     }
 }
