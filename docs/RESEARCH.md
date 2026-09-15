@@ -438,6 +438,15 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
   the settings window is closed.
 
 ### Phase 4 — Features
+- **Screenshot catcher (done 2026-09-16):** `DispatchSource` on the folder from
+  `com.apple.screencapture location` — event-driven, no timer. New images become a
+  `ScreenshotCatch` shown as a chip in the compact wing, draggable out, click to open,
+  auto-dismissed after 8s with the countdown re-armed while the island is open.
+- **Album tint (done 2026-09-16):** the playback bars take the cover's colour, the way
+  iOS tints its waveform. The island *surface* is never tinted — that is what Apple
+  avoids and what this project reverted a material and a blurred bleed to protect.
+  OKLab + fixed-seed k-means, chroma floor 0.045 (greyscale covers get white bars),
+  lightness lifted to 0.78 so contrast on black never depends on the album.
 - Timer, file shelf. (Calendar moved up to Phase 3.)
 
 ### Phase 5 — Advanced

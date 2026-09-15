@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Idle compact indicator, shown whenever the notch has a live activity
@@ -12,14 +13,19 @@ struct CompactActivityView: View {
 
     var body: some View {
         HStack {
-            if let artwork = store.nowPlayingArtwork {
-                Image(decorative: artwork, scale: 1)
-                    .resizable()
-                    .frame(width: 16, height: 16)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-            }
-            if let info = store.nowPlaying {
-                PlaybackBars(isPlaying: info.isPlaying, height: 11)
+            if let shot = store.screenshot {
+                ScreenshotChip(shot: shot, height: 18) { open(shot) }
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+            } else {
+                if let artwork = store.nowPlayingArtwork {
+                    Image(decorative: artwork, scale: 1)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                if let info = store.nowPlaying {
+                    PlaybackBars(isPlaying: info.isPlaying, height: 11, tint: store.nowPlayingTint)
+                }
             }
             Spacer(minLength: 0)
             if let battery = store.battery {
@@ -27,11 +33,17 @@ struct CompactActivityView: View {
             }
         }
         .foregroundStyle(.white)
+        .animation(Motion.resolved(Motion.catchIn), value: store.screenshot)
         // NotchShape's bottom corners round away with radius compactBottomRadius —
         // at x=0/width exactly, the shape's fill stops short of the full height,
         // so edge-flush content pokes outside it. Inset past the curve to stay
         // inside the fill at any vertical position.
         .padding(.horizontal, NotchShape.compactBottomRadius + 2)
+    }
+
+    private func open(_ shot: ScreenshotCatch) {
+        NSWorkspace.shared.open(shot.url)
+        store.setScreenshot(nil)
     }
 
     private func bounceIfCharging(_ info: BatteryInfo) {

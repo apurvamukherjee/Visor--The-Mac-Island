@@ -31,6 +31,27 @@ struct ActivityTests {
         #expect(resolveCurrentActivity(activities)?.kind == .nowPlaying)
     }
 
+    @Test
+    func screenshotOutranksEverything() {
+        let activities: [ActivityKind: Activity] = [
+            .nowPlaying: Activity(kind: .nowPlaying),
+            .charging: Activity(kind: .charging),
+            .screenshot: Activity(kind: .screenshot),
+        ]
+        #expect(resolveCurrentActivity(activities)?.kind == .screenshot)
+    }
+
+    @Test
+    func dismissingAScreenshotFallsBackToTheChargingPeek() {
+        var activities: [ActivityKind: Activity] = [
+            .nowPlaying: Activity(kind: .nowPlaying),
+            .charging: Activity(kind: .charging),
+            .screenshot: Activity(kind: .screenshot),
+        ]
+        activities.removeValue(forKey: .screenshot)
+        #expect(resolveCurrentActivity(activities)?.kind == .charging)
+    }
+
     @Test @MainActor
     func storeActivateAndDeactivateUpdateCurrentActivity() {
         let store = NotchStore()

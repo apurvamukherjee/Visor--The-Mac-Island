@@ -124,6 +124,13 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   drew it) and made store activate/deactivate/battery writes compare before
   mutating. Rule added to RESEARCH §5.1b: never animate a layout property in
   a loop.
+- **Phase 4 (2026-09-16):** screenshot catcher + album tint, built from
+  `docs/superpowers/plans/2026-09-16-screenshot-catcher-ambient-tint.md`.
+  `ScreenshotService` watches the screenshot folder with a `DispatchSource`
+  (no timer); catches show as a draggable chip, auto-dismiss at 8s, re-armed
+  while hovered. `AlbumColor` tints the playback bars in OKLab with a chroma
+  floor and a lightness lift — the island surface stays pure black. Verified
+  live: real screenshot → chip → dismiss, and idle CPU still 0.0%.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

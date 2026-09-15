@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Observation
+import SwiftUI
 
 enum NotchState: Equatable, Sendable {
     case closed
@@ -29,6 +30,8 @@ final class NotchStore {
     private(set) var activities: [ActivityKind: Activity] = [:]
     private(set) var nowPlaying: NowPlayingInfo?
     private(set) var nowPlayingArtwork: CGImage?
+    private(set) var nowPlayingTint: Color?
+    private(set) var screenshot: ScreenshotCatch?
 
     var currentActivity: Activity? {
         resolveCurrentActivity(activities)
@@ -47,8 +50,20 @@ final class NotchStore {
         activities.removeValue(forKey: kind)
     }
 
-    func setNowPlaying(_ info: NowPlayingInfo?, artwork: CGImage? = nil) {
+    /// Track, artwork and tint move together — a separate write for the tint
+    /// would leave a frame where new artwork wears the previous colour.
+    func setNowPlaying(_ info: NowPlayingInfo?, artwork: CGImage? = nil, tint: Color? = nil) {
         nowPlaying = info
         nowPlayingArtwork = artwork
+        nowPlayingTint = tint
+    }
+
+    func setScreenshot(_ shot: ScreenshotCatch?) {
+        screenshot = shot
+        if shot == nil {
+            deactivate(.screenshot)
+        } else {
+            activate(.screenshot)
+        }
     }
 }

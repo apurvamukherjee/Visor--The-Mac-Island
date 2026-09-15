@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct NotchRootView: View {
@@ -72,10 +73,17 @@ struct NotchRootView: View {
     /// lives in the compact wings.
     @ViewBuilder
     private var expandedContent: some View {
-        if let info = store.nowPlaying {
+        if let shot = store.screenshot {
+            ScreenshotChip(shot: shot, height: 72, showsLabel: true) {
+                NSWorkspace.shared.open(shot.url)
+                store.setScreenshot(nil)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let info = store.nowPlaying {
             ExpandedMusicView(
                 info: info,
                 artwork: store.nowPlayingArtwork,
+                tint: store.nowPlayingTint,
                 commands: store.nowPlayingCommands,
                 events: store.calendarEvents
             )

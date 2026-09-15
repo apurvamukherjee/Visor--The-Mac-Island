@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             BatteryService(store: store),
             NowPlayingService(store: store),
             CalendarService(store: store),
+            ScreenshotService(store: store),
         ]
         services.forEach { $0.start() }
     }

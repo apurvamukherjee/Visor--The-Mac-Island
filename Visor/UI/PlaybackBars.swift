@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The Dynamic Island's bouncing bars. Decorative, not a spectrum analyser —
@@ -14,11 +15,19 @@ import SwiftUI
 struct PlaybackBars: View {
     var isPlaying: Bool
     var height: CGFloat = 12
+    /// The album's colour, the way the iPhone tints its waveform. White when
+    /// the cover has no colour worth using, or when the user has asked for
+    /// increased contrast.
+    var tint: Color?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var resolvedTint: Color {
+        NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? .white : (tint ?? .white)
+    }
+
     var body: some View {
-        Bars(isBouncing: isPlaying && !reduceMotion, height: height)
+        Bars(isBouncing: isPlaying && !reduceMotion, height: height, tint: resolvedTint)
             // A representable has no opinion about its size, so without this
             // SwiftUI hands it every point on offer — which stretched the
             // expanded scrim across the whole album cover.
@@ -29,12 +38,14 @@ struct PlaybackBars: View {
     private struct Bars: NSViewRepresentable {
         var isBouncing: Bool
         var height: CGFloat
+        var tint: Color
 
         func makeNSView(context _: Context) -> PlaybackBarsView {
             PlaybackBarsView()
         }
 
         func updateNSView(_ view: PlaybackBarsView, context _: Context) {
+            view.setTint(NSColor(tint))
             view.setBouncing(isBouncing)
         }
 
@@ -67,13 +78,14 @@ final class PlaybackBarsView: NSView {
 
     private var bars: [CALayer] = []
     private var isBouncing = false
+    private var tint = NSColor.white
 
     init() {
         super.init(frame: .zero)
         wantsLayer = true
         bars = (0 ..< Self.barCount).map { _ in
             let bar = CALayer()
-            bar.backgroundColor = NSColor.white.cgColor
+            bar.backgroundColor = tint.cgColor
             bar.cornerRadius = Self.barWidth / 2
             bar.anchorPoint = CGPoint(x: 0.5, y: 0.5)
             layer?.addSublayer(bar)
@@ -107,6 +119,19 @@ final class PlaybackBarsView: NSView {
             if !isBouncing {
                 bar.setValue(Self.restingHeightScale(index), forKeyPath: "transform.scale.y")
             }
+        }
+        CATransaction.commit()
+    }
+
+    /// Matched to the artwork flip's second half so colour and cover land on
+    /// the same frame — a separate, differently-timed fade reads as a glitch.
+    func setTint(_ newTint: NSColor) {
+        guard newTint != tint else { return }
+        tint = newTint
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(Motion.artFlipInDuration)
+        for bar in bars {
+            bar.backgroundColor = newTint.cgColor
         }
         CATransaction.commit()
     }

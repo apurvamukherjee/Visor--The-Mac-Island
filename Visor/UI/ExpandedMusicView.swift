@@ -7,6 +7,7 @@ import SwiftUI
 struct ExpandedMusicView: View {
     let info: NowPlayingInfo
     let artwork: CGImage?
+    let tint: Color?
     let commands: NotchStore.NowPlayingCommands?
     let events: [CalendarEvent]
 
@@ -101,7 +102,7 @@ struct ExpandedMusicView: View {
             // Added after the rotation so the bars stay flat while the card
             // turns, and scrimmed so they read against pale artwork.
             .overlay(alignment: .bottomTrailing) {
-                PlaybackBars(isPlaying: info.isPlaying, height: 13)
+                PlaybackBars(isPlaying: info.isPlaying, height: 13, tint: tint)
                     .padding(5)
                     .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 7))
                     .padding(4)

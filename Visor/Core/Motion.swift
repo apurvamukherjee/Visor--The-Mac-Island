@@ -22,6 +22,11 @@ enum Motion {
     static let artFlipOut = Animation.easeIn(duration: 0.16)
     /// second half: the new face swinging out with a little overshoot
     static let artFlipIn = Animation.spring(duration: 0.26, bounce: 0.28)
+    /// `artFlipIn`'s duration, for Core Animation, which cannot take a
+    /// SwiftUI `Animation` but must land on the same frame as one
+    static let artFlipInDuration = 0.26
+    /// a caught screenshot arriving in the wing
+    static let catchIn = Animation.spring(duration: 0.34, bounce: 0.24)
     /// title/artist swap — the new track's text rises into place
     static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
 
