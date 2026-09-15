@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct CalendarEventMapperTests {
     private static let now = Date(timeIntervalSince1970: 1_000_000)

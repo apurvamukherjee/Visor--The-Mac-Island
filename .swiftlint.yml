@@ -2,7 +2,7 @@ excluded:
   - .build
   - build
   - dist
-  - Notchy.xcodeproj
+  - Visor.xcodeproj
 
 opt_in_rules:
   - force_unwrapping

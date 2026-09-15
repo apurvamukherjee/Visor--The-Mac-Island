@@ -1,4 +1,4 @@
-# Notchy — Research & Technical Design
+# Visor — Research & Technical Design
 
 > A native, Dynamic Island–style notch app for macOS. Goals, in order: **feels like iOS**, **near-zero idle cost**, **clean codebase**.
 >
@@ -43,7 +43,7 @@
 | **Lakr233/NotchDrop** | MIT | File shelf, AirDrop, menu-bar-manager compatibility, minimal architecture | Small, readable, permissive. |
 | **MrKai77/DynamicNotchKit** | MIT | Notch window management, **compact state** (iOS-style leading/trailing), continuous-corner shape, stretchy expansion, hover haptics, configurable transitions | Swift 6 concurrency, DocC docs. Best code to read for the window + shape layer. |
 | **ungive/mediaremote-adapter** (+ `media-control` CLI) | BSD-3 | Now Playing on macOS 15.4+ | The dependency you actually need. |
-| **ejbills/mediaremote-adapter** | MIT | Swift-package wrapper over the same perl-bridge technique, prebuilt binary target | What Notchy actually depends on — see §7.3 |
+| **ejbills/mediaremote-adapter** | MIT | Swift-package wrapper over the same perl-bridge technique, prebuilt binary target | What Visor actually depends on — see §7.3 |
 | **Lakr233/MSDisplayLink** | MIT | Display-link driver for AppKit | Only if you ever need per-frame custom drawing (you probably won't). |
 | **GetStream/swiftui-spring-animations** | Check repo | Worked examples of spring parameters | Good for tuning. |
 
@@ -60,9 +60,9 @@ Closed-source inspiration: **Alcove**, **NotchNook**. Study their videos frame-b
 
 ### 1.3 Licensing (decide before writing code)
 
-- boring.notch and Atoll are **GPL-3.0**. Copying their code means Notchy must also be GPL-3.0.
+- boring.notch and Atoll are **GPL-3.0**. Copying their code means Visor must also be GPL-3.0.
 - DynamicNotchKit, NotchDrop, MSDisplayLink are **MIT**; mediaremote-adapter is **BSD-3**. Fine for any license, with attribution.
-- **Recommendation:** license Notchy **MIT**, write the code yourself, and treat GPL repos as *reading material only*. This also keeps the codebase coherent instead of a patchwork.
+- **Recommendation:** license Visor **MIT**, write the code yourself, and treat GPL repos as *reading material only*. This also keeps the codebase coherent instead of a patchwork.
 
 ---
 
@@ -172,9 +172,9 @@ closed ────────────────────────�
 ### 3.1 Module layout
 
 ```
-Notchy/
+Visor/
 ├── project.yml                 # XcodeGen spec
-├── Notchy/
+├── Visor/
 │   ├── App/                    # @main, AppDelegate, lifecycle
 │   ├── Window/                 # NotchPanel, NotchWindowController, geometry
 │   ├── Core/
@@ -187,7 +187,7 @@ Notchy/
 │   │   └── (Timer, Calendar, Shelf, HUD later)
 │   ├── UI/                     # NotchShape, NotchRootView, shared components
 │   └── Support/                # extensions, logging (os.Logger)
-├── NotchyTests/                # geometry, activity priority, parsers
+├── VisorTests/                # geometry, activity priority, parsers
 └── Vendor/mediaremote-adapter/ # pinned, with LICENSE
 ```
 
@@ -375,7 +375,7 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 
 - **Xcode 26.6** is the current stable release; **Xcode 27 RC** shipped 9 Sep 2026 and **macOS 27** is about to release.
 - **macOS 27 is Apple-silicon-only**, so no Intel concerns for your M4.
-- **Liquid Glass** (the design language since the 26 releases) is available on macOS 26+. If you use glass materials in Notchy's settings window or controls, gate with `if #available(macOS 26, *)`. The island itself stays pure black.
+- **Liquid Glass** (the design language since the 26 releases) is available on macOS 26+. If you use glass materials in Visor's settings window or controls, gate with `if #available(macOS 26, *)`. The island itself stays pure black.
 
 ### 7.2 Install list
 

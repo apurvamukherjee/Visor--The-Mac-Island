@@ -9,7 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         guard let controller = NotchWindowController(store: store) else {
-            Log.app.error("No screen available; Notchy cannot display the island.")
+            Log.app.error("No screen available; Visor cannot display the island.")
             NSApp.terminate(nil)
             return
         }

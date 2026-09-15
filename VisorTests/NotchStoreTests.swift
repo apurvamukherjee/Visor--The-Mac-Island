@@ -1,6 +1,6 @@
 import CoreGraphics
 import Testing
-@testable import Notchy
+@testable import Visor
 
 @MainActor
 struct NotchStoreTests {

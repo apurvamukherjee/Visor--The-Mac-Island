@@ -1,6 +1,6 @@
 import SwiftUI
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct NotchShapeTests {
     /// Bezier approximation of a circular arc can overshoot the true arc by

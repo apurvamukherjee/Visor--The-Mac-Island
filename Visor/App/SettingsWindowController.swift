@@ -21,7 +21,7 @@ final class SettingsWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "Notchy"
+        window.title = "Visor"
         window.contentView = NSHostingView(rootView: SettingsView())
         window.isReleasedWhenClosed = false
         window.center()

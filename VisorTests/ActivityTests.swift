@@ -1,5 +1,5 @@
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct ActivityTests {
     @Test

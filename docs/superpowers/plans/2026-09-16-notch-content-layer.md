@@ -1,4 +1,4 @@
-# Notchy Phase 3 — Content Layer Implementation Plan
+# Visor Phase 3 — Content Layer Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
@@ -40,8 +40,8 @@
 ### Task 1: Geometry — expanded size growth + chip-bar reservation
 
 **Files:**
-- Modify: `Notchy/Window/NotchGeometry.swift`
-- Test: `NotchyTests/NotchGeometryTests.swift`
+- Modify: `Visor/Window/NotchGeometry.swift`
+- Test: `VisorTests/NotchGeometryTests.swift`
 
 **Interfaces:**
 - Consumes: existing `ScreenGeometryProviding`, `closedRect(for:)`, `compactRect(for:)`, `expandedRect(for:)`.
@@ -49,7 +49,7 @@
 
 - [ ] **Step 1: Write the failing test**
 
-Add to `NotchyTests/NotchGeometryTests.swift` (reuses the existing private `FakeScreen`):
+Add to `VisorTests/NotchGeometryTests.swift` (reuses the existing private `FakeScreen`):
 
 ```swift
     @Test
@@ -77,12 +77,12 @@ Add to `NotchyTests/NotchGeometryTests.swift` (reuses the existing private `Fake
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: build fails — `chipBarHeight` and `chipBarGap` don't exist.
 
 - [ ] **Step 3: Implement**
 
-In `Notchy/Window/NotchGeometry.swift`, change the existing `expandedSize` constant and add the two new ones:
+In `Visor/Window/NotchGeometry.swift`, change the existing `expandedSize` constant and add the two new ones:
 
 ```swift
     static let expandedSize = CGSize(width: 600, height: 220)
@@ -114,20 +114,20 @@ Replace the existing `expandedCanvasRect(for:)` with:
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: all tests pass, including the existing `expandedRectSharesClosedRectHorizontalCenterAndTopEdge` and `compactRectSharesClosedRectTopEdgeAndCenterAndAddsWingWidth` (both unchanged in behaviour).
 
 - [ ] **Step 5: Format, lint, and stop for review**
 
 Run: `swiftformat . && swiftlint`
-Expected: clean apart from the 7 known pre-existing `trailing_comma` warnings in `NotchyTests/ActivityTests.swift`, `NotchyTests/BatteryInfoParserTests.swift`, and `Notchy/Features/NowPlaying/ArtworkCache.swift` — a repo-wide swiftformat/swiftlint config disagreement that predates this plan. Do not "fix" them.
+Expected: clean apart from the 7 known pre-existing `trailing_comma` warnings in `VisorTests/ActivityTests.swift`, `VisorTests/BatteryInfoParserTests.swift`, and `Visor/Features/NowPlaying/ArtworkCache.swift` — a repo-wide swiftformat/swiftlint config disagreement that predates this plan. Do not "fix" them.
 
 ---
 
 ### Task 2: Motion tokens for the content layer
 
 **Files:**
-- Modify: `Notchy/Core/Motion.swift`
+- Modify: `Visor/Core/Motion.swift`
 
 **Interfaces:**
 - Produces: `Motion.layout`, `Motion.artSwap`, `Motion.textSwap`, `Motion.chipBarIn`, `Motion.chipBarOut`.
@@ -136,7 +136,7 @@ No test — `Motion` is a table of constants, matching how the existing `open`/`
 
 - [ ] **Step 1: Add the five tokens**
 
-In `Notchy/Core/Motion.swift`, add inside `enum Motion`, after the existing `contentOut`:
+In `Visor/Core/Motion.swift`, add inside `enum Motion`, after the existing `contentOut`:
 
 ```swift
     /// idle ↔ music expanded column redistribution — one coordinated layout
@@ -154,7 +154,7 @@ In `Notchy/Core/Motion.swift`, add inside `enum Motion`, after the existing `con
 
 - [ ] **Step 2: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean. The tokens are unreferenced until Tasks 5–8; that is expected mid-plan.
 
 - [ ] **Step 3: Format, lint, and stop for review**
@@ -167,8 +167,8 @@ Expected: clean apart from the 7 known pre-existing warnings (see Task 1 Step 5)
 ### Task 3: Accessibility flags — Reduce Transparency observation
 
 **Files:**
-- Create: `Notchy/Support/Accessibility.swift`
-- Modify: `Notchy/Core/NotchStore.swift`
+- Create: `Visor/Support/Accessibility.swift`
+- Modify: `Visor/Core/NotchStore.swift`
 
 **Interfaces:**
 - Consumes: `NotchStore` (existing `@Observable @MainActor` class).
@@ -178,7 +178,7 @@ Expected: clean apart from the 7 known pre-existing warnings (see Task 1 Step 5)
 
 - [ ] **Step 1: Extend `NotchStore`**
 
-Add to `Notchy/Core/NotchStore.swift`, inside the existing `NotchStore` class, alongside the other `private(set)` properties:
+Add to `Visor/Core/NotchStore.swift`, inside the existing `NotchStore` class, alongside the other `private(set)` properties:
 
 ```swift
     private(set) var reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
@@ -197,7 +197,7 @@ Add `import AppKit` to the top of `NotchStore.swift` if it isn't already there (
 - [ ] **Step 2: Implement `AccessibilityObserver`**
 
 ```swift
-// Notchy/Support/Accessibility.swift
+// Visor/Support/Accessibility.swift
 import AppKit
 
 /// Mirrors the system's Reduce Transparency setting into the store so views
@@ -240,7 +240,7 @@ final class AccessibilityObserver {
 
 - [ ] **Step 3: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean. Unreferenced until Task 9.
 
 - [ ] **Step 4: Format, lint, and stop for review**
@@ -253,8 +253,8 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 4: Material layer — `NSVisualEffectView` behind the shape
 
 **Files:**
-- Create: `Notchy/Window/VisualEffectBackground.swift`
-- Modify: `Notchy/UI/NotchRootView.swift`
+- Create: `Visor/Window/VisualEffectBackground.swift`
+- Modify: `Visor/UI/NotchRootView.swift`
 
 **Interfaces:**
 - Consumes: `NotchShape`, `NotchStore.state`, `NotchStore.reduceTransparency` (Task 3).
@@ -265,7 +265,7 @@ No unit test — this is AppKit-bridged rendering, matching the project's no-UI-
 - [ ] **Step 1: Implement `VisualEffectBackground`**
 
 ```swift
-// Notchy/Window/VisualEffectBackground.swift
+// Visor/Window/VisualEffectBackground.swift
 import AppKit
 import SwiftUI
 
@@ -288,7 +288,7 @@ struct VisualEffectBackground: NSViewRepresentable {
 
 - [ ] **Step 2: Layer it into `NotchRootView`**
 
-In `Notchy/UI/NotchRootView.swift`, replace the existing `NotchShape(...).fill(.black)` line — currently the first line of `body` — with a layered background. Add these two computed properties to `NotchRootView`:
+In `Visor/UI/NotchRootView.swift`, replace the existing `NotchShape(...).fill(.black)` line — currently the first line of `body` — with a layered background. Add these two computed properties to `NotchRootView`:
 
 ```swift
     private var shape: NotchShape {
@@ -348,12 +348,12 @@ then add `islandSurface` as a computed property:
 
 - [ ] **Step 3: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean.
 
 - [ ] **Step 4: Run tests**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: all existing tests still pass (no test surface touched).
 
 - [ ] **Step 5: Format, lint, and stop for review**
@@ -366,9 +366,9 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 5: `CalendarEvent` model + `CalendarEventMapper` (pure logic)
 
 **Files:**
-- Create: `Notchy/Features/Calendar/CalendarEvent.swift`
-- Create: `Notchy/Features/Calendar/CalendarEventMapper.swift`
-- Test: `NotchyTests/CalendarEventMapperTests.swift`
+- Create: `Visor/Features/Calendar/CalendarEvent.swift`
+- Create: `Visor/Features/Calendar/CalendarEventMapper.swift`
+- Test: `VisorTests/CalendarEventMapperTests.swift`
 
 **Interfaces:**
 - Produces: `struct CalendarEvent: Equatable, Identifiable, Sendable` with `id: String`, `title: String`, `start: Date`, `end: Date`, `isAllDay: Bool`, `colorHex: String?`; `enum CalendarEventMapper` with `static func upcoming(_ events: [CalendarEvent], now: Date, limit: Int) -> [CalendarEvent]` and `static func overflowCount(total: Int, shown: Int) -> Int`.
@@ -378,10 +378,10 @@ This task deliberately keeps `EKEvent` out of the pure layer — the mapper oper
 - [ ] **Step 1: Write the failing tests**
 
 ```swift
-// NotchyTests/CalendarEventMapperTests.swift
+// VisorTests/CalendarEventMapperTests.swift
 import Foundation
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct CalendarEventMapperTests {
     private static let now = Date(timeIntervalSince1970: 1_000_000)
@@ -453,13 +453,13 @@ struct CalendarEventMapperTests {
 
 - [ ] **Step 2: Run to verify failure**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: build fails — `CalendarEvent` and `CalendarEventMapper` don't exist.
 
 - [ ] **Step 3: Implement `CalendarEvent`**
 
 ```swift
-// Notchy/Features/Calendar/CalendarEvent.swift
+// Visor/Features/Calendar/CalendarEvent.swift
 import Foundation
 
 /// A calendar entry, decoupled from EventKit so the list logic stays pure
@@ -479,7 +479,7 @@ struct CalendarEvent: Equatable, Identifiable, Sendable {
 - [ ] **Step 4: Implement `CalendarEventMapper`**
 
 ```swift
-// Notchy/Features/Calendar/CalendarEventMapper.swift
+// Visor/Features/Calendar/CalendarEventMapper.swift
 import Foundation
 
 enum CalendarEventMapper {
@@ -502,7 +502,7 @@ enum CalendarEventMapper {
 
 - [ ] **Step 5: Run to verify pass**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: all six new tests pass, plus the existing suite.
 
 - [ ] **Step 6: Format, lint, and stop for review**
@@ -515,9 +515,9 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 6: `CalendarService` — EventKit, event-driven
 
 **Files:**
-- Create: `Notchy/Features/Calendar/CalendarService.swift`
-- Modify: `Notchy/Core/NotchStore.swift`
-- Modify: `Notchy/Support/Log.swift`
+- Create: `Visor/Features/Calendar/CalendarService.swift`
+- Modify: `Visor/Core/NotchStore.swift`
+- Modify: `Visor/Support/Log.swift`
 - Modify: `project.yml`
 
 **Interfaces:**
@@ -528,7 +528,7 @@ Calendar is deliberately **not** an `ActivityKind` — it is ambient context for
 
 - [ ] **Step 1: Add a `calendar` logging category**
 
-In `Notchy/Support/Log.swift`, add alongside the existing `app`/`window`/`battery`/`nowPlaying` categories:
+In `Visor/Support/Log.swift`, add alongside the existing `app`/`window`/`battery`/`nowPlaying` categories:
 
 ```swift
     static let calendar = Logger(subsystem: subsystem, category: "calendar")
@@ -536,7 +536,7 @@ In `Notchy/Support/Log.swift`, add alongside the existing `app`/`window`/`batter
 
 - [ ] **Step 2: Extend `NotchStore`**
 
-Add to `Notchy/Core/NotchStore.swift`, inside the existing class:
+Add to `Visor/Core/NotchStore.swift`, inside the existing class:
 
 ```swift
     private(set) var calendarEvents: [CalendarEvent] = []
@@ -548,10 +548,10 @@ Add to `Notchy/Core/NotchStore.swift`, inside the existing class:
 
 - [ ] **Step 3: Add the usage-description key to `project.yml`**
 
-In `project.yml`, under `targets: Notchy: info: properties:`, add alongside the existing `LSUIElement` and `NSHumanReadableCopyright`:
+In `project.yml`, under `targets: Visor: info: properties:`, add alongside the existing `LSUIElement` and `NSHumanReadableCopyright`:
 
 ```yaml
-        NSCalendarsFullAccessUsageDescription: "Notchy shows your upcoming events in the notch."
+        NSCalendarsFullAccessUsageDescription: "Visor shows your upcoming events in the notch."
 ```
 
 `NSCalendarsFullAccessUsageDescription` is the key required for read access on macOS 14+ (verified against MacOSX27.0.sdk — see Global Constraints). The legacy `NSCalendarsUsageDescription` is not needed since the deployment target is 14.0.
@@ -561,7 +561,7 @@ Then run: `xcodegen generate`
 - [ ] **Step 4: Implement `CalendarService`**
 
 ```swift
-// Notchy/Features/Calendar/CalendarService.swift
+// Visor/Features/Calendar/CalendarService.swift
 import AppKit
 import EventKit
 
@@ -660,12 +660,12 @@ final class CalendarService: NotchService {
 
 - [ ] **Step 5: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean. `CalendarService` is unreferenced until Task 9; that's expected mid-plan.
 
 - [ ] **Step 6: Run tests**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: Task 5's mapper tests plus the existing suite all pass.
 
 - [ ] **Step 7: Format, lint, and stop for review**
@@ -678,7 +678,7 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 7: `EventRow` — the shared agenda row
 
 **Files:**
-- Create: `Notchy/UI/EventRow.swift`
+- Create: `Visor/UI/EventRow.swift`
 
 **Interfaces:**
 - Consumes: `CalendarEvent` (Task 5).
@@ -691,7 +691,7 @@ Lives in `UI/`, not `Features/Calendar/`, because Task 9's `ExpandedMusicView` c
 - [ ] **Step 1: Implement `EventRow`**
 
 ```swift
-// Notchy/UI/EventRow.swift
+// Visor/UI/EventRow.swift
 import SwiftUI
 
 struct EventRow: View {
@@ -748,7 +748,7 @@ extension Color {
 
 - [ ] **Step 2: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean. Unreferenced until Task 8.
 
 - [ ] **Step 3: Format, lint, and stop for review**
@@ -761,9 +761,9 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 8: `ExpandedIdleView`, `ExpandedMusicView`, `MoodChipBar`
 
 **Files:**
-- Create: `Notchy/UI/ExpandedIdleView.swift`
-- Create: `Notchy/UI/ExpandedMusicView.swift`
-- Create: `Notchy/UI/MoodChipBar.swift`
+- Create: `Visor/UI/ExpandedIdleView.swift`
+- Create: `Visor/UI/ExpandedMusicView.swift`
+- Create: `Visor/UI/MoodChipBar.swift`
 
 **Interfaces:**
 - Consumes: `CalendarEvent`, `CalendarEventMapper` (Task 5), `EventRow` (Task 7), `NowPlayingInfo`, `NotchStore.NowPlayingCommands` (Phase 2), `Motion.artSwap`/`textSwap`/`chipBarIn`/`chipBarOut` (Task 2), `NotchGeometry.chipBarHeight`/`chipBarGap` (Task 1).
@@ -776,7 +776,7 @@ No unit tests — pure SwiftUI layout, matching the project convention. Covered 
 Per the spec's §8 default, the "By Apurva" signature is **kept**, living beside the date header rather than being deleted.
 
 ```swift
-// Notchy/UI/ExpandedIdleView.swift
+// Visor/UI/ExpandedIdleView.swift
 import SwiftUI
 
 /// Expanded, nothing playing: the day's full agenda in two columns.
@@ -840,12 +840,12 @@ struct ExpandedIdleView: View {
 }
 ```
 
-*Note for the implementer:* `SignatureGlow` currently lives as a `private struct` at the bottom of `Notchy/UI/NotchRootView.swift`. Move it into its own file `Notchy/UI/SignatureGlow.swift` and drop the `private` so both files can use it. Keep its body, `@State`, maroon colour, `.title3`/`.semibold` font, and `Motion.pulse` usage byte-for-byte as they are — the user tuned that deliberately.
+*Note for the implementer:* `SignatureGlow` currently lives as a `private struct` at the bottom of `Visor/UI/NotchRootView.swift`. Move it into its own file `Visor/UI/SignatureGlow.swift` and drop the `private` so both files can use it. Keep its body, `@State`, maroon colour, `.title3`/`.semibold` font, and `Motion.pulse` usage byte-for-byte as they are — the user tuned that deliberately.
 
 - [ ] **Step 2: Implement `MoodChipBar`**
 
 ```swift
-// Notchy/UI/MoodChipBar.swift
+// Visor/UI/MoodChipBar.swift
 import SwiftUI
 
 /// Docked under the expanded island while playback is active. Selection is
@@ -895,7 +895,7 @@ struct MoodChipBar: View {
 - [ ] **Step 3: Implement `ExpandedMusicView`**
 
 ```swift
-// Notchy/UI/ExpandedMusicView.swift
+// Visor/UI/ExpandedMusicView.swift
 import SwiftUI
 
 /// Expanded with something playing: music on the left, a trimmed calendar
@@ -1012,7 +1012,7 @@ struct ExpandedMusicView: View {
 
 - [ ] **Step 4: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean. These views are unreferenced until Task 9.
 
 - [ ] **Step 5: Format, lint, and stop for review**
@@ -1025,10 +1025,10 @@ Expected: clean apart from the 7 known pre-existing warnings.
 ### Task 9: Wire it together — `NotchRootView` routing, chip-bar docking, hit-test union, app wiring
 
 **Files:**
-- Modify: `Notchy/UI/NotchRootView.swift`
-- Create: `Notchy/UI/SignatureGlow.swift` (moved out of `NotchRootView.swift` — see Task 8 Step 1)
-- Modify: `Notchy/Window/NotchContentView.swift`
-- Modify: `Notchy/App/AppDelegate.swift`
+- Modify: `Visor/UI/NotchRootView.swift`
+- Create: `Visor/UI/SignatureGlow.swift` (moved out of `NotchRootView.swift` — see Task 8 Step 1)
+- Modify: `Visor/Window/NotchContentView.swift`
+- Modify: `Visor/App/AppDelegate.swift`
 
 **Interfaces:**
 - Consumes: everything from Tasks 1–8.
@@ -1119,7 +1119,7 @@ The calendar column compressing and the music column growing must be **one** coo
 
 - [ ] **Step 4: Extend `hitTest` with the chip-bar rect**
 
-In `Notchy/Window/NotchContentView.swift`, replace the body of `hitTest(_:)`:
+In `Visor/Window/NotchContentView.swift`, replace the body of `hitTest(_:)`:
 
 ```swift
     /// Click-through outside the shape's silhouette. Tested against the
@@ -1177,7 +1177,7 @@ The island's shape path must be built against the island's own rect, not the ful
 - [ ] **Step 5: Wire the new services into `AppDelegate`**
 
 ```swift
-// Notchy/App/AppDelegate.swift
+// Visor/App/AppDelegate.swift
 import AppKit
 
 @MainActor
@@ -1191,7 +1191,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         guard let controller = NotchWindowController(store: store) else {
-            Log.app.error("No screen available; Notchy cannot display the island.")
+            Log.app.error("No screen available; Visor cannot display the island.")
             NSApp.terminate(nil)
             return
         }
@@ -1227,12 +1227,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 - [ ] **Step 6: Build**
 
-Run: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
+Run: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 Expected: builds clean.
 
 - [ ] **Step 7: Run tests**
 
-Run: `xcodebuild -scheme Notchy test | xcbeautify`
+Run: `xcodebuild -scheme Visor test | xcbeautify`
 Expected: everything passes — `CalendarEventMapperTests`, `ActivityTests`, `BatteryInfoParserTests`, `NowPlayingInfoTests`, `NotchGeometryTests`, `NotchShapeTests`, `NotchStoreTests`.
 
 - [ ] **Step 8: Format, lint, and stop for review**

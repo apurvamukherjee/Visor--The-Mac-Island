@@ -10,7 +10,7 @@ struct SettingsView: View {
     private var launchAtLoginHint: String {
         LaunchAtLogin.isInstalled
             ? "macOS refused the login-item change. Check Login Items in System Settings."
-            : "Move Notchy to your Applications folder first — macOS won't register a login item "
+            : "Move Visor to your Applications folder first — macOS won't register a login item "
             + "for an app running from a build folder or a disk image."
     }
 
@@ -24,7 +24,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 18) {
             VStack(spacing: 4) {
-                Text("Notchy")
+                Text("Visor")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                 Text("Version \(version)")
                     .font(.callout)
@@ -59,7 +59,7 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
 
-            Button("Quit Notchy") {
+            Button("Quit Visor") {
                 NSApplication.shared.terminate(nil)
             }
         }

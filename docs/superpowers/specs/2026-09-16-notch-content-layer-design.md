@@ -1,4 +1,4 @@
-# Notchy Phase 3 — Content Layer (material, calendar, expanded layouts, motion)
+# Visor Phase 3 — Content Layer (material, calendar, expanded layouts, motion)
 
 > Design spec. Status: approved in brainstorm 2026-09-16, pending implementation plan.
 > Supersedes the Phase 2 expanded/compact *content* views. Does **not** touch the
@@ -50,7 +50,7 @@ intermediate frames, and coordinated (not sequential) multi-property transitions
 
 ## 5. Geometry
 
-`Notchy/Window/NotchGeometry.swift`:
+`Visor/Window/NotchGeometry.swift`:
 
 ```
 expandedSize   320×120  →  600×220     (starting values, tune by eye)
@@ -109,7 +109,7 @@ Both are read at render time, and both post change notifications
 
 ## 7. Calendar
 
-New feature folder `Notchy/Features/Calendar/`.
+New feature folder `Visor/Features/Calendar/`.
 
 **`CalendarEvent`** — pure model, the unit-testable surface:
 

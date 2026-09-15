@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct NotchyApp: App {
+struct VisorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {

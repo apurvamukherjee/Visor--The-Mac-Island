@@ -1,4 +1,4 @@
-# Notchy
+# Visor
 
 Native macOS Dynamic Island–style app for the MacBook notch.
 Priorities, in order: feels like iOS → near-zero idle power → clean, small codebase.
@@ -14,8 +14,8 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
 
 ## Commands
 - Generate: `xcodegen generate`
-- Build: `xcodebuild -scheme Notchy -configuration Debug build | xcbeautify`
-- Test: `xcodebuild -scheme Notchy test | xcbeautify`
+- Build: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
+- Test: `xcodebuild -scheme Visor test | xcbeautify`
 - Format: `swiftformat .`   Lint: `swiftlint`
 - Run build, tests, format and lint before saying a task is done.
 
@@ -102,7 +102,7 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   quit) opened by right-clicking the island — an accessory app has no menu
   bar; haptics on both trackpad gestures; `.numericText()` on the battery
   percentage; `PlaybackBars` beat animation. `scripts/make-dmg.sh` builds a
-  local ad-hoc `dist/Notchy.dmg` (no sharing, no App Store — §0).
+  local ad-hoc `dist/Visor.dmg` (no sharing, no App Store — §0).
 - **Cleanup pass (2026-09-16):** −133 lines net. Activity model down to the
   two kinds anything produces (`.timer`/`.hud` return with their features);
   `Activity.expiresAt` dropped — `BatteryService.peekTask` was already the

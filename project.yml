@@ -1,4 +1,4 @@
-name: Notchy
+name: Visor
 options:
   bundleIdPrefix: com.apurvamukherjee
   deploymentTarget:
@@ -12,21 +12,22 @@ packages:
     url: https://github.com/ejbills/mediaremote-adapter.git
     revision: 5b6afde3f501a3da567e23bf7f23d562938a1809
 targets:
-  Notchy:
+  Visor:
     type: application
     platform: macOS
     dependencies:
       - package: MediaRemoteAdapter
         embed: true
     sources:
-      - path: Notchy
+      - path: Visor
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.notchy
-        CODE_SIGN_ENTITLEMENTS: Notchy.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.visor
+        CODE_SIGN_ENTITLEMENTS: Visor.entitlements
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # Ad-hoc signing gives the app a new identity on every build, so TCC
         # re-asks for calendar access each time. A stable identity fixes it.
         # Add your Apple ID in Xcode > Settings > Accounts (free is enough),
@@ -40,26 +41,26 @@ targets:
       properties:
         LSUIElement: true
         NSHumanReadableCopyright: "Copyright © 2026 Apurva Mukherjee"
-        NSCalendarsFullAccessUsageDescription: "Notchy shows your upcoming events in the notch."
-  NotchyTests:
+        NSCalendarsFullAccessUsageDescription: "Visor shows your upcoming events in the notch."
+  VisorTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - path: NotchyTests
+      - path: VisorTests
     dependencies:
-      - target: Notchy
+      - target: Visor
       - package: MediaRemoteAdapter
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  Notchy:
+  Visor:
     build:
       targets:
-        Notchy: all
-        NotchyTests: [test]
+        Visor: all
+        VisorTests: [test]
     test:
       targets:
-        - NotchyTests
+        - VisorTests
     run:
       config: Debug

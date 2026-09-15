@@ -1,7 +1,7 @@
 import Foundation
 import MediaRemoteAdapter
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct NowPlayingInfoTests {
     @Test

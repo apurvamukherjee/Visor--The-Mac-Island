@@ -1,7 +1,7 @@
 import os
 
 enum Log {
-    private static let subsystem = "com.apurvamukherjee.notchy"
+    private static let subsystem = "com.apurvamukherjee.visor"
 
     static let app = Logger(subsystem: subsystem, category: "app")
     static let window = Logger(subsystem: subsystem, category: "window")

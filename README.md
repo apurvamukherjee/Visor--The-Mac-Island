@@ -1,14 +1,14 @@
-# Notchy
+# Visor
 
 The MacBook notch, turned into a Dynamic Island.
 
-Hover it and it grows into your music and your day. Move away and it disappears back into the hardware cutout — invisible, and costing nothing.
+The black bar above your screen stops being dead space. Hover it and it grows into your music and your day; move away and it disappears back into the hardware cutout — invisible, and costing nothing.
 
-![Notchy expanded, showing album art, transport controls and the day's agenda](docs/screenshots/expanded.png)
+![Visor expanded, showing album art, transport controls and the day's agenda](docs/screenshots/expanded.png)
 
 Not hovering? It sits in the notch itself: album art, live playback bars, battery.
 
-![Notchy in its compact state, album art and playback bars on the left, battery on the right](docs/screenshots/compact.png)
+![Visor in its compact state, album art and playback bars on the left, battery on the right](docs/screenshots/compact.png)
 
 ---
 
@@ -56,7 +56,7 @@ The rules that get it there:
 
 ```bash
 xcodegen generate
-xcodebuild -scheme Notchy -configuration Debug build
+xcodebuild -scheme Visor -configuration Debug build
 ```
 
 Or package a local `.dmg`:
@@ -65,7 +65,7 @@ Or package a local `.dmg`:
 ./scripts/make-dmg.sh
 ```
 
-Drag it to `/Applications` and launch. It lives entirely in the notch — no Dock icon, no menu bar item.
+Drag it to `/Applications` and launch. Visor lives entirely in the notch — no Dock icon, no menu bar item, nothing to close.
 
 > Calendar permissions are bound to the app's code signature. Add an Apple ID in Xcode → Settings → Accounts (the free tier is enough) and set `DEVELOPMENT_TEAM` in `project.yml`, or macOS will forget the grant on every rebuild.
 

@@ -1,6 +1,6 @@
 import IOKit.ps
 import Testing
-@testable import Notchy
+@testable import Visor
 
 struct BatteryInfoParserTests {
     @Test
