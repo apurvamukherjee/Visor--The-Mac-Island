@@ -14,10 +14,13 @@ struct NotchGeometryTests {
 
         let rect = NotchGeometry.closedRect(for: screen)
 
-        #expect(rect.width == 200)
-        #expect(rect.height == 32)
-        #expect(rect.minX == 656)
-        #expect(rect.minY == 950)
+        // Reported cutout is 200x32 at x 656; the hardware trim narrows and
+        // lengthens it, keeping it centred on the same midpoint.
+        let trim = NotchGeometry.calibration
+        #expect(rect.width == 200 - trim.widthInset)
+        #expect(rect.height == 32 + trim.heightOffset)
+        #expect(rect.midX == 756 + trim.horizontalOffset)
+        #expect(rect.maxY == 982)
     }
 
     @Test

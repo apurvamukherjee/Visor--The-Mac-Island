@@ -42,20 +42,48 @@ enum NotchGeometry {
     static let fallbackClosedSize = CGSize(width: 200, height: 32)
     static let compactExtraWidth: CGFloat = 160
 
-    /// Notch bounding box from the real hardware cutout, or a centered
-    /// pill-sized fallback on non-notched screens.
+    /// Hardware trim for the closed silhouette. macOS reports the auxiliary
+    /// areas and safe-area inset in whole points, but the physical cutout's
+    /// edges don't land exactly on them — drawn straight from those numbers
+    /// the shape reads a touch wide and a touch short against the real notch,
+    /// which is visible to the eye even at a point or two. All zeros = draw
+    /// exactly what the OS reports.
+    ///
+    /// Units are points: on a 2x display 0.5 is one physical pixel, which is
+    /// the finest useful adjustment. Positive `widthInset` narrows the shape
+    /// (split evenly across both sides); positive `heightOffset` extends it
+    /// further down, since the top edge stays welded to the screen edge.
+    struct Calibration {
+        var widthInset: CGFloat
+        var heightOffset: CGFloat
+        var horizontalOffset: CGFloat
+    }
+
+    /// Measured against a 15" M4 MacBook Air by eye — adjust here, nowhere
+    /// else, and only against the real hardware.
+    static let calibration = Calibration(widthInset: 1, heightOffset: 1, horizontalOffset: 0)
+
+    /// Notch bounding box from the real hardware cutout, trimmed by
+    /// `calibration`, or a centered pill-sized fallback on non-notched
+    /// screens (which has no cutout to match, so it takes no trim).
     static func closedRect(for screen: ScreenGeometryProviding) -> CGRect {
-        let height = screen.safeAreaInsets.top
+        let reportedHeight = screen.safeAreaInsets.top
         guard
-            height > 0,
+            reportedHeight > 0,
             let left = screen.auxiliaryTopLeftArea,
             let right = screen.auxiliaryTopRightArea,
             right.minX > left.maxX
         else {
             return fallbackRect(for: screen)
         }
-        let width = right.minX - left.maxX
-        return CGRect(x: left.maxX, y: screen.frame.maxY - height, width: width, height: height)
+        let width = right.minX - left.maxX - calibration.widthInset
+        let height = reportedHeight + calibration.heightOffset
+        return CGRect(
+            x: left.maxX + calibration.widthInset / 2 + calibration.horizontalOffset,
+            y: screen.frame.maxY - height,
+            width: width,
+            height: height
+        )
     }
 
     /// Shares the closed rect's horizontal center and top edge, per the
