@@ -21,10 +21,21 @@ struct ExpandedMusicView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             musicColumn
-            Divider().overlay(.white.opacity(0.12))
+            separator
             calendarColumn
         }
         .foregroundStyle(.white)
+    }
+
+    /// A hairline inset equally top and bottom, so it reads as centred
+    /// between the columns rather than a full-height rule cutting the island
+    /// in two.
+    private var separator: some View {
+        Capsule()
+            .fill(.white.opacity(0.12))
+            .frame(width: 1)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 8)
     }
 
     /// Art beside the title, transport underneath: at a 400pt island the

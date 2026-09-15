@@ -12,6 +12,7 @@ final class NotchWindowController {
     private let panel: NotchPanel
     private let contentView: NotchContentView
     private let canvasSize: CGSize
+    private let skyLight = SkyLightPin()
     private var generation = 0
     private var isHovering = false
     private var isDisplayAsleep = false
@@ -44,6 +45,8 @@ final class NotchWindowController {
 
     func start() {
         panel.orderFrontRegardless()
+        // After ordering front: `windowNumber` isn't valid until then.
+        skyLight.pin(panel)
         registerActivityObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -76,6 +79,7 @@ final class NotchWindowController {
     }
 
     func stop() {
+        skyLight.unpin()
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         if let screenObserver {

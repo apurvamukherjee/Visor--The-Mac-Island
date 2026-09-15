@@ -92,7 +92,11 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   taller one so it morphs instead of resizing) with a single camera-housing
   clearance; music peek trimmed to one event; transport row given 38×34
   targets under the art + title; `hidesOnDeactivate` disabled so the panel
-  survives a Space switch (NSPanel defaults it to true).
+  survives a Space switch (NSPanel defaults it to true); album-art card flip
+  and rising title on track change; trackpad gestures (two-finger swipe =
+  track change, two-finger double tap = play/pause) on the panel view;
+  `SkyLightPin` moves the panel into a private SkyLight space so desktop
+  swipes slide underneath it instead of dragging it along.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
