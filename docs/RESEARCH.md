@@ -21,6 +21,7 @@
 | Min macOS | 14.0 (Sonoma) | `@Observable`, `withAnimation` completions, `.spring(duration:bounce:)` |
 | License | Decide up front (see §1.3) | GPL projects are the best references but can't be copied into an MIT app |
 | Distribution | **Offline `.dmg`, ad-hoc/unsigned** — personal use + sharing with friends manually. No App Store, no auto-update server. | No Apple Developer Program yet. Notarized signing stays a Phase 5 item (§8); revisit only if a paid dev account happens. |
+| Code signing | **Free Apple Development identity** (Xcode > Settings > Accounts, no paid program) | Not for distribution — for TCC. Permissions are bound to the code signature; ad-hoc signing changes the cdhash every build, so macOS re-asked for calendar access on every launch. A stable identity makes the grant stick. `DEVELOPMENT_TEAM` in project.yml |
 | Attribution | **"by Apurva"**, shown once in the app's Settings/About area (Phase 3 settings window) | Keeps the notch UI itself clean, per the "feels like iOS" priority — attribution doesn't belong in the live surface |
 | Island surface | **Pure black, hard-edged, every state.** Nothing may paint outside the silhouette | Two attempts broke the closed state's invisibility and were reverted (2026-09-16): an `NSVisualEffectView(.hudWindow)` material (washed grey against a bright wallpaper) and a blurred outer bleed (a blur extends *past* its shape, smearing a visible dark halo onto screen either side of the notch) |
 | Space pinning | Private SkyLight space at absolute level 100 (`SkyLightPin`) | `.canJoinAllSpaces` only makes the window *present* on each desktop — it stays in the desktop layer, so a four-finger swipe drags it with the wallpaper. A space with a non-zero absolute level sits outside the desktop set like the menu bar, so desktops slide underneath. Level 100 is above every normal window but below the security agent (200) and screen lock (300). Every symbol is `dlsym`'d; if any lookup fails the app degrades to today's behaviour. Verified on macOS 26.6 — recheck each major release |
@@ -277,6 +278,24 @@ Validate in Phase 1 that frame changes cause no flicker or content jump. **Fallb
 | Compact, music playing | < 0.5% | Only the adapter stream + occasional updates |
 | Expanded, animating | Short spikes only | Must settle back to idle within ~0.5 s |
 | Memory | < 60 MB | Artwork cache capped |
+
+### 5.1b Measured regression, 2026-09-16
+
+Idle-with-music sat at ~5% CPU. `sample` showed the main thread in
+`CA::Transaction::flush_as_runloop_observer` -> `NSHostingView.layout()` every
+frame: `PlaybackBars` animated `frame(height:)`, a *layout* property, so each
+frame invalidated layout and re-ran the SwiftUI view graph. Rebuilt on
+`CALayer` + `CABasicAnimation(transform.scale.y)`; measured A/B against the
+old build on the same track: 5.2% -> 0.0%, zero frames in either hot symbol.
+
+Two supporting fixes, same pass: `NowPlayingInfo` no longer carries playback
+position (the adapter re-emits it constantly and nothing drew it, so every
+tick rewrote the store and re-rendered the island), and `NotchStore.activate`
+/`deactivate` plus the battery write now compare before mutating — assigning
+an equal value still fires an `@Observable` notification.
+
+**Rule this adds:** never animate a layout property in a loop. Animate
+transforms, or drop to `CALayer` and let the render server own it.
 
 ### 5.2 Rules
 

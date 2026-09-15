@@ -114,8 +114,16 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   stops mid-track.
 - **Calendar permission loop:** caused by ad-hoc signing — TCC keys grants to
   the code signature, and every build has a new cdhash. Fix is a stable
-  identity: `scripts/make-signing-cert.sh` (one-time, then set
-  `CODE_SIGN_IDENTITY` in project.yml).
+  identity: add an Apple ID in Xcode > Settings > Accounts (free tier is
+  enough) and set `DEVELOPMENT_TEAM` in project.yml.
+- **Power fix (2026-09-16):** ~5% CPU while playing traced by `sample` to
+  `PlaybackBars` animating `frame(height:)` — a layout property, so SwiftUI
+  re-ran the view graph every frame. Rebuilt on CALayer/CABasicAnimation;
+  measured A/B on the same track: **5.2% -> 0.0%**. Also trimmed playback
+  position out of `NowPlayingInfo` (adapter re-emits it constantly, nothing
+  drew it) and made store activate/deactivate/battery writes compare before
+  mutating. Rule added to RESEARCH §5.1b: never animate a layout property in
+  a loop.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

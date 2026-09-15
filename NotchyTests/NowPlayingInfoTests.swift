@@ -30,8 +30,6 @@ struct NowPlayingInfoTests {
         #expect(info?.title == "Song")
         #expect(info?.artist == "Artist")
         #expect(info?.isPlaying == true)
-        #expect(info?.duration == 200)
-        #expect(info?.elapsedTime == 50)
         #expect(info?.trackIdentity == "com.example.player:Song:Artist")
     }
 

@@ -82,7 +82,6 @@ struct ExpandedMusicView: View {
         DragGesture(minimumDistance: 20)
             .onEnded { value in
                 guard abs(value.translation.width) > NotchContentView.swipeThreshold else { return }
-                Haptics.selection()
                 if value.translation.width < 0 {
                     commands?.next()
                 } else {
@@ -141,15 +140,12 @@ struct ExpandedMusicView: View {
     private var controls: some View {
         HStack(spacing: 8) {
             transportButton("backward.fill", size: 16) {
-                Haptics.selection()
                 commands?.previous()
             }
             transportButton(info.isPlaying ? "pause.fill" : "play.fill", size: 22) {
-                Haptics.toggle()
                 commands?.togglePlayPause()
             }
             transportButton("forward.fill", size: 16) {
-                Haptics.selection()
                 commands?.next()
             }
         }

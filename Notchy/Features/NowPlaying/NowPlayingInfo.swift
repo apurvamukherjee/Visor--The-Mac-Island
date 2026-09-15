@@ -1,14 +1,14 @@
 import Foundation
 import MediaRemoteAdapter
 
+/// Only what the island draws. Playback position used to live here too, and
+/// since the adapter re-emits it constantly, every position tick rewrote the
+/// store and re-rendered the whole island for a value nothing displayed.
+/// Equatable is load-bearing: `NowPlayingService` compares before writing.
 struct NowPlayingInfo: Equatable {
     let title: String
     let artist: String?
     let isPlaying: Bool
-    let elapsedTime: TimeInterval
-    let duration: TimeInterval?
-    let timestamp: Date
-    let playbackRate: Double
     /// Cache key for artwork — changes only when the actual track changes.
     let trackIdentity: String
 
@@ -19,10 +19,6 @@ struct NowPlayingInfo: Equatable {
             title: title,
             artist: payload.artist,
             isPlaying: isPlaying,
-            elapsedTime: (payload.elapsedTimeMicros ?? 0) / 1_000_000,
-            duration: payload.durationMicros.map { $0 / 1_000_000 },
-            timestamp: payload.timestampEpochMicros.map { Date(timeIntervalSince1970: $0 / 1_000_000) } ?? .now,
-            playbackRate: payload.playbackRate ?? (isPlaying ? 1 : 0),
             trackIdentity: "\(payload.bundleIdentifier ?? ""):\(title):\(payload.artist ?? "")"
         )
     }

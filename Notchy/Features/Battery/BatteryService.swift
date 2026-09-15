@@ -54,7 +54,10 @@ final class BatteryService: NotchService {
             Log.battery.error("Could not read power source info.")
             return
         }
-        store.battery = info
+        // IOPS notifies far more often than the reading changes.
+        if info != store.battery {
+            store.battery = info
+        }
         if let wasCharging, info.isCharging, !wasCharging {
             schedulePeek()
         }

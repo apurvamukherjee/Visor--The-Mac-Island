@@ -5,56 +5,137 @@ import SwiftUI
 /// would be a lie. Staggered phases read as music without pretending to be
 /// data.
 ///
-/// Core Animation drives the loop on the render server: no timer, no
-/// per-frame SwiftUI work. It still only exists while something is playing,
-/// and stops dead when playback pauses, per the power rules.
+/// Backed by `CALayer` rather than animated SwiftUI views on purpose. The
+/// SwiftUI version animated `frame(height:)`, which is a *layout* property:
+/// every frame invalidated layout and re-ran the view graph on the main
+/// thread, which measured at ~4% CPU for the whole app. These animations are
+/// handed to the render server once and cost the main thread nothing until
+/// playback stops.
 struct PlaybackBars: View {
     var isPlaying: Bool
     var height: CGFloat = 12
 
-    /// Environment, not a one-shot read of `Motion.reduceMotion`: the system
-    /// setting can be switched on mid-track, and the bars are the only
-    /// unbounded animation in the app — they have to stop when it is.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var isBouncing = false
+    var body: some View {
+        Bars(isBouncing: isPlaying && !reduceMotion, height: height)
+            // A representable has no opinion about its size, so without this
+            // SwiftUI hands it every point on offer — which stretched the
+            // expanded scrim across the whole album cover.
+            .frame(width: PlaybackBarsView.intrinsicWidth, height: height)
+            .fixedSize()
+    }
 
+    private struct Bars: NSViewRepresentable {
+        var isBouncing: Bool
+        var height: CGFloat
+
+        func makeNSView(context _: Context) -> PlaybackBarsView {
+            PlaybackBarsView()
+        }
+
+        func updateNSView(_ view: PlaybackBarsView, context _: Context) {
+            view.setBouncing(isBouncing)
+        }
+
+        func sizeThatFits(_: ProposedViewSize, nsView _: PlaybackBarsView, context _: Context) -> CGSize? {
+            CGSize(width: PlaybackBarsView.intrinsicWidth, height: height)
+        }
+
+        @MainActor
+        static func dismantleNSView(_ view: PlaybackBarsView, coordinator _: ()) {
+            view.setBouncing(false)
+        }
+    }
+}
+
+/// Four capsules that scale about their centres. Scale, not height, so the
+/// animation is a layer transform the compositor owns outright.
+@MainActor
+final class PlaybackBarsView: NSView {
     private static let barCount = 4
     private static let barWidth: CGFloat = 2
-    private static let restingScale: CGFloat = 0.35
+    private static let spacing: CGFloat = 2
+    private static let restingScale = 0.35
+    private static let animationKey = "beat"
     /// Each bar lags the one before it, which is what stops the row reading
     /// as a single block pulsing.
     private static let stagger = 0.13
+    private static let beatDuration = 0.42
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 2) {
-            ForEach(0 ..< Self.barCount, id: \.self) { index in
-                Capsule()
-                    .frame(width: Self.barWidth, height: barHeight(index))
-                    .animation(animation(index), value: isBouncing)
-            }
+    static let intrinsicWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * spacing
+
+    private var bars: [CALayer] = []
+    private var isBouncing = false
+
+    init() {
+        super.init(frame: .zero)
+        wantsLayer = true
+        bars = (0 ..< Self.barCount).map { _ in
+            let bar = CALayer()
+            bar.backgroundColor = NSColor.white.cgColor
+            bar.cornerRadius = Self.barWidth / 2
+            bar.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            layer?.addSublayer(bar)
+            return bar
         }
-        .frame(height: height)
-        .onAppear { updateBounce() }
-        .onChange(of: isPlaying) { _, _ in updateBounce() }
-        .onChange(of: reduceMotion) { _, _ in updateBounce() }
     }
 
-    private func updateBounce() {
-        isBouncing = isPlaying && !reduceMotion
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        nil
+    }
+
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: Self.intrinsicWidth, height: NSView.noIntrinsicMetric)
+    }
+
+    /// Laid out from `bounds`, not from init: the view is sized by SwiftUI
+    /// after creation, and at two different heights (compact wing, expanded
+    /// artwork). Implicit animations are off, or every layout pass would
+    /// animate the bars sliding into place.
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (index, bar) in bars.enumerated() {
+            bar.bounds = CGRect(x: 0, y: 0, width: Self.barWidth, height: bounds.height)
+            bar.position = CGPoint(
+                x: CGFloat(index) * (Self.barWidth + Self.spacing) + Self.barWidth / 2,
+                y: bounds.midY
+            )
+            if !isBouncing {
+                bar.setValue(Self.restingHeightScale(index), forKeyPath: "transform.scale.y")
+            }
+        }
+        CATransaction.commit()
+    }
+
+    func setBouncing(_ bouncing: Bool) {
+        guard bouncing != isBouncing else { return }
+        isBouncing = bouncing
+        guard bouncing else {
+            bars.forEach { $0.removeAnimation(forKey: Self.animationKey) }
+            needsLayout = true
+            return
+        }
+        let start = CACurrentMediaTime()
+        for (index, bar) in bars.enumerated() {
+            let beat = CABasicAnimation(keyPath: "transform.scale.y")
+            beat.fromValue = Self.restingHeightScale(index)
+            beat.toValue = index.isMultiple(of: 2) ? 0.6 : 1.0
+            beat.duration = Self.beatDuration
+            beat.autoreverses = true
+            beat.repeatCount = .infinity
+            beat.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            beat.beginTime = start + Double(index) * Self.stagger
+            bar.add(beat, forKey: Self.animationKey)
+        }
     }
 
     /// Bars at rest sit at staggered heights rather than flat, so a paused
     /// track still reads as a track.
-    private func barHeight(_ index: Int) -> CGFloat {
-        let tall = index.isMultiple(of: 2) ? 0.6 : 1.0
-        return height * (isBouncing ? tall : Self.restingScale + CGFloat(index) * 0.08)
-    }
-
-    private func animation(_ index: Int) -> Animation? {
-        guard isBouncing else { return Motion.resolved(Motion.contentOut) }
-        return Motion.beat
-            .repeatForever(autoreverses: true)
-            .delay(Double(index) * Self.stagger)
+    private static func restingHeightScale(_ index: Int) -> Double {
+        restingScale + Double(index) * 0.08
     }
 }

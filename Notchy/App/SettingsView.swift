@@ -52,7 +52,7 @@ struct SettingsView: View {
 
             VStack(spacing: 6) {
                 Text("Hover the notch to expand it.")
-                Text("Two-finger swipe to change track, two-finger double tap to play or pause.")
+                Text("Two-finger swipe to change track. Double-click to play or pause.")
                 Text("Right-click the notch to open this window.")
             }
             .font(.footnote)
@@ -70,7 +70,6 @@ struct SettingsView: View {
     private func updateLaunchAtLogin(to enabled: Bool) {
         do {
             try LaunchAtLogin.setEnabled(enabled)
-            Haptics.toggle()
             launchAtLoginFailed = false
         } catch {
             Log.app.error("Launch at login failed: \(error.localizedDescription)")

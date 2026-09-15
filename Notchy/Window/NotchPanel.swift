@@ -23,13 +23,16 @@ final class NotchPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
     }
 
-    /// `NSHostingView` claims right-clicks and smart-magnify before they can
+    /// `NSHostingView` claims right-clicks, smart-magnify and double-clicks
+    /// before they can
     /// reach `NotchContentView`'s overrides, so they are intercepted here —
     /// ahead of dispatch — rather than waiting for the responder chain that
     /// never bubbles them back up. Scroll still goes the normal route: SwiftUI
     /// declines it, so the content view sees it.
     override func sendEvent(_ event: NSEvent) {
-        let intercepts = event.type == .rightMouseUp || event.type == .smartMagnify
+        let intercepts = event.type == .rightMouseUp
+            || event.type == .smartMagnify
+            || (event.type == .leftMouseUp && event.clickCount == 2)
         if intercepts, let view = contentView as? NotchContentView, view.handleInterceptedEvent(event) {
             return
         }

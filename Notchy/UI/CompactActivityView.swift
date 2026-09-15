@@ -8,6 +8,8 @@ import SwiftUI
 struct CompactActivityView: View {
     let store: NotchStore
 
+    @State private var chargeBounce = 0
+
     var body: some View {
         HStack {
             if let artwork = store.nowPlayingArtwork {
@@ -32,10 +34,22 @@ struct CompactActivityView: View {
         .padding(.horizontal, NotchShape.compactBottomRadius + 2)
     }
 
+    private func bounceIfCharging(_ info: BatteryInfo) {
+        guard info.isCharging else { return }
+        chargeBounce += 1
+    }
+
     private func batteryGlyph(_ info: BatteryInfo) -> some View {
         HStack(spacing: 3) {
             Image(systemName: info.isCharging ? "bolt.fill" : "battery.100")
                 .foregroundStyle(info.isCharging ? .yellow : .white)
+                .contentTransition(.symbolEffect(.replace))
+                // One bounce when the charger goes in. `value:` alone misses
+                // it, because the peek creates this view and flips the flag in
+                // the same pass — the onAppear covers that case.
+                .symbolEffect(.bounce, value: chargeBounce)
+                .onAppear { bounceIfCharging(info) }
+                .onChange(of: info.isCharging) { _, _ in bounceIfCharging(info) }
             Text("\(info.percentage)%")
                 .font(.system(.caption2, design: .rounded).monospacedDigit())
                 // Digits roll rather than pop when the charge moves.

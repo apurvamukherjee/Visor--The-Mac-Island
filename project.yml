@@ -27,10 +27,14 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        # Ad-hoc signing gives the app a new identity on every build, and TCC
-        # re-asks for calendar access each time. Run scripts/make-signing-cert.sh
-        # once, then set this to "Notchy Local Signing" to make the grant stick.
-        # CODE_SIGN_IDENTITY: "Notchy Local Signing"
+        # Ad-hoc signing gives the app a new identity on every build, so TCC
+        # re-asks for calendar access each time. A stable identity fixes it.
+        # Add your Apple ID in Xcode > Settings > Accounts (free is enough),
+        # then fill in DEVELOPMENT_TEAM below with the 10-character Team ID
+        # from that screen and uncomment both lines.
+        CODE_SIGN_STYLE: Automatic
+        # DEVELOPMENT_TEAM: XXXXXXXXXX
+        # CODE_SIGN_IDENTITY: "Apple Development"
     info:
       path: Generated-Info.plist
       properties:

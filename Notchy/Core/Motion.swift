@@ -22,8 +22,6 @@ enum Motion {
     static let artFlipOut = Animation.easeIn(duration: 0.16)
     /// second half: the new face swinging out with a little overshoot
     static let artFlipIn = Animation.spring(duration: 0.26, bounce: 0.28)
-    /// one bounce of a playback bar; paired with .repeatForever per bar
-    static let beat = Animation.easeInOut(duration: 0.42)
     /// title/artist swap — the new track's text rises into place
     static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
 

@@ -34,11 +34,16 @@ final class NotchStore {
         resolveCurrentActivity(activities)
     }
 
+    /// Both guard before mutating: assigning an equal value still fires an
+    /// `@Observable` notification, and these are called on every adapter and
+    /// power event, most of which change nothing.
     func activate(_ kind: ActivityKind) {
+        guard activities[kind] == nil else { return }
         activities[kind] = Activity(kind: kind)
     }
 
     func deactivate(_ kind: ActivityKind) {
+        guard activities[kind] != nil else { return }
         activities.removeValue(forKey: kind)
     }
 

@@ -75,7 +75,6 @@ final class NotchContentView: NSView {
         case .ended, .cancelled:
             defer { scrollOffset = 0 }
             guard abs(scrollOffset) > Self.swipeThreshold else { return }
-            Haptics.selection()
             if scrollOffset < 0 {
                 commands.next()
             } else {
@@ -93,13 +92,14 @@ final class NotchContentView: NSView {
     func handleInterceptedEvent(_ event: NSEvent) -> Bool {
         guard hitTest(event.locationInWindow) != nil else { return false }
         switch event.type {
-        case .smartMagnify:
+        // Two-finger double tap (`smartMagnify`) needs "Smart zoom" enabled in
+        // Trackpad settings, so a plain double-click is accepted too — same
+        // gesture for anyone who has that turned off, or is using a mouse.
+        case .smartMagnify, .leftMouseUp:
             guard let commands = store.nowPlayingCommands else { return false }
-            Haptics.toggle()
             commands.togglePlayPause()
             return true
         case .rightMouseUp:
-            Haptics.toggle()
             onShowSettings?()
             return true
         default:
