@@ -34,6 +34,10 @@ struct ExpandedMusicView: View {
     /// The face currently on screen, which lags `artwork` by half a flip.
     @State private var shownArtwork: CGImage?
     @State private var flipAngle = 0.0
+    /// Read on appear and after each toggle rather than observed: device mute
+    /// only changes when someone changes it, and a listener here would be a
+    /// live CoreAudio callback for a glyph nobody is looking at.
+    @State private var isMuted: Bool?
 
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
 
@@ -239,7 +243,15 @@ struct ExpandedMusicView: View {
             transportButton("forward.fill", size: 16) {
                 commands?.next()
             }
+            if let isMuted {
+                transportButton(isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: 15) {
+                    SystemMute.toggle()
+                    self.isMuted = SystemMute.isMuted
+                }
+                .foregroundStyle(isMuted ? .white : .white.opacity(0.55))
+            }
         }
+        .onAppear { isMuted = SystemMute.isMuted }
         .foregroundStyle(.white)
         .buttonStyle(.plain)
     }
