@@ -25,6 +25,12 @@ final class NotchStore {
     var state: NotchState = .closed
     var closedSize: CGSize = .zero
     var battery: BatteryInfo?
+    /// Bumped by `BatteryService` on either edge of the charging transition,
+    /// so the compact glyph's bounce is driven by the actual event rather
+    /// than inferred from view-mount timing — which broke down once the
+    /// glyph could also appear for reasons that have nothing to do with
+    /// charging (a screenshot catch, the wave, the greeting).
+    var batteryBounceTick = 0
     var nowPlayingCommands: NowPlayingCommands?
     var screenshotCommands: ScreenshotCommands?
     /// True while a file is being dragged over the island. The window
@@ -34,6 +40,10 @@ final class NotchStore {
     /// when the pointer is away. Only written while expanded.
     var hoverPoint: CGPoint?
     var calendarEvents: [CalendarEvent] = []
+    /// Set and cleared by `GreetingService`, which also owns `.greeting`'s
+    /// activation/dismissal — same split as `battery`, whose peek is likewise
+    /// driven by its service rather than the store.
+    var greetingText: Greeting?
 
     /// These three keep their setters because the setters do something:
     /// `activate`/`deactivate` own the dictionary's shape, and `setNowPlaying`
@@ -47,9 +57,34 @@ final class NotchStore {
     /// different view.
     private(set) var nowPlayingBleed: CGImage?
     private(set) var screenshot: ScreenshotCatch?
+    private var waveTask: Task<Void, Never>?
+
+    private static let waveDuration: TimeInterval = 1.2
 
     var currentActivity: Activity? {
         resolveCurrentActivity(activities)
+    }
+
+    /// True while the double-click easter egg's peek is showing.
+    var wave: Bool {
+        activities[.wave] != nil
+    }
+
+    /// The idle-island double-click easter egg. No-ops over any real
+    /// activity — it only ever fires into a genuinely empty island. Owns its
+    /// own dismiss timer directly, the way `BatteryService.schedulePeek`
+    /// does, since there is no external resource behind it that would need a
+    /// full `NotchService` to release.
+    func triggerWave() {
+        guard currentActivity == nil else { return }
+        Haptics.wave()
+        activate(.wave)
+        waveTask?.cancel()
+        waveTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.waveDuration), tolerance: .milliseconds(150))
+            guard !Task.isCancelled else { return }
+            self?.deactivate(.wave)
+        }
     }
 
     /// Both guard before mutating: assigning an equal value still fires an

@@ -59,14 +59,13 @@ struct SettingsView: View {
 
             Divider()
 
-            VStack(spacing: 6) {
-                Text("Hover the notch to expand it.")
-                Text("Two-finger swipe to change track. Double-click to play or pause.")
-                Text("Right-click the notch to open this window.")
+            VStack(spacing: 10) {
+                ShortcutRow(symbol: "cursorarrow.rays", label: "Hover the notch to expand it")
+                ShortcutRow(symbol: "hand.tap.fill", label: "Double-click to play or pause")
+                ShortcutRow(symbol: "hand.draw.fill", label: "Two-finger swipe to change track")
+                ShortcutRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
+                ShortcutRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
 
             Button("Quit Visor") {
                 NSApplication.shared.terminate(nil)
@@ -84,6 +83,26 @@ struct SettingsView: View {
             Log.app.error("Launch at login failed: \(error.localizedDescription)")
             launchAtLoginFailed = true
             launchAtLogin = LaunchAtLogin.isEnabled
+        }
+    }
+}
+
+/// One row of the shortcut sheet: a System Settings–style tinted icon tile
+/// plus a label, in place of the sentence-per-gesture prose this replaced.
+private struct ShortcutRow: View {
+    let symbol: String
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(.secondary, in: RoundedRectangle(cornerRadius: 6))
+            Text(label)
+                .font(.footnote)
+            Spacer(minLength: 0)
         }
     }
 }

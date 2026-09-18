@@ -8,4 +8,7 @@ enum Preferences {
     /// the cover is the honest representation of what's playing, and the
     /// record is a preference, not a fallback.
     static let vinylModeKey = "vinylMode"
+    /// `yyyy-MM-dd` of the last wake/login greeting shown, so it fires at
+    /// most once a day regardless of how many times the Mac wakes.
+    static let lastGreetingDayKey = "lastGreetingDay"
 }

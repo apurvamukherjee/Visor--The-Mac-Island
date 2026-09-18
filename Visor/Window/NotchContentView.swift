@@ -99,11 +99,18 @@ final class NotchContentView: NSView {
         // Trackpad settings, so a plain double-click is accepted too — same
         // gesture for anyone who has that turned off, or is using a mouse.
         case .smartMagnify, .leftMouseUp:
-            guard let commands = store.nowPlayingCommands else { return false }
             // A double-click that landed on a control belongs to that control.
             // Swallowing it here turned a double-tap on the transport buttons
             // or the screenshot chip's dismiss badge into a play/pause.
             guard event.type == .smartMagnify || !isOverInteractiveContent(event) else { return false }
+            // `nowPlayingCommands` is set for the app's whole lifetime, so
+            // this is the only signal for "is there actually something to
+            // play or pause" — otherwise the double-click is a no-op on an
+            // idle island, which the wave easter egg takes over instead.
+            guard store.nowPlaying != nil, let commands = store.nowPlayingCommands else {
+                store.triggerWave()
+                return true
+            }
             commands.togglePlayPause()
             return true
         case .rightMouseUp:

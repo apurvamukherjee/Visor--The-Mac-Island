@@ -2,14 +2,15 @@ import AppKit
 import SwiftUI
 
 /// Idle compact indicator, shown whenever the notch has a live activity
-/// (charging peek or Now Playing) but isn't hovered. Deliberately content
-/// -agnostic about which activity triggered it: album art on the left wing
-/// while something's actually playing, battery reading always on the right
-/// wing. Controls/artist text live only in the expanded (hover) view.
+/// (screenshot catch, wave, charging peek, Now Playing, or the daily
+/// greeting) but isn't hovered. Deliberately content-agnostic about which
+/// activity triggered it: the left wing shows whichever won
+/// `resolveCurrentActivity`, battery reading always on the right wing.
+/// Controls/artist text live only in the expanded (hover) view.
 struct CompactActivityView: View {
     let store: NotchStore
 
-    @State private var chargeBounce = 0
+    @State private var waveBounce = 0
 
     var body: some View {
         HStack {
@@ -22,6 +23,19 @@ struct CompactActivityView: View {
                     onDropCompleted: { store.dismissScreenshot(shot) }
                 )
                 .transition(.scale(scale: 0.7).combined(with: .opacity))
+            } else if store.wave {
+                Image(systemName: "hand.wave.fill")
+                    .symbolEffect(.bounce, value: waveBounce)
+                    .onAppear {
+                        if !Motion.reduceMotion {
+                            waveBounce += 1
+                        }
+                    }
+            } else if let greeting = store.greetingText {
+                Image(systemName: greeting.symbolName)
+                Text(greeting.message)
+                    .font(.system(.caption2, design: .rounded))
+                    .lineLimit(1)
             } else {
                 if let artwork = store.nowPlayingArtwork {
                     Image(decorative: artwork, scale: 1)
@@ -52,22 +66,17 @@ struct CompactActivityView: View {
         store.setScreenshot(nil)
     }
 
-    private func bounceIfCharging(_ info: BatteryInfo) {
-        guard info.isCharging else { return }
-        chargeBounce += 1
-    }
-
     private func batteryGlyph(_ info: BatteryInfo) -> some View {
         HStack(spacing: 3) {
-            Image(systemName: info.isCharging ? "bolt.fill" : "battery.100")
-                .foregroundStyle(info.isCharging ? .yellow : .white)
+            Image(systemName: BatteryGlyph.symbolName(percentage: info.percentage, isCharging: info.isCharging))
+                .foregroundStyle(BatteryGlyph.tint(percentage: info.percentage, isCharging: info.isCharging))
                 .contentTransition(.symbolEffect(.replace))
-                // One bounce when the charger goes in. `value:` alone misses
-                // it, because the peek creates this view and flips the flag in
-                // the same pass — the onAppear covers that case.
-                .symbolEffect(.bounce, value: chargeBounce)
-                .onAppear { bounceIfCharging(info) }
-                .onChange(of: info.isCharging) { _, _ in bounceIfCharging(info) }
+                // Driven by `BatteryService`'s own tick rather than this
+                // view's mount/onChange timing: the glyph can also appear
+                // because of an unrelated compact peek (screenshot, wave,
+                // greeting), and that must never borrow a charge bounce it
+                // didn't earn.
+                .symbolEffect(.bounce, value: store.batteryBounceTick)
             Text("\(info.percentage)%")
                 .font(.system(.caption2, design: .rounded).monospacedDigit())
                 // Digits roll rather than pop when the charge moves.

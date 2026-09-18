@@ -58,12 +58,23 @@ final class BatteryService: NotchService {
         if info != store.battery {
             store.battery = info
         }
-        if let wasCharging, info.isCharging, !wasCharging {
+        // Symmetric: a peek on plugging in and on unplugging, since both are
+        // moments the user wants to see without having to hover. IOKit's
+        // callback already fires within the same runloop turn as the
+        // hardware event, so this is the whole latency budget — nothing
+        // else to speed up.
+        if let wasCharging, info.isCharging != wasCharging {
+            if !Motion.reduceMotion {
+                store.batteryBounceTick += 1
+            }
             schedulePeek()
         }
         wasCharging = info.isCharging
     }
 
+    /// Despite the name, this now peeks for either edge of the charging
+    /// transition — the icon itself (bolt vs. tiered `battery.*`) already
+    /// says which one happened.
     private func schedulePeek() {
         store.activate(.charging)
         peekTask?.cancel()

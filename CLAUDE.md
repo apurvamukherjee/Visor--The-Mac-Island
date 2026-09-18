@@ -166,6 +166,38 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   RESEARCH.md §5.1c.
 - **Known:** two `large_tuple` warnings in `AlbumColorTests` — an RGB triple
   is the honest shape for a colour; left as is.
+- **Small-features pass (2026-09-19):** four additions, all built on existing
+  mechanisms rather than new ones. Battery compact glyph now tiers symbol +
+  colour with charge level (`BatteryGlyph`, matching Control Center) instead
+  of always reading `battery.100`/white — visual only, no new peek. New
+  `GreetingService` shows a once-a-day "Good morning" compact peek on first
+  idle after login or after a `didWake` on a new day, modelled on
+  `BatteryService`'s charging peek (`.greeting` activity, lowest priority).
+  Idle double-click, previously a silent no-op when nothing was playing
+  (`nowPlayingCommands` is set for the app's whole lifetime, so the old code
+  called a dead-end adapter toggle), now fires a `.wave` compact peek instead
+  — double-click during playback still toggles play/pause unchanged. Settings
+  crib sheet restyled from three prose sentences to `ShortcutRow` icon+label
+  rows, System Settings–style; no behaviour change. `Haptics` gains two new
+  exceptions (`greeting()`, `wave()`) alongside the original `shapeChange()`
+  — both one-off, once-a-day-or-rarer, matching the original "chattery"
+  finding's bar rather than lowering it. Volume/brightness HUD (also
+  proposed) was dropped: it needs a global key monitor or CGEventTap, which
+  conflicts with the "no global monitors" rule and needs Accessibility
+  permission nothing else in the app asks for. Build, 59/59 tests,
+  swiftformat, swiftlint (2 warnings, 0 serious — same known large_tuple
+  pair) all pass. Plan: `~/.claude-me/plans/wobbly-purring-lollipop.md`.
+- **Battery disconnect follow-up (2026-09-19):** the charging peek only ever
+  fired on the plug-in edge; unplugging was silent. `BatteryService.refresh`
+  now peeks on either edge of the charging transition — the tiered glyph
+  itself (bolt vs. `battery.*`) already says which one happened. Latency was
+  already effectively zero (IOKit's callback + activity-driven `enterCompact`
+  need no hover), so this was a missing case, not a speed problem. Also
+  replaced the glyph's onAppear/onChange bounce heuristic — which could
+  mis-fire on an unrelated compact peek (screenshot, wave, greeting) — with
+  `store.batteryBounceTick`, bumped by the service itself on either edge and
+  skipped under Reduce Motion. Build, 59/59 tests, swiftformat, swiftlint (2
+  warnings, 0 serious) all pass.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
