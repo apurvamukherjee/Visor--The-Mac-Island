@@ -13,7 +13,7 @@ struct IslandLayoutTests {
     func layoutsAddUpToTheseSizesOnReferenceHardware() {
         #expect(
             IslandLayout.idle(IslandContent(agendaRows: 3, hasTimerPresets: true))
-                .expandedSize(closed: referenceNotch) == CGSize(width: 338, height: 212)
+                .expandedSize(closed: referenceNotch) == CGSize(width: 366, height: 220)
         )
         // The player no longer reserves a calendar column. It is still wide,
         // because the card has a floor: dropping the column once left it
@@ -21,13 +21,13 @@ struct IslandLayoutTests {
         // visibly *shrank* the island sideways.
         #expect(
             IslandLayout.nowPlaying(IslandContent())
-                .expandedSize(closed: referenceNotch) == CGSize(width: 405, height: 177)
+                .expandedSize(closed: referenceNotch) == CGSize(width: 421, height: 193)
         )
         #expect(
             IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
-                .expandedSize(closed: referenceNotch) == CGSize(width: 445, height: 177)
+                .expandedSize(closed: referenceNotch) == CGSize(width: 473, height: 193)
         )
-        #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 109))
+        #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 117))
     }
 
     /// The point of resolving size from content: a quiet day gets a

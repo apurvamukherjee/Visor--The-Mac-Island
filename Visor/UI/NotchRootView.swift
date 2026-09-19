@@ -16,11 +16,14 @@ struct NotchRootView: View {
     /// squash and the in-progress swipe squeeze. Both ride their own springs
     /// — that is the whole point of them being additive rather than extra
     /// curves on the frame.
+    /// The resting size displaced only by the collapse squash. The swipe no
+    /// longer squeezes the island: shrinking it mid-gesture made changing
+    /// track look like the notch was being dragged about, when all that is
+    /// happening is the next song starting. The island holds still.
     private var currentSize: CGSize {
         let base = restingSize
-        let squeeze = Motion.SwipeFeedback.compression(for: base.width) * store.swipeProgress
         return CGSize(
-            width: max(0, base.width + store.squashWidth - squeeze),
+            width: max(0, base.width + store.squashWidth),
             height: max(0, base.height + store.squashHeight)
         )
     }
