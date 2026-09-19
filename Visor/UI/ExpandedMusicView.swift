@@ -12,13 +12,19 @@ struct ExpandedMusicView: View {
     /// Anchor-based position, nil when the source app reports no duration.
     let progress: NowPlayingProgress?
     let events: [CalendarEvent]
+    /// Reports the lyrics panel's state back to the store, so the island
+    /// can resize for the second column before it draws.
+    var onLyricsVisibilityChange: ((Bool) -> Void)?
     /// Cursor position for the parallax tilt, nil when the pointer is away.
     let hoverPoint: CGPoint?
     /// Pre-blurred artwork for the halo behind the cover.
     let bleed: CGImage?
 
-    private static let peekLimit = 1
     private static let artworkSide: CGFloat = 56
+    /// Fixed, so a long title can never reflow the rows beneath it. Wide
+    /// enough to clear the date box in the corner above it, since the title
+    /// row is the one row that shares its height.
+    private static let textWidth: CGFloat = 190
     /// The record runs larger than the cover it replaces: a disc reads as a
     /// disc only once the grooves and the tonearm have room. Still inside the
     /// existing 168pt island — the height comes out of the music column's
@@ -51,13 +57,32 @@ struct ExpandedMusicView: View {
     @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
 
     var body: some View {
+        // The date is an overlay in the top-right corner, not a column.
+        // As a column it claimed full height for content that only fills the
+        // top of it, so the player was squeezed into the left while a tall
+        // strip of black sat beside it — and the full-height separator drew
+        // a line down the middle of that emptiness. The player now gets the
+        // whole width and the date sits in the corner it actually occupies.
+        //
+        // The lyrics panel is still a real column: it is full-height content.
         HStack(alignment: .top, spacing: IslandSpacing.column) {
             musicColumn
-            separator
-            calendarColumn
+            if showLyrics {
+                separator
+                lyricsColumn
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if !showLyrics {
+                datePeek
+            }
         }
         .foregroundStyle(.white)
-        .onChange(of: showLyrics) { loadLyricsIfNeeded() }
+        .onChange(of: showLyrics) {
+            onLyricsVisibilityChange?(showLyrics)
+            loadLyricsIfNeeded()
+        }
+        .onDisappear { onLyricsVisibilityChange?(false) }
         .onChange(of: info.trackIdentity) { loadLyricsIfNeeded() }
     }
 
@@ -88,23 +113,35 @@ struct ExpandedMusicView: View {
             .padding(.vertical, 8)
     }
 
-    /// Art beside the title, transport underneath: at a 400pt island the
-    /// music column is ~220pt, too narrow to carry art, text and a 130pt
-    /// transport row on one line without shrinking the targets.
+    /// Art beside the title, scrub row and transport underneath.
+    ///
+    /// The title and artist are `MarqueeText` at an explicit width, which is
+    /// the reference's own answer to the row below them jumping: a `Text`
+    /// that sizes itself to its content reflows the whole column every time
+    /// a longer title arrives, and the transport row visibly moves.
     private var musicColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
                 artworkView
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(info.title)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .lineLimit(1)
-                    if let artist = info.artist {
-                        Text(artist)
-                            .font(.system(size: 12, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.55))
-                            .lineLimit(1)
-                    }
+                    MarqueeText(
+                        .constant(info.title),
+                        font: .system(size: 14, weight: .bold, design: .rounded),
+                        nsFont: .headline,
+                        textColor: .white,
+                        backgroundColor: .clear,
+                        minDuration: 2.0,
+                        frameWidth: Self.textWidth
+                    )
+                    MarqueeText(
+                        .constant(info.artist ?? ""),
+                        font: .system(size: 12, design: .rounded),
+                        nsFont: .headline,
+                        textColor: .white.opacity(0.55),
+                        backgroundColor: .clear,
+                        minDuration: 3.0,
+                        frameWidth: Self.textWidth
+                    )
                 }
                 // The new track's text rises into place as the old one leaves
                 // upward; clipped to its own box so it never paints over the
@@ -123,7 +160,11 @@ struct ExpandedMusicView: View {
                 if showEqualizer {
                     NowPlayingEqualizer(isPlaying: info.isPlaying, tint: tint)
                 }
+                Spacer(minLength: 0)
             }
+            // The date box sits above this row, so it stops short of it.
+            // The scrub and transport rows below run the full width.
+            .padding(.trailing, showLyrics ? 0 : dateBoxWidth + IslandSpacing.column)
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
             if let progress {
@@ -149,10 +190,12 @@ struct ExpandedMusicView: View {
         DragGesture(minimumDistance: 20)
             .onEnded { value in
                 guard abs(value.translation.width) > NotchContentView.swipeThreshold else { return }
+                // Same direction as the trackpad swipe in `NotchContentView`:
+                // right advances, left goes back.
                 if value.translation.width < 0 {
-                    commands?.next()
-                } else {
                     commands?.previous()
+                } else {
+                    commands?.next()
                 }
             }
     }
@@ -176,6 +219,23 @@ struct ExpandedMusicView: View {
         // ZStack sizes to the 1.9x glow and pushes the title column sideways.
         .frame(width: side, height: side)
         .animation(Motion.resolved(Motion.artSwap), value: info.trackIdentity)
+        // Clicking the cover brings the player forward — the cover only,
+        // since a click anywhere else on the island already means something
+        // (double-click toggles playback, right-click opens Settings).
+        .contentShape(Rectangle())
+        .onTapGesture { activatePlayer() }
+        .help("Open \(info.bundleIdentifier == nil ? "the player" : "in the player")")
+    }
+
+    /// Brings whichever app is playing to the front. `NSRunningApplication`
+    /// rather than `NSWorkspace.launchApplication`: the app is already
+    /// running by definition, and this activates the existing instance
+    /// instead of risking a second one.
+    private func activatePlayer() {
+        guard let bundleIdentifier = info.bundleIdentifier else { return }
+        let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+        guard let app = running.first else { return }
+        app.activate(options: [.activateAllWindows])
     }
 
     private var card: some View {
@@ -272,70 +332,91 @@ struct ExpandedMusicView: View {
         }
     }
 
+    /// The reference's own transport buttons, with their press feedback —
+    /// a pulse, a scale and a directional nudge. Ported rather than
+    /// re-implemented, so it behaves exactly as it does there.
     private var controls: some View {
-        HStack(spacing: 8) {
-            transportButton("backward.fill", size: 16) {
+        HStack(spacing: 14) {
+            PlayerControlButton(
+                systemImage: "backward.fill",
+                fontSize: 16,
+                width: 34,
+                height: 30,
+                feedbackStyle: .backward
+            ) {
                 commands?.previous()
             }
-            transportButton(info.isPlaying ? "pause.fill" : "play.fill", size: 22) {
+
+            PlayerControlButton(
+                systemImage: info.isPlaying ? "pause.fill" : "play.fill",
+                fontSize: 22,
+                width: 34,
+                height: 30,
+                feedbackStyle: .playPause
+            ) {
                 commands?.togglePlayPause()
             }
-            transportButton("forward.fill", size: 16) {
+
+            PlayerControlButton(
+                systemImage: "forward.fill",
+                fontSize: 16,
+                width: 34,
+                height: 30,
+                feedbackStyle: .forward
+            ) {
                 commands?.next()
             }
+
             if let isMuted {
-                transportButton(isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: 15) {
+                PlayerControlButton(
+                    systemImage: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                    fontSize: 15,
+                    width: 34,
+                    height: 30
+                ) {
                     SystemMute.toggle()
                     self.isMuted = SystemMute.isMuted
                 }
-                .foregroundStyle(isMuted ? .white : .white.opacity(0.55))
+                .opacity(isMuted ? 1 : 0.55)
             }
         }
         .onAppear { isMuted = SystemMute.isMuted }
-        .foregroundStyle(.white)
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
     }
 
-    private func transportButton(
-        _ symbol: String,
-        size: CGFloat,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: size))
-                .contentTransition(.symbolEffect(.replace))
-                // Padding alone leaves the gaps dead; an explicit square with
-                // a content shape makes the whole target clickable.
-                .frame(width: 38, height: 34)
-                .contentShape(Rectangle())
-        }
-    }
-
-    @ViewBuilder
-    private var calendarColumn: some View {
-        if showLyrics {
-            LyricsPanelView(result: lyricsResult, progress: progress)
-                .frame(width: IslandLayout.Column.musicPeek, alignment: .leading)
-                .transition(.island)
-        } else {
-            VStack(alignment: .leading, spacing: IslandSpacing.row) {
-                DateBlock(alignment: .trailing)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                ForEach(peek) { EventRow(event: $0) }
-                Spacer(minLength: 0)
+    /// The date, and at most one upcoming event under it. With nothing
+    /// upcoming this is the date block alone and the column narrows, so a
+    /// clear day does not hold an empty panel open.
+    /// The date, and the single next event under it when there is one.
+    /// A fixed box in the corner: it takes only the height it draws, so
+    /// nothing below it is dead space, and it never resizes the island
+    /// under the player.
+    private var datePeek: some View {
+        VStack(alignment: .trailing, spacing: IslandSpacing.row) {
+            DateBlock(alignment: .trailing)
+            if let next = peek.first {
+                EventRow(event: next)
+                    .frame(width: IslandLayout.Column.datePeek, alignment: .leading)
             }
-            // Only as wide as it has anything to put there: with nothing
-            // upcoming this is the date block alone, and the island comes in
-            // by the difference rather than holding an empty column open.
-            .frame(width: peek.isEmpty ? IslandLayout.Column.datePeek : IslandLayout.Column.musicPeek,
-                   alignment: .leading)
-            .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
-            .transition(.island)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: IslandLayout.Column.datePeek, alignment: .trailing)
+        .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
+        .transition(.island)
+    }
+
+    /// What the corner box occupies, so the title row can stop short of it.
+    private var dateBoxWidth: CGFloat {
+        IslandLayout.Column.datePeek
     }
 
     private var peek: [CalendarEvent] {
-        CalendarEventMapper.upcoming(events, now: .now, limit: Self.peekLimit)
+        CalendarEventMapper.upcoming(events, now: .now, limit: 1)
+    }
+
+    private var lyricsColumn: some View {
+        LyricsPanelView(result: lyricsResult, progress: progress)
+            .frame(width: IslandLayout.Column.musicPeek, alignment: .leading)
+            .transition(.island)
     }
 }

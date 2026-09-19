@@ -112,10 +112,10 @@ struct NotchRootView: View {
                         .transition(.island)
                 }
             }
-            // Content recedes behind the squeeze rather than being squashed
-            // with it, so a swipe reads as pushing the island away.
-            .blur(radius: Motion.SwipeFeedback.blurRadius * store.swipeProgress)
-            .opacity(1 - Motion.SwipeFeedback.opacityReduction * store.swipeProgress)
+            // No blur on the gesture. The squeeze alone is the feedback —
+            // blurring the content as well made a swipe read as the island
+            // going out of focus rather than being pushed, and it smeared
+            // the artwork and text for the whole gesture.
             // Enforces the rule the surface comment states: nothing paints
             // outside the silhouette. It also lets content keep its resting
             // width while the squash narrows the shape around it.
@@ -214,7 +214,8 @@ struct NotchRootView: View {
             }
         // `resolveExpandedKind` never returns the compact-only peeks, but
         // the switch has to be total over the enum.
-        case .charging, .deviceBattery, .wave, .greeting, .focus, nil:
+        // `.lock` is compact-only, like the peeks beside it here.
+        case .charging, .deviceBattery, .wave, .greeting, .focus, .lock, nil:
             ExpandedIdleView(
                 events: store.calendarEvents,
                 onStartTimer: store.timerCommands.map { commands in { commands.start($0) } }
@@ -232,6 +233,7 @@ struct NotchRootView: View {
                 commands: store.nowPlayingCommands,
                 progress: store.nowPlayingProgress,
                 events: store.calendarEvents,
+                onLyricsVisibilityChange: { store.isShowingLyrics = $0 },
                 hoverPoint: store.hoverPoint,
                 bleed: store.nowPlayingBleed
             )
