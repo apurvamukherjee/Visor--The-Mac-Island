@@ -55,342 +55,146 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - When done, report: what changed, how you verified it, what I should test by hand, and any open questions.
 
 ## Progress
-- **Phase 1 ("The island"):** scaffold implemented (2026-09-15) — project.yml,
-  NotchGeometry, NotchShape, NotchPanel/NotchContentView/NotchWindowController,
-  NotchStore, Motion tokens, placeholder clock, unit tests. Build, tests,
-  swiftformat, swiftlint all pass. Full detail: `~/.claude/plans/tender-waddling-rose.md`.
-- **Not yet verified:** the manual checklist in that plan (closed-island
-  invisibility, idle CPU, hover feel, interrupt stress test, click-through,
-  Reduce Motion, screen reconfig, sleep/wake) — needs the user's eyes on
-  real hardware.
-- **Phase 2 ("Live activities"):** Tasks 1-9 implemented and reviewed
-  (2026-09-16) — Activity model/priority, compact-state geometry,
-  activity-driven NotchWindowController, BatteryService + charging peek,
-  `mediaremote-adapter` SPM package, NowPlayingService + artwork pipeline,
-  compact/expanded Now Playing views, full AppDelegate/NotchRootView
-  wiring, plus a post-integration design pass from live hardware feedback
-  (charging-detection run-loop-mode fix, expanded layout flanks the camera
-  housing, compact view redesigned to battery%+art only). Build, 27/27
-  tests, swiftformat, swiftlint all pass. Full detail:
+Phases 1-5 and the passes after them are summarised below; each named plan
+file holds the full detail. Anything still unverified on hardware is flagged.
+
+- **Phase 1 "The island" (2026-09-15):** shell scaffold — project.yml,
+  NotchGeometry/NotchShape/NotchPanel/NotchWindowController, NotchStore,
+  Motion tokens. Plan: `~/.claude/plans/tender-waddling-rose.md`.
+- **Phase 2 "Live activities" (2026-09-16):** Activity model + priority,
+  BatteryService, `mediaremote-adapter` (the one approved SPM package),
+  NowPlayingService + artwork pipeline. Detail:
   `.superpowers/sdd/notchy-phase2-live-activities/progress.md`.
-- **Phase 3 ("Content layer"):** Tasks 1-10 implemented (2026-09-16) —
-  NSVisualEffectView(.hudWindow) material + Reduce Transparency fallback,
-  EventKit CalendarService + pure CalendarEventMapper, geometry grown to
-  600×220 with chip-bar reservation, ExpandedIdleView/ExpandedMusicView/
-  EventRow/MoodChipBar, five new Motion tokens, album-art crossfade+
-  scale-pop on track change, threshold swipe gestures, hit-test union for
-  the detached chip bar. Build, 34/34 tests, swiftformat, swiftlint (0
-  errors) all pass. Spec: `docs/superpowers/specs/2026-09-16-notch-content-layer-design.md`.
-  Plan: `docs/superpowers/plans/2026-09-16-notch-content-layer.md`.
-- **Dropped:** system-notification mirroring — Notification Center's DB is
-  TCC-blocked without Full Disk Access (verified 2026-09-16 on macOS
-  26.6.2) and its schema is undocumented. Not worth the permission cost.
-- **Layout pass (2026-09-16):** island was rendering 22pt low (NSHostingView
-  centred a 176pt root in a 220pt canvas); mood chip bar and "By Apurva"
-  signature removed; between-track nil debounced 900ms in NowPlayingService so
-  a skip no longer flashes the idle/calendar layout; expanded resized to
-  400×186 idle / 400×168 playing (per-layout height, panel frame keeps the
-  taller one so it morphs instead of resizing) with a single camera-housing
-  clearance; music peek trimmed to one event; transport row given 38×34
-  targets under the art + title; `hidesOnDeactivate` disabled so the panel
-  survives a Space switch (NSPanel defaults it to true); album-art card flip
-  and rising title on track change; trackpad gestures (two-finger swipe =
-  track change, two-finger double tap = play/pause) on the panel view;
-  `SkyLightPin` moves the panel into a private SkyLight space so desktop
-  swipes slide underneath it instead of dragging it along.
-- **Phase 3 completion (2026-09-16):** Settings window (version, "by Apurva"
-  per §0 attribution, launch-at-login via SMAppService, gesture crib sheet,
-  quit) opened by right-clicking the island — an accessory app has no menu
-  bar; haptics on both trackpad gestures; `.numericText()` on the battery
-  percentage; `PlaybackBars` beat animation. `scripts/make-dmg.sh` builds a
-  local ad-hoc `dist/Visor.dmg` (no sharing, no App Store — §0).
-- **Cleanup pass (2026-09-16):** −133 lines net. Activity model down to the
-  two kinds anything produces (`.timer`/`.hud` return with their features);
-  `Activity.expiresAt` dropped — `BatteryService.peekTask` was already the
-  only clock that fires; `NotchShape.topRadius` dropped (never drawn);
-  calendar colour carried as `Color` instead of a hex round-trip; store
-  pass-through setters are plain vars; `AppDelegate` drives `[any
-  NotchService]`. Codex findings fixed: `make-dmg.sh` now runs `xcodegen`
-  first, and `PlaybackBars` reads Reduce Motion from the environment so it
-  stops mid-track.
+- **Phase 3 "Content layer" (2026-09-16):** EventKit CalendarService +
+  pure CalendarEventMapper, expanded idle/music views, swipe gestures,
+  Settings window (right-click the island — an accessory app has no menu
+  bar), `scripts/make-dmg.sh`. Plan:
+  `docs/superpowers/plans/2026-09-16-notch-content-layer.md`.
+- **Phase 4 (2026-09-16):** screenshot catcher (DispatchSource, no timer)
+  + `AlbumColor` OKLab tinting.
+- **Phase 5 "Premium music" (2026-09-16):** album halo, cursor parallax,
+  vinyl mode (a Settings toggle, not an art-less fallback). Plan:
+  `docs/superpowers/plans/2026-09-16-phase5-premium-music.md`.
+  **Cut by choice:** progress-as-bottom-lip — scoped, feasible, cheap to
+  revive.
+- **Power fix (2026-09-16):** ~5% CPU while playing traced to
+  `PlaybackBars` animating `frame(height:)` — a *layout* property, so
+  SwiftUI re-ran the view graph every frame. Rebuilt on CALayer:
+  **5.2% -> 0.0%** measured A/B. Rule in RESEARCH §5.1b: never animate a
+  layout property in a loop.
+- **Audit pass (2026-09-16):** four fixes, no UX change — a 2s polling
+  loop in `ScreenshotService` replaced with `withObservationTracking`;
+  `NotchPanel.sendEvent` no longer swallows double-clicks landing on real
+  controls; accessibility flags cached in `Motion` (each raw read is an IPC
+  round-trip); hover-parallax writes gated and quantised. Detail:
+  RESEARCH §5.1c.
+- **Motion pass (2026-09-19):** the "collapses then rounds its corners" bug
+  was *sequencing*, not curves — `.logicallyComplete` fires 117ms before the
+  close spring lands, so `setFrame` clipped the still-protruding corners.
+  Fixed with `.removed` (RESEARCH §5.1d). Same harness disproved two
+  plausible causes: stacked `.animation(_:value:)` do *not* eat the
+  `withAnimation` transaction, and per-axis scoped animations cannot
+  desynchronise width from height. `NotchShape` rewritten with continuous
+  bottom corners and the outward-flaring shoulder as a unioned fillet —
+  appended subpaths left a pale seam, because two antialiased edges that
+  merely abut composite to ~75% coverage, not 100%.
+- **Per-feature layout (2026-09-19):** `IslandLayout` replaced two hardcoded
+  sizes; every size is a **delta from the measured cutout**, so layouts land
+  on any notch. `resolveExpandedKind` is the single resolution driving both
+  size and view, fixing a latent drift (the compact order puts `.charging`
+  above `.nowPlaying`, so sizing from it would blank the music card whenever
+  the charger went in).
+- **Content-resolved layouts + agenda rewrite (2026-09-19):** sizes resolve
+  from `IslandContent`, so a quiet day gets a smaller island rather than the
+  same island with black in it. Real bug found: overflow counted the *whole*
+  day, printing "2 more events" over an empty agenda.
+- **Motion model + new features (2026-09-19):** `MotionPreset` ladder
+  exposed as "Animation speed"; `NetworkService`, battery Low/Full alerts,
+  `TimerService`, the 4-item screenshot shelf.
+- **Volume HUD (2026-09-19):** reverses an earlier drop. The keys are never
+  seen; CoreAudio's *result* is. Verified with a standalone CLI probe before
+  any app code. Two measured quirks the code relies on: every change fires
+  the listener **twice** (deduped), and at 0 or 100 a keypress changes
+  nothing so nothing fires — that gap is the ceiling of the no-permission
+  approach and is left open.
+- **Device battery (2026-09-19):** `DeviceBatteryService` reads the
+  IORegistry — no permission, no Bluetooth framework — and peeks on
+  **connection only**: macOS posts nothing when an accessory's charge moves,
+  so a live reading would be a poll. **Unverified on hardware.** To confirm:
+  `ioreg -r -c AppleDeviceManagementHIDEventService -l | grep -i batterypercent`.
+- **Welcome/Player/Settings (2026-09-19):** three-step onboarding that lives
+  *inside* the panel as a mode orthogonal to the activity ladder (the
+  precedent the lock screen later followed); seek bar, shuffle/repeat, and a
+  lyrics panel that fetches only while open. Position is a
+  `NowPlayingProgress` **anchor**, written only on a real event — everything
+  else reads it live through `TimelineView`, so the per-tick store rewrite
+  the power pass removed did not come back.
+- **Dropped, each for a stated reason:** system-notification mirroring
+  (Notification Center's DB is TCC-blocked without Full Disk Access,
+  verified 2026-09-16, schema undocumented); VPN-by-interface-name (`utun`
+  exists without any VPN, so it false-positives — later shipped properly via
+  SCDynamicStore); AirPlay route button (`AVRoutePickerView` routes the
+  *calling app's* audio, and Visor produces none); favourite-track button
+  (AppleScript automation = a new per-app TCC prompt for one star icon).
+- **Known:** two `large_tuple` warnings in `AlbumColorTests` — an RGB triple
+  is the honest shape for a colour; left as is.
 - **Calendar permission loop:** caused by ad-hoc signing — TCC keys grants to
   the code signature, and every build has a new cdhash. Fix is a stable
   identity: add an Apple ID in Xcode > Settings > Accounts (free tier is
   enough) and set `DEVELOPMENT_TEAM` in project.yml.
-- **Power fix (2026-09-16):** ~5% CPU while playing traced by `sample` to
-  `PlaybackBars` animating `frame(height:)` — a layout property, so SwiftUI
-  re-ran the view graph every frame. Rebuilt on CALayer/CABasicAnimation;
-  measured A/B on the same track: **5.2% -> 0.0%**. Also trimmed playback
-  position out of `NowPlayingInfo` (adapter re-emits it constantly, nothing
-  drew it) and made store activate/deactivate/battery writes compare before
-  mutating. Rule added to RESEARCH §5.1b: never animate a layout property in
-  a loop.
-- **Phase 4 (2026-09-16):** screenshot catcher + album tint, built from
-  `docs/superpowers/plans/2026-09-16-screenshot-catcher-ambient-tint.md`.
-  `ScreenshotService` watches the screenshot folder with a `DispatchSource`
-  (no timer); catches show as a draggable chip with an iOS-style dismiss badge,
-  auto-dismiss at 60s, re-armed while hovered. Dragging an image onto the
-  island opens it and adopts the file. `AlbumColor` tints the playback bars in OKLab with a chroma
-  floor and a lightness lift — the island surface stays pure black. Verified
-  live: real screenshot → chip → dismiss, and idle CPU still 0.0%.
-- **Phase 5 ("Premium music", 2026-09-16):** album halo behind the artwork
-  (pre-blurred once in `ArtworkCache` via CIGaussianBlur, radial-masked,
-  `.plusLighter` at 0.55, off under Reduce Transparency/Increase Contrast) —
-  started as a panel-wide wash and was cut back after live feedback, so the
-  island surface stays pure black in every state; cursor parallax on the album card (±6°,
-  `.mouseMoved` on the existing NSTrackingArea, no global monitor); paused art
-  desaturates to 0.65 and scales to 0.96; vinyl mode as a **Settings toggle**
-  (off by default, not an art-less fallback) on CALayer with the spin removed
-  rather than paused. `make-dmg.sh` release names now carry version, build
-  number, HH:MM and short commit. Build, 46/46 tests, swiftformat, swiftlint
-  (0 serious) all pass. Plan:
-  `docs/superpowers/plans/2026-09-16-phase5-premium-music.md`.
-- **Cut from Phase 5:** progress-as-bottom-lip (B) — scoped, verified feasible
-  (the adapter exposes an elapsed/timestamp/rate anchor plus `setTime`, so it
-  needs no timer), dropped by choice before build. Cheap to revive.
-- **Audit pass (2026-09-16):** whole-codebase sweep for bugs, waste and hot
-  paths. Four fixes, no UI or UX change: (1) `ScreenshotService.scheduleDismiss`
-  was a 2s polling loop while the island stayed hovered — replaced with
-  `withObservationTracking` on `store.state`, self-terminating on
-  `store.screenshot == nil`; (2) `NotchPanel.sendEvent` swallowed every
-  double-click inside the silhouette, so double-tapping a transport button or
-  the chip's ✕ toggled play/pause instead — the intercept now declines when
-  `hostingView.hitTest` finds real content under the point; (3) accessibility
-  flags (`reduceMotion`/`reduceTransparency`/`increaseContrast`) were IPC-read
-  from view bodies and from `mouseMoved` — now cached in `Motion` and
-  refreshed on `accessibilityDisplayOptionsDidChangeNotification`;
-  (4) hover-parallax writes gated on the music card being on screen and
-  quantised to a 0.02 step, instead of re-rendering at the mouse event rate.
-  Also settled the long-standing lint conflict: `--commas inline` in
-  `.swiftformat` took swiftlint from 14 warnings to 2. Build, 49/49 tests,
-  swiftformat, swiftlint (2 warnings, 0 serious) all pass. Detail:
-  RESEARCH.md §5.1c.
-- **Known:** two `large_tuple` warnings in `AlbumColorTests` — an RGB triple
-  is the honest shape for a colour; left as is.
-- **Small-features pass (2026-09-19):** four additions, all built on existing
-  mechanisms rather than new ones. Battery compact glyph now tiers symbol +
-  colour with charge level (`BatteryGlyph`, matching Control Center) instead
-  of always reading `battery.100`/white — visual only, no new peek. New
-  `GreetingService` shows a once-a-day "Good morning" compact peek on first
-  idle after login or after a `didWake` on a new day, modelled on
-  `BatteryService`'s charging peek (`.greeting` activity, lowest priority).
-  Idle double-click, previously a silent no-op when nothing was playing
-  (`nowPlayingCommands` is set for the app's whole lifetime, so the old code
-  called a dead-end adapter toggle), now fires a `.wave` compact peek instead
-  — double-click during playback still toggles play/pause unchanged. Settings
-  crib sheet restyled from three prose sentences to `ShortcutRow` icon+label
-  rows, System Settings–style; no behaviour change. `Haptics` gains two new
-  exceptions (`greeting()`, `wave()`) alongside the original `shapeChange()`
-  — both one-off, once-a-day-or-rarer, matching the original "chattery"
-  finding's bar rather than lowering it. Volume/brightness HUD (also
-  proposed) was dropped on the belief it needs a global key monitor —
-  **wrong for volume, see the Volume bullet below**; brightness stays
-  dropped (private API). Build, 59/59 tests,
-  swiftformat, swiftlint (2 warnings, 0 serious — same known large_tuple
-  pair) all pass. Plan: `~/.claude-me/plans/wobbly-purring-lollipop.md`.
-- **Battery disconnect follow-up (2026-09-19):** the charging peek only ever
-  fired on the plug-in edge; unplugging was silent. `BatteryService.refresh`
-  now peeks on either edge of the charging transition — the tiered glyph
-  itself (bolt vs. `battery.*`) already says which one happened. Latency was
-  already effectively zero (IOKit's callback + activity-driven `enterCompact`
-  need no hover), so this was a missing case, not a speed problem. Also
-  replaced the glyph's onAppear/onChange bounce heuristic — which could
-  mis-fire on an unrelated compact peek (screenshot, wave, greeting) — with
-  `store.batteryBounceTick`, bumped by the service itself on either edge and
-  skipped under Reduce Motion. Build, 59/59 tests, swiftformat, swiftlint (2
-  warnings, 0 serious) all pass.
-- **Motion pass (2026-09-19):** the "collapses then rounds its corners" bug
-  was sequencing, not curves. Measured with an instrumented `Shape`:
-  `.logicallyComplete` fires 117ms before the close spring actually lands, so
-  `finishShrink`'s `setFrame` clipped the still-protruding bottom corners →
-  `.removed` in both `collapseFromExpanded` and `exitCompact` (RESEARCH
-  §5.1d). Same harness disproved two plausible-sounding causes: stacked
-  `.animation(_:value:)` modifiers do *not* eat the `withAnimation`
-  transaction, and per-axis scoped animations cannot desynchronise width from
-  height — SwiftUI folds both onto the ambient transaction. `NotchShape`
-  rewritten: continuous (squircle) bottom corners via `UnevenRoundedRectangle`
-  replacing the hand-rolled arcs, plus the outward-flaring **shoulder**
-  RESEARCH §2.5 always wanted, as a concave fillet subpath — `topRadius` 0
-  closed (invisibility), 8 compact, 11 expanded. Collapse now carries a
-  squash-and-stretch impulse (−20% w / +20% h, held 100ms, radius bulges with
-  the stretch), additive on its own spring, with `squashAllowance` headroom in
-  the canvas so the overshoot can never be clipped. Content is pinned to its
-  resting width and the whole island is `clipShape`d to the silhouette,
-  enforcing the "nothing paints outside the shape" rule. Build, 61/61 tests,
-  swiftformat, swiftlint (2 known large_tuple) all pass. **Not yet seen on
-  hardware.**
-- **Reference checkout:** `DynamicNotch/` (and a second copy under
-  `main code/`) is a GPL-3.0 clone. Originally kept for ideas only; superseded
-  2026-09-19 (see License bullet below) — porting its code is now allowed.
-- **Per-feature layout (2026-09-19):** `IslandLayout` replaces the two
-  hardcoded expanded sizes and the `hasNowPlaying` branch. Each feature
-  declares `expandedExtraWidth/Height`, `compactExtraWidth` and both radii;
-  sizes are **deltas from the measured cutout**, not absolutes, so they adapt
-  to any notch (on the 15" M4 Air they resolve to the same 400x206/400x168
-  the branch produced — guarded by `IslandLayoutTests`). `resolveExpandedKind`
-  is the single resolution driving both the size and the view, which fixes a
-  latent drift: the compact order puts `.charging` above `.nowPlaying`, so
-  sizing the expanded island from it would have blanked the music card
-  whenever the charger went in.
-- **Motion model ported from DynamicNotch (2026-09-19):** `MotionPreset`
-  ladder (snappy/fast/balanced/slow/relaxed, baseResponse 0.41-0.53) with
-  every `Motion` token derived from it — expand = base-0.02, close =
-  base+0.08, bounce = 1-dampingFraction. Exposed as "Animation speed" in
-  Settings. **Note the close is now slower and slightly sprung** (was
-  `spring(0.34, bounce: 0)`); NotchKit argues the opposite and the one line
-  to flip is documented in `Motion.close`. Swipe-stretch feedback added to
-  the *existing* track-change swipe rather than replacing it: the island
-  squeezes (clamped 28-44pt) and content blurs/fades while the gesture is
-  live, springing back on release.
-- **New features (2026-09-19):** `NetworkService` (NWPathMonitor, offline
-  alert with OK/Settings, dismissal re-arms on the next path change);
-  battery Low/Full alerts on `BatteryService` with pure edge detection in
-  `BatteryAlert.crossing` (no Low Power Mode toggle — it needs an admin
-  `pmset`, so it points at Settings instead); `TimerService` with preset
-  durations from the idle island, deadline-based so nothing ticks behind a
-  closed island and `TimelineView` supplies the on-screen clock; the
-  screenshot catch became a **4-item shelf** with per-item dismiss, drag-out
-  and clear-all, swept by one task rather than one per item. Build, 94/94
-  tests, swiftformat, swiftlint (2 known large_tuple) all pass. **None of it
-  seen on hardware.**
-- **Released:** `new-releases/Visor-1.3(4)-2026-09-19-174655-4945619.dmg`
-  (1.3M); the five older DMGs were `git rm`'d at the user's request (still in
-  history). Version bumped to 1.3 (build 4).
-- **Volume HUD + slider (2026-09-19):** reverses the drop above. The keys
-  are never seen; CoreAudio's *result* is. `VolumeService` listens on the
-  default output device's `VolumeScalar`/`Mute` via
-  `AudioObjectAddPropertyListenerBlock`, plus one on
-  `kAudioHardwarePropertyDefaultOutputDevice` so plugging in headphones
-  re-targets. Verified with a standalone unsigned CLI probe before any app
-  code: F10/F11/F12 all fire, same runloop turn, no Accessibility
-  permission, no TCC prompt, no monitor. Two measured quirks the code
-  relies on: every change fires the listener **twice** (deduped by
-  comparing `VolumeInfo` before writing the store), and at 0 or 100 a
-  keypress changes nothing so nothing fires — the island stays shut where
-  Control Center's HUD still appears. That gap is the ceiling of the
-  no-permission approach and is left open. Expanded layout is a hand-rolled
-  draggable bar (`AudioObjectSetPropertyData`, settable confirmed on
-  hardware) with optimistic writes so it tracks the pointer; the peek
-  refuses to dismiss while the island is expanded, re-arming on collapse
-  the way the screenshot shelf does, so it can't vanish mid-drag.
-- **Expanded gutter (2026-09-19):** content was laid out at 14pt sides /
-  10pt bottom and read edge-to-edge — at the bottom corners the shape
-  curves in by its own 28-34pt radius, so content clearing the straight
-  edge still ran into the curve. Now 20/14 with the camera clearance at
-  +10, applied once in `NotchRootView` rather than per feature, and every
-  `expandedExtraHeight` grown 8pt to keep the same content box
-  (`IslandLayoutTests` updated: idle 400x214, music 400x176, timer 360x144).
-- **Paused music no longer disappears (2026-09-19):** `NowPlayingService`
-  called `store.deactivate(.nowPlaying)` whenever `isPlaying` was false, so
-  pausing took the whole music layout — transport row included — leaving
-  the player's own window as the only way to resume. The activity means "a
-  track is loaded", not "audio is coming out"; it now stays active and only
-  `scheduleClear`'s 900ms nil grace clears it. Nothing else read it as a
-  playback flag (checked every reader). Note: a track paused and abandoned
-  now holds the island until its player quits — no idle timeout added.
-- **Shoulder seam + motion (2026-09-19):** the pale line separating the top
-  curves from the island, and the shoulders reading as a separate piece,
-  were one bug. `NotchShape` appended the two shoulder fillets as their own
-  closed subpaths, abutting the body along `x = body.minX/maxX`; two
-  antialiased edges that merely touch composite to ~75% coverage, not 100%,
-  so a hairline ran down each join — worst mid-morph, when the seam sits off
-  the pixel grid, which is why it "blended late". Now one region via
-  `Path.union` (macOS 14+), skipped entirely when `topRadius == 0` so the
-  closed state pays nothing. Second half: the close was
-  `baseResponse + 0.08` with `bounce: 0.175`, and the tail of that bounce is
-  visible in the shoulders after the body has settled. Flipped to
-  `baseResponse - 0.08`, `bounce: 0` — NotchKit's argument, and Visor's
-  original number. `unmountDelay` now derives from `closeResponse + 0.06`
-  instead of its own ladder, so "content outlives the close" holds
-  structurally rather than by two hand-tuned tables agreeing.
-- **Content-resolved layouts (2026-09-19):** the "everything is edge to
-  edge" complaint had two causes. The gutter (fixed above, 20/14/+10 from
-  `IslandSpacing`), and sizing: every layout was a constant tuned for its
-  *fullest* state, so a quiet day still got the island a packed one needs.
-  `IslandContent` (agenda rows, overflow row, timer presets) now resolves
-  size, and totals are added up from named `IslandLayout.Block` heights and
-  `IslandLayout.Column` widths instead of typed in — so the numbers to tune
-  are the blocks, not the totals, and `IslandLayoutTests` pins what they add
-  up to. Reference-hardware results: idle 338x212 with three events,
-  **248x143 with none** (was a flat 400x214), music 395x171 with an event
-  and 347x171 without, shelf 400x161, battery alert 342x104, timer 360x109,
-  volume 360x89. The canvas is unchanged at the max.
-- **Agenda rewrite (2026-09-19):** the two-column split balanced at three
-  events and fell apart at zero, which is the common case by evening. One
-  column beside the date block, an explicit empty state ("Nothing
-  scheduled" / "Nothing left today"), and the real bug behind the
-  screenshot: `overflow = events.count - shown.count` counted the whole
-  day, so two *finished* events printed "2 more events" over an empty
-  agenda in a full-height island. `CalendarEventMapper.upcomingCount` is
-  now what both the overflow row and the island's height count against.
-  Shelf thumbnails centre rather than hugging the left edge (a chip's width
-  follows its screenshot's aspect ratio, so the row cannot be sized ahead of
-  time); alert detail is `lineLimit(2)`, which is what the height reserves.
-- **Device battery (2026-09-19):** Phase C. `DeviceBatteryService` reads
-  `AppleDeviceManagementHIDEventService` out of the IORegistry — no
-  permission, no Bluetooth framework — and peeks on **connection only**:
-  macOS posts nothing when an accessory's charge moves, so a live reading
-  would be a poll. `IOServiceAddMatchingNotification` +
-  `kIOFirstMatchNotification`, run-loop source in `.commonModes`, initial
-  drain suppressed (arming is not a connection event). Lower bud wins; the
-  case is ignored; 0 means "not reported", not flat. **Unverified on
-  hardware — nothing with a battery was paired when it was written.** To
-  confirm: pair AirPods, then
-  `ioreg -r -c AppleDeviceManagementHIDEventService -l | grep -i batterypercent`.
-  If those keys are named differently the feature stays inert rather than
-  misreporting.
-- **Not shipped — VPN indicator:** `utun` interfaces exist on macOS without
-  any VPN (Handoff and friends use them), so an `NWPath` interface-name
-  check false-positives, and the reliable signal (NetworkExtension) needs an
-  entitlement Visor will not ask for. Left out rather than shipped as a
-  badge that lies.
-- **License (2026-09-19):** relicensed GPL-3.0 (`LICENSE` added, copyright
-  Apurva Mukherjee) specifically so code from the GPL-3.0 `DynamicNotch`
-  reference project can be ported into Visor rather than only read for ideas.
-  This reverses the earlier "reading for ideas only" stance. Consequence: any
-  future distribution of Visor's source must stay GPL-3.0-compatible.
-- **Welcome/Player/Settings pass (2026-09-19):** ported ideas from
-  `main code/DynamicNotch` (now deleted — everything needed was pulled out
-  first) into Visor's own architecture; nothing copied verbatim where
-  Visor's shape differs. No paid/premium features existed in the reference
-  to exclude; Telegram links (About + onboarding step 4) and donation/crypto
-  links (Support screen) were dropped rather than ported.
-  — **Welcome**: three-step flow (`OnboardingService`, `OnboardingStep`,
-  `ExpandedOnboardingView`) that lives *inside* the notch panel as a mode
-  orthogonal to the activity ladder — `NotchStore.layout`/`expandedContent`
-  check `onboardingStep` before touching `expandedKind` at all, so it never
-  competes for priority. `NotchWindowController` force-expands on
-  `isOnboardingActive` and `collapseFromExpanded` now refuses to fire while
-  it's true, so a mouse-out mid-sentence can't close it. First-launch flag
-  plus a "Replay welcome tour" row in Settings. Dropped the reference's
-  GitHub-star step content but kept the *shape* of a third step, re-pointed
-  at Visor's own repo — the Telegram step has no equivalent.
-  — **Player**: `NowPlayingSeekBar` (scrub + elapsed/duration), shuffle and
-  repeat (`MusicSeekRow`, state already exposed by the existing
-  `mediaremote-adapter` dependency — `setTime`/`setShuffleMode`/
-  `setRepeatMode` were already there, unused), and a lyrics panel
-  (`LyricsFetcher` against LRCLIB, free/keyless, fetched only while the
-  panel is open — never on every track change) that takes over the calendar
-  column when toggled. The real risk here was re-introducing the per-tick
-  store rewrite the Power fix pass already paid to remove: position is a
-  `NowPlayingProgress` anchor (duration/elapsedAtAnchor/anchorDate/rate),
-  written only when `shouldReplace` detects a real event (track/duration
-  change, play/pause flip, or a jump the projected drift can't explain) —
-  everything else reads it live through `TimelineView`, the same pattern
-  `IslandTimer`/`ExpandedTimerView` already used for the countdown.
-  Dropped an AirPlay output-route button: `AVRoutePickerView` routes the
-  *calling app's own* audio session, and Visor produces no audio of its
-  own — it would have controlled nothing.
-  — **Settings**: grown from a flat list into labelled sections (General /
-  Now Playing / shortcuts / About) in the same file — still one screen, not
-  the reference's sidebar/factory architecture, which would be pure
-  overhead at Visor's current preference count.
-  `Block.musicColumn` grew 114→140 for the new scrub row
-  (`IslandLayoutTests` updated: music layout 395×171 → 395×197). Build,
-  124/124 tests, swiftformat, swiftlint (2 known large_tuple) all pass.
-  **None of it seen on hardware** — the seek bar's drag feel, the lyrics
-  panel's readability at real size, and the onboarding force-expand
-  interaction all need the user's eyes.
+- **Reference checkouts:** `DynamicNotch/` and `old-code/` are GPL-3.0
+  clones kept for porting from, excluded from swiftformat/swiftlint.
+- **old-code port (2026-09-19):** ported the feature set of a ~350-file
+  alternate Dynamic Island app into Visor's own architecture. Its competing
+  shell (NotchEngine/NotchModel/NotchViewModel/DynamicIslandShape) was *not*
+  ported — every feature's logic and views were rehomed onto Visor's single
+  `NotchStore` + `Activity` ladder + `IslandLayout` + `NotchShape` + `Motion`
+  shell, which was extended rather than duplicated.
+  — **Shell:** `SkyLightPin.pin` takes a `Level` (the island keeps 100, below
+  the lock shield; the lock overlay pins 301/302 above it) and gained
+  `isFullscreenSpaceActive`; `NotchShape` grew an `isCapsule` branch for
+  screens with no cutout (one shape, per the never-cross-fade rule, not
+  old-code's separate `DynamicIslandShape`); `scrollWheel` gained a vertical
+  axis with a 1.25x direction lock so swipe-to-dismiss cannot collide with
+  the existing track-change swipe.
+  — **Lock screen:** `LockScreenService` (distributed lock/unlock plus the
+  `sessionDidResignActive` pre-lock edge, merged through Combine internally,
+  out as two plain store flags) and `LockScreenWindowController`, two panels
+  above `CGShieldingWindowLevel()`. Lock is a *mode* like onboarding, checked
+  before the activity ladder — `LockScreenModeTests` pins that seam. Widget
+  shows the player when something is playing and clock+agenda when not; they
+  never share the card.
+  — **New activities:** Downloads (FSEvents on ~/Downloads + the public
+  `com.apple.progress.fractionCompleted` xattr — *not* old-code's 1s rescan
+  timer), AirDrop (outgoing only via `NSSharingService`; Option-drop on the
+  island), Screen Recording (`CGSRegisterNotifyProc`, `dlsym`-resolved so a
+  missing symbol degrades instead of crashing like old-code's
+  `@_silgen_name`), Bluetooth connect/disconnect, Focus on/off, VPN.
+  — **Now Playing:** progress tint style (standard/album/accent), optional
+  decorative equaliser (scale, never `frame(height:)` — RESEARCH §5.1b).
+  — **Customization:** stroke, ±16pt/±4pt notch trims with live feedback,
+  fullscreen hide, display selection.
+  — **Deliberately not ported, each for a stated reason:** Focus mode
+  *names* (needs FDA + undocumented JSON — the notification-mirroring wall);
+  Apple Clock timer mirroring (private prefs + log scraping + AX automation +
+  1s poll); media-key HUD (global CGEventTap + Accessibility); Hotspot
+  (private `Sharing.framework`); Bluetooth battery fusion (5 scraped sources
+  + 3s poll — `DeviceBatteryService` already covers it); Chromium History
+  scraping; FileConverter/HomePage/SystemStats (never requested).
+  — **Two plan assumptions proved wrong on contact:** (1) Lottie was dropped
+  — SF Symbols' `lock`/`lock.open` pair with `.symbolEffect(.replace)` draws
+  the latch natively, so the dependency bought nothing; **no new SPM package
+  was added**. (2) "Bluetooth alerts need no new TCC prompt" was right only
+  for the notification — `IOBluetoothDevice.pairedDevices()` is privacy-gated
+  and *aborted the process* at launch under the test host with no
+  `NSBluetoothAlwaysUsageDescription`. Rewritten to read the notification's
+  own payload; no IOBluetooth import, no prompt.
+  Build, 158/158 tests, swiftformat, swiftlint (5 warnings, 0 serious — the 2
+  known `large_tuple` plus 3 size/complexity on shapes CLAUDE.md prescribes)
+  all pass. `old-code/` and `DynamicNotch/` added to the swiftformat/swiftlint
+  exclusions — reference checkouts, not Visor's source.
+  **None of it seen on hardware.** Highest-uncertainty item by far: whether
+  the lock overlay actually paints above the real lock shield.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
