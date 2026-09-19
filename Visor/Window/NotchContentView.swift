@@ -9,15 +9,54 @@ final class NotchContentView: NSView {
     private let store: NotchStore
     private var trackingArea: NSTrackingArea?
     private var scrollOffset: CGFloat = 0
+    private var verticalOffset: CGFloat = 0
+    private var axis = SwipeAxis.undetermined
 
     /// Points of two-finger travel before a scroll counts as a track change.
     /// Low enough to flick, high enough that a stray scroll over the notch
     /// on the way to the menu bar doesn't skip a song.
     static let swipeThreshold: CGFloat = 40
+    /// Vertical travel before a swipe counts as dismiss or restore. Higher
+    /// than the horizontal one: an up-flick is also how you leave the notch,
+    /// so it has to be deliberate.
+    static let verticalSwipeThreshold: CGFloat = 60
+
+    /// Which way a two-finger swipe is going. Locked once one axis leads the
+    /// other by `axisDominance`, so a diagonal flick can skip a track *or*
+    /// dismiss the island but never both — which is what happened when each
+    /// axis was tested on its own.
+    enum SwipeAxis {
+        case undetermined
+        case horizontal
+        case vertical
+    }
+
+    /// How far one axis must lead before the gesture locks to it, and the
+    /// travel below which neither leads yet.
+    private static let axisDominance: CGFloat = 1.25
+    private static let axisLockTravel: CGFloat = 2
+
+    /// Pure, so the lock can be tested without a trackpad.
+    static func resolveAxis(horizontal: CGFloat, vertical: CGFloat) -> SwipeAxis {
+        let absH = abs(horizontal)
+        let absV = abs(vertical)
+        guard max(absH, absV) >= axisLockTravel else { return .undetermined }
+        if absH > absV * axisDominance {
+            return .horizontal
+        }
+        if absV > absH * axisDominance {
+            return .vertical
+        }
+        return .undetermined
+    }
 
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
     var onShowSettings: (() -> Void)?
+    /// Swipe up on the island: dismiss whatever it is showing.
+    var onSwipeDismiss: (() -> Void)?
+    /// Swipe down on a dismissed island: bring it back.
+    var onSwipeRestore: (() -> Void)?
 
     override var isFlipped: Bool {
         true
@@ -59,36 +98,78 @@ final class NotchContentView: NSView {
     /// silhouette, since `hitTest` rejects everything else — no global
     /// monitor, nothing running while the island isn't under the pointer.
     override func scrollWheel(with event: NSEvent) {
-        guard
-            let commands = store.nowPlayingCommands,
-            event.hasPreciseScrollingDeltas
-        else {
+        guard event.hasPreciseScrollingDeltas else {
             return super.scrollWheel(with: event)
         }
-        // Normalise away the "natural scrolling" setting so the gesture
-        // always follows the fingers: negative means they moved left.
-        let delta = event.isDirectionInvertedFromDevice
-            ? event.scrollingDeltaX
-            : -event.scrollingDeltaX
+        // Normalise away the "natural scrolling" setting on both axes so the
+        // gesture always follows the fingers: negative x means they moved
+        // left, negative y means they moved up.
+        let inverted = event.isDirectionInvertedFromDevice
         switch event.phase {
         case .began:
-            scrollOffset = 0
-            setSwipeProgress(0, animated: false)
+            beginSwipe()
         case .changed:
-            scrollOffset += delta
-            setSwipeProgress(min(1, abs(scrollOffset) / Self.swipeThreshold), animated: false)
+            continueSwipe(
+                deltaX: inverted ? event.scrollingDeltaX : -event.scrollingDeltaX,
+                deltaY: inverted ? event.scrollingDeltaY : -event.scrollingDeltaY
+            )
         case .ended, .cancelled:
-            defer {
-                scrollOffset = 0
-                setSwipeProgress(0, animated: true)
-            }
-            guard abs(scrollOffset) > Self.swipeThreshold else { return }
-            if scrollOffset < 0 {
+            endSwipe()
+        default:
+            break
+        }
+    }
+
+    private func beginSwipe() {
+        scrollOffset = 0
+        verticalOffset = 0
+        axis = .undetermined
+        setSwipeProgress(0, animated: false)
+    }
+
+    private func continueSwipe(deltaX: CGFloat, deltaY: CGFloat) {
+        scrollOffset += deltaX
+        verticalOffset += deltaY
+        if axis == .undetermined {
+            axis = Self.resolveAxis(horizontal: scrollOffset, vertical: verticalOffset)
+        }
+        switch axis {
+        case .horizontal:
+            setSwipeProgress(min(1, abs(scrollOffset) / Self.swipeThreshold), animated: false)
+        case .vertical:
+            setSwipeProgress(min(1, abs(verticalOffset) / Self.verticalSwipeThreshold), animated: false)
+        case .undetermined:
+            break
+        }
+    }
+
+    private func endSwipe() {
+        let settledAxis = axis
+        let horizontal = scrollOffset
+        let vertical = verticalOffset
+        scrollOffset = 0
+        verticalOffset = 0
+        axis = .undetermined
+        setSwipeProgress(0, animated: true)
+
+        switch settledAxis {
+        case .horizontal:
+            guard let commands = store.nowPlayingCommands, abs(horizontal) > Self.swipeThreshold else { return }
+            if horizontal < 0 {
                 commands.next()
             } else {
                 commands.previous()
             }
-        default:
+        case .vertical:
+            guard abs(vertical) > Self.verticalSwipeThreshold else { return }
+            // Negative is upward, which is the dismiss direction — the
+            // island slides back into the notch it came from.
+            if vertical < 0 {
+                onSwipeDismiss?()
+            } else {
+                onSwipeRestore?()
+            }
+        case .undetermined:
             break
         }
     }
