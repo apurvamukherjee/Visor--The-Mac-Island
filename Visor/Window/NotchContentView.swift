@@ -124,23 +124,17 @@ final class NotchContentView: NSView {
         scrollOffset = 0
         verticalOffset = 0
         axis = .undetermined
-        setSwipeProgress(0, animated: false)
     }
 
+    /// Accumulates travel and locks the axis. Nothing is drawn while the
+    /// gesture is live: the island used to squeeze in proportion to it, and
+    /// that read as the notch being dragged about rather than a track
+    /// changing. The result of the swipe is the whole feedback.
     private func continueSwipe(deltaX: CGFloat, deltaY: CGFloat) {
         scrollOffset += deltaX
         verticalOffset += deltaY
-        if axis == .undetermined {
-            axis = Self.resolveAxis(horizontal: scrollOffset, vertical: verticalOffset)
-        }
-        switch axis {
-        case .horizontal:
-            setSwipeProgress(min(1, abs(scrollOffset) / Self.swipeThreshold), animated: false)
-        case .vertical:
-            setSwipeProgress(min(1, abs(verticalOffset) / Self.verticalSwipeThreshold), animated: false)
-        case .undetermined:
-            break
-        }
+        guard axis == .undetermined else { return }
+        axis = Self.resolveAxis(horizontal: scrollOffset, vertical: verticalOffset)
     }
 
     private func endSwipe() {
@@ -150,7 +144,6 @@ final class NotchContentView: NSView {
         scrollOffset = 0
         verticalOffset = 0
         axis = .undetermined
-        setSwipeProgress(0, animated: true)
 
         switch settledAxis {
         case .horizontal:
@@ -250,18 +243,6 @@ final class NotchContentView: NSView {
         let point = Self.normalized(local, in: islandRect)
         guard Self.isSignificantMove(from: store.hoverPoint, to: point) else { return }
         store.hoverPoint = point
-    }
-
-    /// Quantised like the hover parallax, and for the same reason: a
-    /// trackpad delivers scroll events far faster than the squeeze is
-    /// visible, and each write is a full view-graph pass.
-    private func setSwipeProgress(_ progress: CGFloat, animated: Bool) {
-        guard animated || abs(store.swipeProgress - progress) >= Self.hoverStep else { return }
-        if animated {
-            withAnimation(Motion.resolved(Motion.stretchReset)) { store.swipeProgress = progress }
-        } else {
-            store.swipeProgress = progress
-        }
     }
 
     /// Smallest cursor move worth re-rendering for, in normalised units.
