@@ -5,12 +5,17 @@
 /// nothing else is, so its low rank is really just documentation.
 enum ActivityKind: Sendable, CaseIterable {
     case screenshot
+    case airDrop
     case wave
     case volume
     case network
     case batteryAlert
+    case bluetooth
+    case focus
     case charging
     case deviceBattery
+    case screenRecording
+    case download
     case nowPlaying
     case timer
     case greeting
@@ -25,16 +30,20 @@ struct Activity: Equatable, Sendable {
 /// expiry clock here would never fire a re-render anyway, since
 /// `@Observable` only notifies on mutation.
 private let compactPriority: [ActivityKind] = [
-    .screenshot, .wave, .volume, .network, .batteryAlert, .charging, .deviceBattery,
-    .nowPlaying, .timer, .greeting
+    .screenshot, .airDrop, .wave, .volume, .network, .batteryAlert, .bluetooth, .focus,
+    .charging, .deviceBattery, .screenRecording, .download, .nowPlaying, .timer, .greeting
 ]
 
 /// Who gets the *expanded* island, which is not the same question: a
 /// charging peek outranks music in the wings but must never replace the
 /// music card when the user hovers. A long-running timer sits below music
 /// for the opposite reason — it would otherwise hide the card for minutes.
+/// `.screenRecording` sits below music for the same reason `.timer` does:
+/// a recording runs for minutes, and hiding the music card for all of it
+/// would be worse than showing the recording only in the wings.
 private let expandedPriority: [ActivityKind] = [
-    .screenshot, .volume, .network, .batteryAlert, .nowPlaying, .timer
+    .screenshot, .airDrop, .volume, .network, .batteryAlert, .bluetooth, .download,
+    .nowPlaying, .timer, .screenRecording
 ]
 
 func resolveCurrentActivity(_ activities: [ActivityKind: Activity]) -> Activity? {

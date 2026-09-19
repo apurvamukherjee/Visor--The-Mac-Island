@@ -30,6 +30,8 @@ struct IslandContent: Equatable, Sendable {
     var hasAgendaOverflow = false
     /// Whether the idle island is offering the timer presets.
     var hasTimerPresets = false
+    /// Download rows that will really be drawn, already clamped.
+    var downloadRows = 0
 
     static let empty = IslandContent()
 }
@@ -95,6 +97,12 @@ extension IslandLayout {
         static let onboardingBody: CGFloat = 92
         /// The primary button plus the secondary link underneath it.
         static let onboardingButtons: CGFloat = 56
+        /// One download: name over a progress bar.
+        static let downloadRow: CGFloat = 34
+        /// The AirDrop card: glyph over the file name and its status.
+        static let airDrop: CGFloat = 62
+        /// The recording indicator and its elapsed clock, side by side.
+        static let recording: CGFloat = 34
     }
 
     /// Column widths, absolute because columns hold real text at real
@@ -116,9 +124,14 @@ extension IslandLayout {
         static let timerPresets: CGFloat = 200
         /// A sentence of body copy, centred, plus a full-width button.
         static let onboarding: CGFloat = 230
+        static let download: CGFloat = 260
+        static let airDrop: CGFloat = 200
+        static let recording: CGFloat = 170
     }
 
     static let maxEventRows = 3
+    /// Past this the rows stop fitting and the island shows a count instead.
+    static let maxDownloadRows = 3
 
     /// The cutout the absolute column widths above were tuned against.
     /// Sizes stay deltas so they land on any notch; this only converts a
@@ -216,6 +229,39 @@ extension IslandLayout {
         expandedRadii: NotchRadii(top: 11, bottom: 34)
     )
 
+    /// One row per download in flight, so a single file does not get the
+    /// island a batch needs — the same content-resolved sizing the agenda
+    /// uses.
+    static func downloads(_ content: IslandContent) -> IslandLayout {
+        let rows = min(max(content.downloadRows, 1), maxDownloadRows)
+        let body = CGFloat(rows) * Block.downloadRow + CGFloat(rows - 1) * IslandSpacing.row
+        return IslandLayout(
+            expandedExtraWidth: extraWidth(content: Column.download),
+            expandedExtraHeight: extraHeight(body),
+            compactExtraWidth: 150
+        )
+    }
+
+    static let airDrop = IslandLayout(
+        expandedExtraWidth: extraWidth(content: Column.airDrop),
+        expandedExtraHeight: extraHeight(Block.airDrop),
+        compactExtraWidth: 160
+    )
+
+    static let bluetoothAlert = IslandLayout(
+        expandedExtraWidth: extraWidth(content: Column.alertIcon + IslandSpacing.column + Column.alertText),
+        expandedExtraHeight: extraHeight(Block.alert),
+        compactExtraWidth: 176
+    )
+
+    /// A pill, like the timer and the volume bar: one glyph and one clock.
+    static let screenRecording = IslandLayout(
+        expandedExtraWidth: extraWidth(content: Column.recording),
+        expandedExtraHeight: extraHeight(Block.recording),
+        compactExtraWidth: 150,
+        expandedRadii: NotchRadii(top: 11, bottom: 34)
+    )
+
     /// The welcome flow. One size for all three steps rather than resizing
     /// step to step — the copy is written to fit the same box, and a flow
     /// the user cannot yet dismiss on their own is the wrong place for the
@@ -236,12 +282,16 @@ extension IslandLayout {
         case .screenshot: shelf
         case .network: networkAlert
         case .batteryAlert: batteryAlert
+        case .bluetooth: bluetoothAlert
+        case .airDrop: airDrop
+        case .download: downloads(content)
+        case .screenRecording: screenRecording
         case .nowPlaying: nowPlaying(content)
         case .timer: timer
         case .volume: volume
         // The compact-only peeks never reach here — `resolveExpandedKind`
         // does not return them — but the island behind them is the idle one.
-        case .charging, .deviceBattery, .wave, .greeting, nil: idle(content)
+        case .charging, .deviceBattery, .wave, .greeting, .focus, nil: idle(content)
         }
     }
 
@@ -254,7 +304,11 @@ extension IslandLayout {
         batteryAlert,
         timer,
         volume,
-        onboarding(.welcome)
+        onboarding(.welcome),
+        downloads(IslandContent(downloadRows: maxDownloadRows)),
+        airDrop,
+        bluetoothAlert,
+        screenRecording
     ]
 
     static let maxExpandedExtraWidth = all.map(\.expandedExtraWidth).max() ?? 0

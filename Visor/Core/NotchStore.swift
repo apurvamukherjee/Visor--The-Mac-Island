@@ -40,6 +40,11 @@ final class NotchStore {
         let cycleRepeat: () -> Void
     }
 
+    struct AirDropCommands {
+        let send: ([URL]) -> Void
+        let dismiss: () -> Void
+    }
+
     struct OnboardingCommands {
         let advance: () -> Void
         let finish: () -> Void
@@ -103,6 +108,59 @@ final class NotchStore {
     var onboardingStep: OnboardingStep?
     var onboardingCommands: OnboardingCommands?
 
+    // MARK: - Lock screen
+
+    //
+    // Lock is a *mode*, like onboarding and like `state` itself — not one
+    // more activity competing in the priority ladder. The island's own panel
+    // is deliberately pinned below the lock shield and stays there; these
+    // drive a separate pair of overlay panels that live above it. See
+    // `LockScreenService`.
+
+    /// Set by `LockScreenService`. True from the moment the screen locks
+    /// until it unlocks.
+    var isLocked = false
+    /// True while a lock or unlock is still animating, including the
+    /// fast-user-switch edge before the shield actually appears. The overlay
+    /// outlives `isLocked` by this much so the unlock animation can finish
+    /// instead of being cut off.
+    var isLockTransitioning = false
+
+    // MARK: - Ported live activities
+
+    /// Owned by `DownloadService`. Empty means nothing is arriving.
+    var downloads: [DownloadItem] = []
+    /// Owned by `AirDropService`; outgoing sends only.
+    var airDropTransfer: AirDropTransfer?
+    var airDropCommands: AirDropCommands?
+    /// Owned by `ScreenRecordingService`. Holds a start date, not a
+    /// ticking elapsed value — see `ScreenRecording`.
+    var screenRecording: ScreenRecording?
+    /// Owned by `BluetoothService`; an event, so it clears itself.
+    var bluetoothAlert: BluetoothAlert?
+    /// Owned by `FocusService`. `isFocusOn` is the condition; `focusPeek`
+    /// is the transient announcement of it changing, which is what drives
+    /// the `.focus` activity.
+    var isFocusOn = false
+    var focusPeek: Bool?
+    /// Owned by `NetworkService`. Non-nil means a VPN is actually up — see
+    /// `VPNStatus` for why that is not the same as a `utun` interface
+    /// existing.
+    var vpnName: String?
+    /// True when the island is drawing on a screen with no physical cutout,
+    /// where it becomes a free-floating capsule. Written by
+    /// `NotchWindowController` whenever it resolves its target screen.
+    var isCapsule = false
+    /// The user's width/height trim from Settings, in points. Applied as a
+    /// delta on the measured cutout the same way every layout is.
+    var notchWidthOffset: CGFloat = 0
+    var notchHeightOffset: CGFloat = 0
+    /// Set by a swipe-up on the island: the current activity is hidden until
+    /// it goes away on its own or a swipe-down brings it back. Not a
+    /// `deactivate` — the feature still owns its activity, the user has just
+    /// asked not to look at it.
+    var dismissedActivity: ActivityKind?
+
     /// These three keep their setters because the setters do something:
     /// `activate`/`deactivate` own the dictionary's shape, and `setNowPlaying`
     /// keeps the track and its artwork in step.
@@ -125,7 +183,13 @@ final class NotchStore {
     static let shelfLimit = 4
 
     var currentActivity: Activity? {
-        resolveCurrentActivity(activities)
+        resolveCurrentActivity(visibleActivities)
+    }
+
+    /// Everything active except whatever the user swiped away.
+    private var visibleActivities: [ActivityKind: Activity] {
+        guard let dismissedActivity else { return activities }
+        return activities.filter { $0.key != dismissedActivity }
     }
 
     /// True while the welcome flow owns the island. `NotchWindowController`
@@ -138,7 +202,29 @@ final class NotchStore {
     /// The feature that owns the expanded island, or nil for the idle
     /// agenda. Read by both the layout and the view, so they cannot drift.
     var expandedKind: ActivityKind? {
-        resolveExpandedKind(activities)
+        resolveExpandedKind(visibleActivities)
+    }
+
+    /// Swipe up: hide whatever owns the island right now.
+    func dismissCurrentActivity() {
+        guard let kind = currentActivity?.kind else { return }
+        dismissedActivity = kind
+    }
+
+    /// Swipe down: undo that.
+    func restoreDismissedActivity() {
+        guard dismissedActivity != nil else { return }
+        dismissedActivity = nil
+    }
+
+    /// Bumped by Settings whenever a notch trim moves, so the window
+    /// controller can re-measure. A counter rather than the values
+    /// themselves: the controller wants "something changed, re-read the
+    /// screen", and two values would have it re-measuring twice for one drag.
+    private(set) var notchSizeTick = 0
+
+    func previewNotchSize() {
+        notchSizeTick += 1
     }
 
     /// The shape the island takes right now. Onboarding is checked first and
@@ -159,8 +245,15 @@ final class NotchStore {
         return IslandContent(
             agendaRows: min(upcoming, IslandLayout.maxEventRows),
             hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
-            hasTimerPresets: timerCommands != nil
+            hasTimerPresets: timerCommands != nil,
+            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows)
         )
+    }
+
+    /// True while either lock overlay should be on screen. It stays true
+    /// through the unlock animation, which is why it is not just `isLocked`.
+    var isLockPresenting: Bool {
+        isLocked || isLockTransitioning
     }
 
     /// The island's resting size for the current state, before the squash
@@ -206,6 +299,12 @@ final class NotchStore {
     func deactivate(_ kind: ActivityKind) {
         guard activities[kind] != nil else { return }
         activities.removeValue(forKey: kind)
+        // The dismissal dies with the thing it dismissed. Left standing, the
+        // *next* activity of the same kind would be silently swallowed — a
+        // track swiped away would take every track after it.
+        if dismissedActivity == kind {
+            dismissedActivity = nil
+        }
     }
 
     /// Track, artwork, tint and backdrop move together — a separate write for
