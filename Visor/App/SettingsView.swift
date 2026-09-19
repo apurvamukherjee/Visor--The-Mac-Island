@@ -16,9 +16,14 @@ struct SettingsView: View {
     @AppStorage(Preferences.motionPresetKey) private var motionPreset = MotionPreset.balanced.rawValue
     @AppStorage(Preferences.progressTintKey) private var progressTint = ProgressTintStyle.standard.rawValue
     @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
-    @AppStorage(Preferences.lockScreenWidgetKey) private var lockScreenWidget = true
-    @AppStorage(Preferences.lockScreenNowPlayingKey) private var lockScreenNowPlaying = true
-    @AppStorage(Preferences.lockScreenClockKey) private var lockScreenClock = true
+    @AppStorage(LockScreenSettings.liveActivityKey) private var lockLiveActivity = true
+    @AppStorage(LockScreenSettings.mediaPanelKey) private var lockMediaPanel = true
+    @AppStorage(LockScreenSettings.styleKey) private var lockStyle = LockScreenStyle.compact.rawValue
+    @AppStorage(LockScreenSettings.widgetAppearanceStyleKey)
+    private var lockWidgetAppearance = LockScreenWidgetAppearanceStyle.ultraThinMaterial.rawValue
+    @AppStorage(LockScreenSettings.mediaPanelBackgroundStyleKey)
+    private var lockPanelBackground = LockScreenMediaPanelBackgroundStyle.animatedArtwork.rawValue
+    @AppStorage(LockScreenSettings.mediaPanelVerticalOffsetKey) private var lockPanelOffset = 0.0
     @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
     @AppStorage(Preferences.strokeWidthKey) private var strokeWidth = 1.0
     @AppStorage(Preferences.strokeOpacityKey) private var strokeOpacity = 0.25
@@ -114,11 +119,42 @@ struct SettingsView: View {
             Divider()
 
             SettingsSection("Lock Screen") {
-                Toggle("Show widget when locked", isOn: $lockScreenWidget)
-                Toggle("Show Now Playing", isOn: $lockScreenNowPlaying)
-                    .disabled(!lockScreenWidget)
-                Toggle("Show clock and agenda", isOn: $lockScreenClock)
-                    .disabled(!lockScreenWidget)
+                Toggle("Padlock in the notch", isOn: $lockLiveActivity)
+
+                Picker("Padlock style", selection: $lockStyle) {
+                    ForEach(LockScreenStyle.allCases, id: \.rawValue) { style in
+                        Text(style == .compact ? "Icon only" : "Icon and label").tag(style.rawValue)
+                    }
+                }
+                .disabled(!lockLiveActivity)
+
+                Toggle("Media panel when locked", isOn: $lockMediaPanel)
+
+                Text("Shows the player on the lock screen whenever a track is loaded.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Picker("Panel material", selection: $lockWidgetAppearance) {
+                    ForEach(LockScreenWidgetAppearanceStyle.allCases, id: \.rawValue) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+                .disabled(!lockMediaPanel)
+
+                Picker("Panel backdrop", selection: $lockPanelBackground) {
+                    ForEach(LockScreenMediaPanelBackgroundStyle.allCases, id: \.rawValue) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+                .disabled(!lockMediaPanel)
+
+                LabeledSlider(
+                    "Panel position",
+                    value: $lockPanelOffset,
+                    range: LockScreenSettings.mediaPanelVerticalOffsetRange,
+                    format: { String(format: "%+.0f pt", $0) }
+                )
+                .disabled(!lockMediaPanel)
             }
 
             Divider()
