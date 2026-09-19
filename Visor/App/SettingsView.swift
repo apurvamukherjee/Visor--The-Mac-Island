@@ -14,6 +14,18 @@ struct SettingsView: View {
     /// Drives every spring in `Motion`. Stored as the raw value so
     /// `@AppStorage` can hold it; `Motion` reads the same key.
     @AppStorage(Preferences.motionPresetKey) private var motionPreset = MotionPreset.balanced.rawValue
+    @AppStorage(Preferences.progressTintKey) private var progressTint = ProgressTintStyle.standard.rawValue
+    @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
+    @AppStorage(Preferences.lockScreenWidgetKey) private var lockScreenWidget = true
+    @AppStorage(Preferences.lockScreenNowPlayingKey) private var lockScreenNowPlaying = true
+    @AppStorage(Preferences.lockScreenClockKey) private var lockScreenClock = true
+    @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
+    @AppStorage(Preferences.strokeWidthKey) private var strokeWidth = 1.0
+    @AppStorage(Preferences.strokeOpacityKey) private var strokeOpacity = 0.25
+    @AppStorage(Preferences.notchWidthOffsetKey) private var notchWidthOffset = 0.0
+    @AppStorage(Preferences.notchHeightOffsetKey) private var notchHeightOffset = 0.0
+    @AppStorage(Preferences.hidesInFullscreenKey) private var hidesInFullscreen = false
+    @AppStorage(Preferences.screenChoiceKey) private var screenChoice = NotchScreenChoice.automatic.rawValue
 
     private var launchAtLoginHint: String {
         LaunchAtLogin.isInstalled
@@ -30,6 +42,16 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        // Scrollable since the notch and lock-screen sections landed: the
+        // window is fixed-width by design, and a taller one would run off a
+        // 13" screen.
+        ScrollView {
+            content
+        }
+        .frame(width: 340, height: 560)
+    }
+
+    private var content: some View {
         VStack(spacing: 18) {
             VStack(spacing: 4) {
                 Text("Visor")
@@ -75,6 +97,73 @@ struct SettingsView: View {
                 Text("Show a turning record instead of the album cover.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+
+                Picker("Progress colour", selection: $progressTint) {
+                    ForEach(ProgressTintStyle.allCases, id: \.rawValue) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+
+                Toggle("Show equaliser", isOn: $showEqualizer)
+
+                Text("Decorative — macOS gives no app the system's audio levels.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            SettingsSection("Lock Screen") {
+                Toggle("Show widget when locked", isOn: $lockScreenWidget)
+                Toggle("Show Now Playing", isOn: $lockScreenNowPlaying)
+                    .disabled(!lockScreenWidget)
+                Toggle("Show clock and agenda", isOn: $lockScreenClock)
+                    .disabled(!lockScreenWidget)
+            }
+
+            Divider()
+
+            SettingsSection("Notch") {
+                Picker("Display", selection: $screenChoice) {
+                    ForEach(NotchScreenChoice.allCases, id: \.rawValue) { choice in
+                        Text(choice.title).tag(choice.rawValue)
+                    }
+                }
+
+                Toggle("Hide in full screen", isOn: $hidesInFullscreen)
+
+                Toggle("Outline", isOn: $strokeEnabled)
+
+                if strokeEnabled {
+                    LabeledSlider(
+                        "Outline width",
+                        value: $strokeWidth,
+                        range: 0.5 ... 4,
+                        format: { String(format: "%.1f pt", $0) }
+                    )
+                    LabeledSlider(
+                        "Outline opacity",
+                        value: $strokeOpacity,
+                        range: 0 ... 1,
+                        format: { "\(Int($0 * 100))%" }
+                    )
+                }
+
+                LabeledSlider(
+                    "Width trim",
+                    value: $notchWidthOffset,
+                    range: Preferences.notchWidthOffsetRange,
+                    format: { String(format: "%+.0f pt", $0) }
+                )
+                .onChange(of: notchWidthOffset) { showSizeFeedback() }
+
+                LabeledSlider(
+                    "Height trim",
+                    value: $notchHeightOffset,
+                    range: Preferences.notchHeightOffsetRange,
+                    format: { String(format: "%+.0f pt", $0) }
+                )
+                .onChange(of: notchHeightOffset) { showSizeFeedback() }
             }
 
             Divider()
@@ -82,7 +171,9 @@ struct SettingsView: View {
             VStack(spacing: 10) {
                 ShortcutRow(symbol: "cursorarrow.rays", label: "Hover the notch to expand it")
                 ShortcutRow(symbol: "hand.tap.fill", label: "Double-click to play or pause")
-                ShortcutRow(symbol: "hand.draw.fill", label: "Two-finger swipe to change track")
+                ShortcutRow(symbol: "hand.draw.fill", label: "Two-finger swipe sideways to change track")
+                ShortcutRow(symbol: "chevron.up", label: "Swipe up to dismiss, down to bring it back")
+                ShortcutRow(symbol: "airplayaudio", label: "Hold Option while dropping to AirDrop instead")
                 ShortcutRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
                 ShortcutRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
             }
@@ -100,7 +191,16 @@ struct SettingsView: View {
             }
         }
         .padding(24)
-        .frame(width: 340)
+    }
+
+    /// The island redraws itself at the new trim while the slider moves, so
+    /// the numbers can be dialled in by eye rather than guessed at and then
+    /// checked. Not a new mechanism — it is the ordinary compact peek, the
+    /// same one a charger or a screenshot triggers.
+    private func showSizeFeedback() {
+        store.notchWidthOffset = notchWidthOffset
+        store.notchHeightOffset = notchHeightOffset
+        store.previewNotchSize()
     }
 
     private func updateLaunchAtLogin(to enabled: Bool) {
@@ -111,6 +211,41 @@ struct SettingsView: View {
             Log.app.error("Launch at login failed: \(error.localizedDescription)")
             launchAtLoginFailed = true
             launchAtLogin = LaunchAtLogin.isEnabled
+        }
+    }
+}
+
+/// A slider with its label and current value above it — `Slider`'s own
+/// label sits beside the track and squeezes it to nothing at this width.
+private struct LabeledSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let format: (Double) -> String
+
+    init(
+        _ title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        format: @escaping (Double) -> String
+    ) {
+        self.title = title
+        _value = value
+        self.range = range
+        self.format = format
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(format(value))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .font(.callout)
+            Slider(value: $value, in: range)
         }
     }
 }

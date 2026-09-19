@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = NotchStore()
     private var windowController: NotchWindowController?
+    private var lockScreenController: LockScreenWindowController?
     private let settingsWindow = SettingsWindowController()
     private var services: [any NotchService] = []
 
@@ -21,6 +22,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController = controller
         controller.start()
 
+        // Its own controller, not the island's: the lock overlay lives in
+        // separate panels above the lock shield, while the island's panel
+        // stays pinned below it. See `LockScreenWindowController`.
+        let lockController = LockScreenWindowController(store: store)
+        lockScreenController = lockController
+        lockController.start()
+
         services = [
             OnboardingService(store: store),
             BatteryService(store: store),
@@ -31,6 +39,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             VolumeService(store: store),
             DeviceBatteryService(store: store),
             ScreenshotService(store: store),
+            DownloadService(store: store),
+            AirDropService(store: store),
+            ScreenRecordingService(store: store),
+            BluetoothService(store: store),
+            FocusService(store: store),
+            LockScreenService(store: store),
             GreetingService(store: store, name: "Apurva")
         ]
         services.forEach { $0.start() }
@@ -38,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_: Notification) {
         windowController?.stop()
+        lockScreenController?.stop()
         services.forEach { $0.stop() }
     }
 }
