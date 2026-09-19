@@ -84,11 +84,10 @@ extension IslandLayout {
         static let agendaOverflow: CGFloat = 20
         static let timerPresets: CGFloat = 24
         /// Artwork (56, or 72 in vinyl mode) beside the title, then the
-        /// scrub row (18) and the transport row (30), with 8pt between each.
-        /// Measured against what the column actually draws — it was 128,
-        /// which left 8pt of dead space under the transport row, visible as
-        /// a gap along the bottom of the expanded island.
-        static let musicColumn: CGFloat = 120
+        /// scrub row (18) and the transport row (30), with 12pt between
+        /// each. Measured against what the column actually draws, so there
+        /// is no dead space under the transport row.
+        static let musicColumn: CGFloat = 128
         static let shelfHeader: CGFloat = 18
         static let shelfTile: CGFloat = 76
         /// Title over two lines of detail.
@@ -218,8 +217,11 @@ extension IslandLayout {
     }
 
     /// How much wider than its own compact wing the player opens. Enough to
-    /// read as a panel rather than a slightly larger pill.
-    private static let musicExpandMargin: CGFloat = 60
+    /// read as a panel rather than a slightly larger pill, and enough that
+    /// the wider gutter comes out of the island rather than out of the
+    /// player: the floor is what binds here, so raising the gutter alone
+    /// would only squeeze the content it was meant to inset.
+    private static let musicExpandMargin: CGFloat = 76
 
     /// A header over a row of thumbnails. Width stays fixed: a chip is as
     /// wide as its screenshot's aspect ratio makes it, which is not known

@@ -94,10 +94,6 @@ final class NotchStore {
     /// zero every time — nothing rests on a non-zero value.
     var squashWidth: CGFloat = 0
     var squashHeight: CGFloat = 0
-    /// 0...1 while a two-finger swipe is in progress. The island squeezes
-    /// and its content recedes in proportion, so the gesture has something
-    /// to push against instead of firing blind at the threshold.
-    var swipeProgress: CGFloat = 0
     /// Set and cleared by `GreetingService`, which also owns `.greeting`'s
     /// activation/dismissal — same split as `battery`, whose peek is likewise
     /// driven by its service rather than the store.
