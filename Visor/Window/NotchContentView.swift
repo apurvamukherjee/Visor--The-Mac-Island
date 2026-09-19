@@ -68,6 +68,23 @@ final class NotchContentView: NSView {
         super.init(frame: .zero)
         hostingView.frame.size = canvasSize
         addSubview(hostingView)
+        observeIslandSize()
+    }
+
+    /// The tracking area is the island's own rect rather than `bounds`, so
+    /// it no longer rides `.inVisibleRect` and has to be rebuilt whenever
+    /// that rect changes. One-shot, so it re-arms itself.
+    private func observeIslandSize() {
+        withObservationTracking {
+            _ = store.state
+            _ = store.closedSize
+            _ = store.layout
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.observeIslandSize()
+                self?.updateTrackingAreas()
+            }
+        }
     }
 
     required init?(coder _: NSCoder) {
@@ -76,15 +93,30 @@ final class NotchContentView: NSView {
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
+        // Rebuilt only when the rect actually moved. Replacing a tracking
+        // area makes AppKit re-evaluate the cursor against it, which
+        // re-delivers `mouseEntered` even though the pointer never moved —
+        // and that read as the island opening twice, with two haptics. The
+        // island resizes on every state change, so this is the difference
+        // between one rebuild and one per open.
+        let rect = islandRect
         if let trackingArea {
+            guard trackingArea.rect != rect else { return }
             removeTrackingArea(trackingArea)
         }
         // `.mouseMoved` is still event-driven — AppKit delivers it only while
         // the cursor is inside this view, so nothing runs when the pointer is
         // elsewhere on screen. This is not the global monitor §5.2.2 bans.
+        //
+        // The rect is the island's own resting size, not `bounds`. The canvas
+        // is sized for the tallest layout any feature declares, so tracking
+        // `bounds` armed hover across a block of screen far below the closed
+        // notch — the cursor entered the island without ever touching it.
+        // `.inVisibleRect` is dropped with it: that option pins the area to
+        // `bounds` and would undo this.
         let area = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
+            rect: rect,
+            options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways],
             owner: self,
             userInfo: nil
         )
@@ -280,13 +312,26 @@ final class NotchContentView: NSView {
     }
 
     /// The canvas is sized for the tallest expanded layout, so the silhouette
-    /// is the top slice of `bounds` — and the slice shrinks with the music
-    /// layout, or the strip below the shorter island would swallow clicks
-    /// meant for whatever is behind it.
+    /// is the top slice of `bounds`.
+    ///
+    /// Every state now measures its *own* resting size. It used to fall back
+    /// to `NotchGeometry.expandedSize` whenever the island was not expanded,
+    /// which made the closed island's hover target the full height of the
+    /// tallest layout — a ~220pt block of screen under the notch that
+    /// swallowed the cursor and expanded the island on the way past. The
+    /// closed target is now the cutout itself, which is the only thing
+    /// actually drawn there.
     private var islandRect: CGRect {
-        let height = store.state == .expanded
-            ? store.layout.expandedSize(closed: store.closedSize).height
-            : NotchGeometry.expandedSize(closed: store.closedSize).height
-        return CGRect(x: 0, y: 0, width: bounds.width, height: height)
+        let resting = store.restingSize(for: store.state)
+        // Centred, because every rect the geometry produces shares the
+        // cutout's midX while the canvas is wider than all of them. Measured
+        // against `bounds`, not the frame, so it holds mid-animation too.
+        let width = min(resting.width, bounds.width)
+        return CGRect(
+            x: (bounds.width - width) / 2,
+            y: 0,
+            width: width,
+            height: resting.height
+        )
     }
 }

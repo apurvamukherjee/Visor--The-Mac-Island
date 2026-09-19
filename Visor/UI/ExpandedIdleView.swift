@@ -24,7 +24,12 @@ struct ExpandedIdleView: View {
                 TimerPresetRow(onStart: onStartTimer)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Centred, not leading. The agenda column is a fixed width sized for
+        // the longest title that fits; a short one ("Gym: Chest-triceps")
+        // leaves the surplus as dead black, and pinned left it all pooled on
+        // the right — so the collapse read as the island sliding right-to-
+        // left rather than closing evenly into the notch.
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     @ViewBuilder

@@ -68,20 +68,11 @@ enum Preferences {
         progressTintKey,
         equalizerKey,
         LockScreenSettings.liveActivityKey,
-        LockScreenSettings.mediaPanelKey,
         LockScreenSettings.soundKey,
         LockScreenSettings.customSoundPathKey,
         LockScreenSettings.customLockSoundPathKey,
         LockScreenSettings.customUnlockSoundPathKey,
-        LockScreenSettings.styleKey,
-        LockScreenSettings.widgetAppearanceStyleKey,
-        LockScreenSettings.widgetTintStyleKey,
-        LockScreenSettings.widgetBackgroundBrightnessKey,
-        LockScreenSettings.liquidGlassVariantKey,
-        LockScreenSettings.mediaPanelBackgroundStyleKey,
-        LockScreenSettings.lyricsEnabledKey,
-        LockScreenSettings.artworkExpandedKey,
-        LockScreenSettings.mediaPanelVerticalOffsetKey
+        LockScreenSettings.styleKey
     ]
 
     /// Clears every resettable key. Launch-at-login is *not* touched: it is a

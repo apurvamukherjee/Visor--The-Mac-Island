@@ -1,7 +1,7 @@
 import Testing
 @testable import Visor
 
-/// A paused track collapses the island back to the bare notch, but the track
+/// A paused track collapses the island down to a single dot, but the track
 /// itself stays loaded — see `NowPlayingService.syncPresence`.
 ///
 /// The 5s delay lives in a `Task.sleep`, so what is pinned here is the seam
@@ -32,10 +32,37 @@ struct PauseCollapseTests {
         store.activate(.nowPlaying)
 
         store.deactivate(.nowPlaying)
+        store.activate(.pausedTrack)
 
-        #expect(store.currentActivity == nil)
+        #expect(store.currentActivity?.kind == .pausedTrack)
         #expect(store.nowPlaying != nil)
         #expect(store.nowPlaying?.isPlaying == false)
+    }
+
+    /// The dot is the handle back to the player: hovering it has to resolve
+    /// to the same expanded card, or there is nothing to press play on.
+    @Test
+    func thePausedDotStillOpensThePlayer() {
+        let store = NotchStore()
+        store.setNowPlaying(pausedTrack())
+        store.activate(.pausedTrack)
+
+        #expect(store.expandedKind == .pausedTrack)
+        #expect(
+            IslandLayout.resolved(for: .pausedTrack, content: .empty).expandedExtraWidth
+                == IslandLayout.nowPlaying(.empty).expandedExtraWidth
+        )
+    }
+
+    /// The dot must never outrank a real activity, and must never sit beside
+    /// `.nowPlaying` — resuming hands the wing back.
+    @Test
+    func thePausedDotYieldsToRealActivities() {
+        let store = NotchStore()
+        store.activate(.pausedTrack)
+        store.activate(.download)
+
+        #expect(store.currentActivity?.kind == .download)
     }
 
     /// Resuming re-activates rather than re-loading, so the island comes back
