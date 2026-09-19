@@ -16,6 +16,21 @@ final class NotchStore {
         let adopt: (URL) -> Void
     }
 
+    struct TimerCommands {
+        let start: (TimeInterval) -> Void
+        let togglePause: () -> Void
+        let cancel: () -> Void
+    }
+
+    struct VolumeCommands {
+        let setLevel: (Float) -> Void
+        let toggleMute: () -> Void
+    }
+
+    struct NetworkCommands {
+        let dismiss: () -> Void
+    }
+
     struct NowPlayingCommands {
         let togglePlayPause: () -> Void
         let next: () -> Void
@@ -32,6 +47,23 @@ final class NotchStore {
     /// charging (a screenshot catch, the wave, the greeting).
     var batteryBounceTick = 0
     var nowPlayingCommands: NowPlayingCommands?
+    var networkCommands: NetworkCommands?
+    /// Set by `NetworkService`; the `.network` activity follows it, except
+    /// while the user has dismissed the alert for this offline episode.
+    var isOffline = false
+    /// Set and cleared by `BatteryService`, which owns the alert's lifetime
+    /// the same way it owns the charging peek's.
+    var batteryAlert: BatteryAlert?
+    /// Set and cleared by `DeviceBatteryService`, which owns the peek's
+    /// lifetime the way `BatteryService` owns the charging one's.
+    var deviceBattery: DeviceBattery?
+    var volumeCommands: VolumeCommands?
+    /// Owned by `VolumeService`, which also owns `.volume`'s peek.
+    var volume: VolumeInfo?
+    var timerCommands: TimerCommands?
+    /// Owned by `TimerService`. Stored as a deadline, so nothing ticks to
+    /// keep it true — see `IslandTimer`.
+    var timer: IslandTimer?
     var screenshotCommands: ScreenshotCommands?
     /// True while a file is being dragged over the island. The window
     /// controller watches it so the island opens to meet the drag.
@@ -40,6 +72,15 @@ final class NotchStore {
     /// when the pointer is away. Only written while expanded.
     var hoverPoint: CGPoint?
     var calendarEvents: [CalendarEvent] = []
+    /// Additive displacement of the island's resting size, driven by the
+    /// collapse squash. Written only by `NotchWindowController`, and back to
+    /// zero every time — nothing rests on a non-zero value.
+    var squashWidth: CGFloat = 0
+    var squashHeight: CGFloat = 0
+    /// 0...1 while a two-finger swipe is in progress. The island squeezes
+    /// and its content recedes in proportion, so the gesture has something
+    /// to push against instead of firing blind at the threshold.
+    var swipeProgress: CGFloat = 0
     /// Set and cleared by `GreetingService`, which also owns `.greeting`'s
     /// activation/dismissal — same split as `battery`, whose peek is likewise
     /// driven by its service rather than the store.
@@ -56,13 +97,51 @@ final class NotchStore {
     /// `nowPlayingArtwork` because it is built once per track and read by a
     /// different view.
     private(set) var nowPlayingBleed: CGImage?
-    private(set) var screenshot: ScreenshotCatch?
+    /// Newest first. A shelf rather than a single catch: screenshots
+    /// arrive in bursts, and the old model threw the previous one away
+    /// mid-glance.
+    private(set) var shelf: [ScreenshotCatch] = []
     private var waveTask: Task<Void, Never>?
 
     private static let waveDuration: TimeInterval = 1.2
+    /// Past this the row stops fitting the island and the oldest is dropped.
+    static let shelfLimit = 4
 
     var currentActivity: Activity? {
         resolveCurrentActivity(activities)
+    }
+
+    /// The feature that owns the expanded island, or nil for the idle
+    /// agenda. Read by both the layout and the view, so they cannot drift.
+    var expandedKind: ActivityKind? {
+        resolveExpandedKind(activities)
+    }
+
+    /// The shape the island takes right now, resolved from both the feature
+    /// on top and what that feature actually has to show.
+    var layout: IslandLayout {
+        IslandLayout.resolved(for: expandedKind, content: islandContent)
+    }
+
+    /// Filtered exactly the way the agenda view filters, so the island can
+    /// never reserve a row for an event that has already ended.
+    var islandContent: IslandContent {
+        let upcoming = CalendarEventMapper.upcomingCount(calendarEvents, now: .now)
+        return IslandContent(
+            agendaRows: min(upcoming, IslandLayout.maxEventRows),
+            hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
+            hasTimerPresets: timerCommands != nil
+        )
+    }
+
+    /// The island's resting size for the current state, before the squash
+    /// and swipe offsets are applied.
+    func restingSize(for state: NotchState) -> CGSize {
+        switch state {
+        case .expanded: layout.expandedSize(closed: closedSize)
+        case .compact: layout.compactSize(closed: closedSize)
+        case .closed: closedSize
+        }
     }
 
     /// True while the double-click easter egg's peek is showing.
@@ -115,22 +194,32 @@ final class NotchStore {
         nowPlayingBleed = bleed
     }
 
-    /// Clears the catch only if it is still the one named. A drag provider
-    /// outlives the chip that created it — the receiver can load it after a
-    /// newer screenshot has taken the wing — and an unconditional clear there
-    /// would throw away the catch the user is currently looking at.
-    func dismissScreenshot(_ shot: ScreenshotCatch) {
-        guard screenshot == shot else { return }
-        setScreenshot(nil)
+    /// Newest first, capped. Re-adding a catch already on the shelf is a
+    /// no-op rather than a duplicate row.
+    func addToShelf(_ item: ScreenshotCatch) {
+        guard !shelf.contains(item) else { return }
+        shelf.insert(item, at: 0)
+        if shelf.count > Self.shelfLimit {
+            shelf.removeLast(shelf.count - Self.shelfLimit)
+        }
+        activate(.screenshot)
     }
 
-    func setScreenshot(_ shot: ScreenshotCatch?) {
-        guard shot != screenshot else { return }
-        screenshot = shot
-        if shot == nil {
+    /// Removes only if it is still on the shelf. A drag provider outlives
+    /// the chip that created it — the receiver can load it after the shelf
+    /// has moved on — so an unconditional removal there would throw away
+    /// whatever the user is currently looking at.
+    func removeFromShelf(_ item: ScreenshotCatch) {
+        guard let index = shelf.firstIndex(of: item) else { return }
+        shelf.remove(at: index)
+        if shelf.isEmpty {
             deactivate(.screenshot)
-        } else {
-            activate(.screenshot)
         }
+    }
+
+    func clearShelf() {
+        guard !shelf.isEmpty else { return }
+        shelf.removeAll()
+        deactivate(.screenshot)
     }
 }

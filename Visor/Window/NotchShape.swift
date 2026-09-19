@@ -1,49 +1,79 @@
 import SwiftUI
 
-/// One continuous shape for every notch state. The top edge is flush with
-/// the screen's top edge — bottom corners round normally.
+/// One continuous shape for every notch state. Two curvatures, both chosen:
+///
+/// * The bottom corners are *continuous* (squircle) rather than circular
+///   arcs — the corner Apple draws everywhere in iOS and macOS. Measured
+///   against the arc this replaced: at r=28 the curve starts 43pt along the
+///   bottom edge instead of 28pt, which is plainly visible at island size.
+/// * The top corners flare *outward* into the menu bar — the shoulder
+///   RESEARCH.md §2.5 asked for. It adds material instead of removing it, so
+///   it is a concave fillet, not a corner radius. `topRadius` is 0 in the
+///   closed state and only there: any material outside the physical cutout
+///   would break closed-island invisibility.
 struct NotchShape: Shape {
+    var topRadius: CGFloat
     var bottomRadius: CGFloat
 
-    static let closedBottomRadius: CGFloat = 12
-    static let expandedBottomRadius: CGFloat = 28
-    static let compactBottomRadius: CGFloat = 14
-
-    var animatableData: CGFloat {
-        get { bottomRadius }
-        set { bottomRadius = newValue }
+    init(topRadius: CGFloat, bottomRadius: CGFloat) {
+        self.topRadius = topRadius
+        self.bottomRadius = bottomRadius
     }
 
-    /// The top edge is flush, with no radius at all: any curve that removes
-    /// material at the true top corner shows background through a gap exactly
-    /// where the shape should meet the bezel. RESEARCH.md §2.5 wants an
-    /// outward-flaring shoulder eventually — that has to *add* material
-    /// outward, so it will not be a corner radius when it arrives.
-    func path(in rect: CGRect) -> Path {
-        let width = rect.width
-        let height = rect.height
-        let bottom = min(bottomRadius, width / 2, height)
+    init(_ radii: NotchRadii) {
+        self.init(topRadius: radii.top, bottomRadius: radii.bottom)
+    }
 
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(topRadius, bottomRadius) }
+        set {
+            topRadius = newValue.first
+            bottomRadius = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let top = max(0, min(topRadius, rect.width / 4, rect.height))
+        // The body is inset by the shoulder on both sides; the shoulders then
+        // add that material back at the very top only, so the silhouette is
+        // full width where it meets the bezel and narrower below.
+        let body = rect.insetBy(dx: top, dy: 0)
+        let bottom = max(0, min(bottomRadius, body.width / 2, body.height))
+
+        var path = UnevenRoundedRectangle(
+            bottomLeadingRadius: bottom,
+            bottomTrailingRadius: bottom,
+            style: .continuous
+        ).path(in: body)
+
+        // Closed: no shoulder, and no boolean op to pay for in the state
+        // the island spends all its time in.
+        guard top > 0 else { return path }
+        // Unioned rather than appended. Appended, these stayed three separate
+        // closed subpaths meeting along x = body.minX/maxX — and two
+        // antialiased edges that merely *abut* composite to about 75%
+        // coverage, not 100%, so a pale hairline ran down the join. That line
+        // is what made the shoulders read as pieces stuck onto the island
+        // instead of part of it, and it was worst mid-morph, when the seam
+        // sits off the pixel grid. One region has no interior edge to seam.
+        return path
+            .union(shoulder(outerX: rect.minX, bodyX: body.minX, topY: rect.minY, radius: top))
+            .union(shoulder(outerX: rect.maxX, bodyX: body.maxX, topY: rect.minY, radius: top))
+    }
+
+    /// The concave fillet blending one top corner outward into the menu bar:
+    /// the material between the straight top edge and the body's side. Its
+    /// own subpath, unioned into the body by `path(in:)` — see the note
+    /// there for why appending it was not enough.
+    private func shoulder(outerX: CGFloat, bodyX: CGFloat, topY: CGFloat, radius: CGFloat) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: width, y: 0))
-        path.addLine(to: CGPoint(x: width, y: height - bottom))
-        path.addArc(
-            center: CGPoint(x: width - bottom, y: height - bottom),
-            radius: bottom,
-            startAngle: .degrees(0),
-            endAngle: .degrees(90),
-            clockwise: false
+        path.move(to: CGPoint(x: outerX, y: topY))
+        path.addQuadCurve(
+            to: CGPoint(x: bodyX, y: topY + radius),
+            control: CGPoint(x: bodyX, y: topY)
         )
-        path.addLine(to: CGPoint(x: bottom, y: height))
-        path.addArc(
-            center: CGPoint(x: bottom, y: height - bottom),
-            radius: bottom,
-            startAngle: .degrees(90),
-            endAngle: .degrees(180),
-            clockwise: false
-        )
+        path.addLine(to: CGPoint(x: bodyX, y: topY))
         path.closeSubpath()
-        return path.offsetBy(dx: rect.minX, dy: rect.minY)
+        return path
     }
 }

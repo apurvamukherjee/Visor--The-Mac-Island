@@ -19,7 +19,7 @@ final class ScreenshotService: NotchService {
     /// macOS writes the file and then renames it, so one screenshot produces a
     /// burst of directory events. Coalesce them.
     private static let debounce: Duration = .milliseconds(150)
-    private static let visibleFor: Duration = .seconds(60)
+    private static let visibleSeconds: TimeInterval = 60
     /// While the island is open the user is looking at the catch, so the
     /// countdown restarts instead of pulling it out from under them.
     private static let hoverGrace: Duration = .seconds(2)
@@ -60,7 +60,7 @@ final class ScreenshotService: NotchService {
         source?.cancel()
         source = nil
         store.screenshotCommands = nil
-        store.setScreenshot(nil)
+        store.clearShelf()
     }
 
     private func folderChanged() {
@@ -75,7 +75,7 @@ final class ScreenshotService: NotchService {
     private func catchNewest() {
         let folder = ScreenshotLocation.current()
         guard let url = Self.newestImage(in: folder, after: lastSeen) else { return }
-        guard url != store.screenshot?.url else { return }
+        guard url != store.shelf.first?.url else { return }
         lastSeen = .now
 
         present(url)
@@ -100,28 +100,41 @@ final class ScreenshotService: NotchService {
         Task { [weak self] in
             let thumbnail = await Self.thumbnail(for: url)
             guard let self, !Task.isCancelled else { return }
-            store.setScreenshot(ScreenshotCatch(url: url, thumbnail: thumbnail, caughtAt: .now))
-            scheduleDismiss()
+            store.addToShelf(ScreenshotCatch(url: url, thumbnail: thumbnail, caughtAt: .now))
+            scheduleSweep()
         }
     }
 
-    /// Restarted on every catch. If the island is open when the clock runs
-    /// out the catch is not pulled out from under the user — the timer is
-    /// simply not rescheduled, and the collapse itself re-arms it. A 2-second
-    /// re-check loop did the same job by waking the CPU for as long as the
-    /// pointer stayed on the island; observation costs nothing while idle.
-    private func scheduleDismiss() {
+    /// One task for the whole shelf, not one per catch: it sleeps until the
+    /// oldest item is due, sweeps everything that has expired, then
+    /// reschedules for whatever is next. If the island is open when the
+    /// clock runs out nothing is pulled out from under the user — the sweep
+    /// waits for the collapse instead. A re-check loop did this job by
+    /// waking the CPU for as long as the pointer stayed on the island;
+    /// observation costs nothing while idle.
+    private func scheduleSweep() {
         dismissTask?.cancel()
+        dismissTask = nil
+        guard let oldest = store.shelf.map(\.caughtAt).min() else { return }
+        let delay = max(0, oldest.addingTimeInterval(Self.visibleSeconds).timeIntervalSinceNow)
         dismissTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.visibleFor, tolerance: .milliseconds(500))
+            try? await Task.sleep(for: .seconds(delay), tolerance: .milliseconds(500))
             guard !Task.isCancelled, let self else { return }
             dismissTask = nil
             if store.state == .expanded {
                 waitForCollapse()
             } else {
-                dismiss()
+                sweep()
             }
         }
+    }
+
+    private func sweep() {
+        let cutoff = Date.now.addingTimeInterval(-Self.visibleSeconds)
+        for item in store.shelf where item.caughtAt <= cutoff {
+            store.removeFromShelf(item)
+        }
+        scheduleSweep()
     }
 
     /// Fires once, when the island next leaves the expanded state.
@@ -130,7 +143,7 @@ final class ScreenshotService: NotchService {
             _ = store.state
         } onChange: { [weak self] in
             Task { @MainActor in
-                guard let self, self.store.screenshot != nil else { return }
+                guard let self, !self.store.shelf.isEmpty else { return }
                 guard self.store.state != .expanded else {
                     self.waitForCollapse()
                     return
@@ -138,16 +151,10 @@ final class ScreenshotService: NotchService {
                 self.dismissTask = Task { [weak self] in
                     try? await Task.sleep(for: Self.hoverGrace, tolerance: .milliseconds(250))
                     guard !Task.isCancelled else { return }
-                    self?.dismiss()
+                    self?.sweep()
                 }
             }
         }
-    }
-
-    private func dismiss() {
-        dismissTask?.cancel()
-        dismissTask = nil
-        store.setScreenshot(nil)
     }
 
     private static func newestImage(in folder: URL, after mark: Date) -> URL? {

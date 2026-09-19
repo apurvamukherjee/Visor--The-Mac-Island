@@ -22,6 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             BatteryService(store: store),
             NowPlayingService(store: store),
             CalendarService(store: store),
+            NetworkService(store: store),
+            TimerService(store: store),
+            VolumeService(store: store),
+            DeviceBatteryService(store: store),
             ScreenshotService(store: store),
             GreetingService(store: store, name: "Apurva")
         ]

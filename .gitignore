@@ -7,3 +7,7 @@ xcuserdata/
 *.xcuserstate
 build/
 dist/
+
+# GPL-3.0 reference checkout, read for ideas only (CLAUDE.md forbids copying
+# code from it). Committing it would vendor GPL source into Visor.
+/DynamicNotch/

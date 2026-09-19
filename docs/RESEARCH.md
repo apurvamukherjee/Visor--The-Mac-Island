@@ -182,7 +182,12 @@ island changes state, and the island changes state constantly.
 - Use **quad or cubic curves**, and make radii `animatableData` so they morph with size.
 - Closed: top ≈ 6, bottom ≈ 10–14. Expanded: top ≈ 14–18, bottom ≈ 24–32.
 - Consider continuous-curvature (squircle-like) bottom corners: DynamicNotchKit moved to continuous corners specifically because they read as more polished.
-- **Phase 1 status:** the top edge is flush (no flare drawn) — a curve that removes material at the true top corner shows background through a gap right where the shape should meet the bezel. `topRadius` is still tracked/animated for a future outward-flaring shoulder, but since expanded-state menu bar overlap is now accepted (§0), that shoulder is a **possible later refinement, not planned**.
+- **Phase 1 status (superseded):** the top edge was flush with no flare — a curve that *removes* material at the true top corner shows background through a gap right where the shape should meet the bezel.
+- **Shipped 2026-09-19:** both halves of this section are now built.
+  - Bottom corners are **continuous** (`UnevenRoundedRectangle(style: .continuous)`, macOS 13+, `RectangleCornerRadii` is `Animatable`). Measured against the circular arc it replaced: at r=28 the curve starts 43pt along the bottom edge instead of 28pt. The hand-rolled arc path is gone.
+  - The **shoulder** is drawn as a concave quad-curve fillet per side, added as its own disjoint subpath so the fill rule unions it with the body rather than cancelling it. It *adds* material outward, which is why it never reopens the Phase 1 gap.
+  - `topRadius` is **0 when closed and only there** — material outside the physical cutout would break closed-island invisibility. Compact 8, expanded 11; bottom 12/14/28.
+  - The fillet tapers to zero thickness at the outer extreme by design, so a point-sample at the very corner reads as empty. Tests assert flushness across the *body* and the flare just under the top edge, not the vanishing tip.
 
 ### 2.6 States
 
@@ -367,6 +372,33 @@ fixed with no change to the UI or the interaction model:
 slow one — if you are sleeping to ask "has it changed yet", observe it
 instead. And never read an accessibility or defaults flag from a view body;
 cache it and refresh on its notification.
+
+### 5.1d Collapse clipping, 2026-09-19
+
+The island "collapsed and then rounded its corners" on every hover-out. Cause
+was sequencing, not the curve. `collapseFromExpanded` resized the panel on
+`completionCriteria: .logicallyComplete`; instrumenting an interpolating
+`Shape` showed that criterion fires at **t=0.355s with the shape still 3.7pt
+wider and 2.6pt taller than target**, which it does not reach until
+**t=0.472s**. The early `setFrame` clipped the only part still protruding —
+the bottom corners — so the island snapped to a hard rectangle and visibly
+re-rounded inside the fixed window.
+
+- Fix: `.removed` (callback at t=0.820s, shape settled since 0.470s). Applied
+  to `exitCompact` too, whose margin was only 34ms.
+- **Rule: never resize the panel on `.logicallyComplete`.** A spring is not
+  visually done when it is logically done. If a discrete frame change must
+  land mid-animation, the window has to be the larger of the two sizes for
+  the whole transition.
+- Corollary already relied on elsewhere: the canvas carries headroom
+  (`NotchGeometry.squashAllowance`) so a transient overshoot cannot exceed
+  its window.
+
+Measured with a throwaway instrumented `Shape` that logs every `path(in:)`
+call; the same harness disproved two other hypotheses (that stacked
+`.animation(_:value:)` modifiers were eating the morph transaction, and that
+per-axis scoped animations could desynchronise width from height — SwiftUI
+folds both onto the ambient transaction).
 
 ### 5.2 Rules
 

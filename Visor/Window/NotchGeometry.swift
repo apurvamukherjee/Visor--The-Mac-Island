@@ -33,21 +33,27 @@ enum NotchGeometry {
     /// 400 wide is roughly 2.2x the cutout, matching the proportion asked for
     /// — it splits into a ~150pt agenda column and ~220pt of music column,
     /// which is the least the transport row fits in at full 38x34 targets.
-    static let expandedIdleSize = CGSize(width: 400, height: 186)
-    static let expandedMusicSize = CGSize(width: 400, height: 168)
-    /// What the panel frame is sized to: the taller layout, so neither state
-    /// has to resize the window.
-    static let expandedSize = CGSize(width: 400, height: max(expandedIdleSize.height, expandedMusicSize.height))
+    static let fallbackClosedSize = CGSize(width: 200, height: 32)
+    /// Widest wings any feature asks for; the canvas must cover them all.
+    static let compactExtraWidth = IslandLayout.maxCompactExtraWidth
 
-    /// The island the user actually sees, which is shorter while something
-    /// is playing. Both the SwiftUI shape and the click-through hit test read
-    /// it from here — two copies of this branch would drift apart.
-    static func expandedSize(hasNowPlaying: Bool) -> CGSize {
-        hasNowPlaying ? expandedMusicSize : expandedIdleSize
+    /// The largest layout any feature declares, against a given cutout.
+    static func expandedSize(closed: CGSize) -> CGSize {
+        IslandLayout.maxExpandedSize(closed: closed)
     }
 
-    static let fallbackClosedSize = CGSize(width: 200, height: 32)
-    static let compactExtraWidth: CGFloat = 160
+    /// What the SwiftUI canvas is sized to vertically: every resting layout
+    /// plus squash headroom.
+    static func canvasHeight(closed: CGSize) -> CGFloat {
+        expandedSize(closed: closed).height + squashAllowance
+    }
+
+    /// Headroom below the tallest layout for the collapse squash, which
+    /// briefly stretches the island past every resting size. The panel is
+    /// click-through outside the silhouette so unused canvas costs nothing —
+    /// but a shape taller than its window gets clipped, which is the whole
+    /// class of bug this pass exists to remove.
+    static let squashAllowance: CGFloat = 44
 
     /// Hardware trim for the closed silhouette. macOS reports the auxiliary
     /// areas and safe-area inset in whole points, but the physical cutout's
@@ -95,19 +101,20 @@ enum NotchGeometry {
     /// approved plan's "frame follows shape" design.
     static func expandedRect(for screen: ScreenGeometryProviding) -> CGRect {
         let closed = closedRect(for: screen)
+        let size = expandedSize(closed: closed.size)
         return CGRect(
-            x: closed.midX - expandedSize.width / 2,
-            y: closed.maxY - expandedSize.height,
-            width: expandedSize.width,
-            height: expandedSize.height
+            x: closed.midX - size.width / 2,
+            y: closed.maxY - size.height,
+            width: size.width,
+            height: size.height
         )
     }
 
     /// Wings sit symmetrically outside the real notch, at menu-bar height —
     /// no vertical growth, unlike the expanded state.
-    static func compactRect(for screen: ScreenGeometryProviding) -> CGRect {
+    static func compactRect(for screen: ScreenGeometryProviding, extraWidth: CGFloat = compactExtraWidth) -> CGRect {
         let closed = closedRect(for: screen)
-        let width = closed.width + compactExtraWidth
+        let width = closed.width + extraWidth
         return CGRect(x: closed.midX - width / 2, y: closed.minY, width: width, height: closed.height)
     }
 
@@ -117,7 +124,14 @@ enum NotchGeometry {
     /// wider before it gets shorter, never has to widen the frame
     /// mid-animation. That was the expanded→compact jitter bug.
     static func expandedCanvasRect(for screen: ScreenGeometryProviding) -> CGRect {
-        expandedRect(for: screen).union(compactRect(for: screen))
+        let base = expandedRect(for: screen).union(compactRect(for: screen))
+        // Grows downward only: the top edge stays welded to the screen edge.
+        return CGRect(
+            x: base.minX,
+            y: base.minY - squashAllowance,
+            width: base.width,
+            height: base.height + squashAllowance
+        )
     }
 
     private static func fallbackRect(for screen: ScreenGeometryProviding) -> CGRect {

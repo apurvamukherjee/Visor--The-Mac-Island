@@ -3,6 +3,8 @@ excluded:
   - build
   - dist
   - Visor.xcodeproj
+  # Read-only GPL-3.0 reference checkout. Not ours, not shipped, not linted.
+  - DynamicNotch
 
 opt_in_rules:
   - force_unwrapping

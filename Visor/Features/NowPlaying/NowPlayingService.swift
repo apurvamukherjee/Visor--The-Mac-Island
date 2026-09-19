@@ -74,11 +74,13 @@ final class NowPlayingService: NotchService {
         if info != store.nowPlaying || artworkArrived {
             store.setNowPlaying(info, artwork: artwork, tint: tint, bleed: bleed)
         }
-        if info.isPlaying {
-            store.activate(.nowPlaying)
-        } else {
-            store.deactivate(.nowPlaying)
-        }
+        // Whether a track is loaded, not whether audio is coming out.
+        // Deactivating on pause took the transport row away with the layout,
+        // so the only way back was the player's own window — and the paused
+        // presentation (desaturated art, still bars) had nothing left to draw
+        // itself in. A track that actually goes away still clears through
+        // `scheduleClear`.
+        store.activate(.nowPlaying)
     }
 
     private func scheduleClear() {

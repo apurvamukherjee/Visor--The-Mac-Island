@@ -42,7 +42,7 @@ struct ExpandedMusicView: View {
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: IslandSpacing.column) {
             musicColumn
             separator
             calendarColumn
@@ -273,15 +273,18 @@ struct ExpandedMusicView: View {
     }
 
     private var calendarColumn: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: IslandSpacing.row) {
             DateBlock(alignment: .trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
             ForEach(peek) { EventRow(event: $0) }
             Spacer(minLength: 0)
         }
-        // The date block plus one chip need ~150; everything left over goes
-        // to the music column and its transport row.
-        .frame(width: 150, alignment: .leading)
+        // Only as wide as it has anything to put there: with nothing
+        // upcoming this is the date block alone, and the island comes in by
+        // the difference rather than holding an empty column open.
+        .frame(width: peek.isEmpty ? IslandLayout.Column.datePeek : IslandLayout.Column.musicPeek,
+               alignment: .leading)
+        .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
     }
 
     private var peek: [CalendarEvent] {

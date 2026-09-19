@@ -9,6 +9,9 @@ struct SettingsView: View {
     /// `@AppStorage`, not `@State`: the island reads the same key and has to
     /// pick the change up while this window is still open.
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
+    /// Drives every spring in `Motion`. Stored as the raw value so
+    /// `@AppStorage` can hold it; `Motion` reads the same key.
+    @AppStorage(Preferences.motionPresetKey) private var motionPreset = MotionPreset.balanced.rawValue
 
     private var launchAtLoginHint: String {
         LaunchAtLogin.isInstalled
@@ -38,6 +41,15 @@ struct SettingsView: View {
             }
 
             Divider()
+
+            Picker("Animation speed", selection: $motionPreset) {
+                ForEach(MotionPreset.allCases, id: \.rawValue) { preset in
+                    Text(preset.title).tag(preset.rawValue)
+                }
+            }
+            .onChange(of: motionPreset) { _, raw in
+                Motion.preset = MotionPreset(rawValue: raw) ?? .balanced
+            }
 
             Toggle("Launch at login", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, enabled in

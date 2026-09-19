@@ -52,7 +52,7 @@ struct NotchGeometryTests {
 
         #expect(expanded.midX == closed.midX)
         #expect(expanded.maxY == closed.maxY)
-        #expect(expanded.size == NotchGeometry.expandedSize)
+        #expect(expanded.size == NotchGeometry.expandedSize(closed: closed.size))
     }
 
     @Test
@@ -86,12 +86,22 @@ struct NotchGeometryTests {
         let canvas = NotchGeometry.expandedCanvasRect(for: screen)
 
         // Canvas must contain both, so no state change ever grows the frame
-        // mid-animation, and it must not exceed the island's height.
+        // mid-animation, plus headroom below for the collapse squash, which
+        // briefly stretches the island past every resting layout. A shape
+        // taller than its window gets clipped.
         #expect(canvas.width >= expanded.width)
         #expect(canvas.width >= NotchGeometry.compactRect(for: screen).width)
-        #expect(canvas.height == expanded.height)
-        #expect(expanded.height == NotchGeometry.expandedSize(hasNowPlaying: false).height)
-        #expect(NotchGeometry.expandedSize(hasNowPlaying: true).height < expanded.height)
+        #expect(canvas.height == expanded.height + NotchGeometry.squashAllowance)
+        #expect(canvas.minY < expanded.minY)
+        let closed = NotchGeometry.closedRect(for: screen).size
+        #expect(expanded.height == IslandLayout.maxExpandedSize(closed: closed).height)
+        // Every declared layout fits the canvas, so no feature can force a
+        // window resize mid-hover.
+        for layout in IslandLayout.all {
+            #expect(layout.expandedSize(closed: closed).width <= canvas.width)
+            #expect(layout.expandedSize(closed: closed).height <= NotchGeometry.expandedSize(closed: closed).height)
+            #expect(layout.compactSize(closed: closed).width <= canvas.width)
+        }
         #expect(canvas.maxY == expanded.maxY)
     }
 }

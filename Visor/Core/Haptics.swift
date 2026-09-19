@@ -6,6 +6,9 @@ import AppKit
 /// already looking at when it fires: the bar the original finding set, not a
 /// lower one.
 ///
+/// A timer reaching zero joins them: it fires once per timer the user
+/// started themselves, which is the same bar.
+///
 /// No-ops on hardware without a Force Touch trackpad, so there is nothing to
 /// gate. macOS exposes no "reduce haptics" accessibility setting; the system
 /// setting that does exist ("Force Click and haptic feedback") is honoured by
@@ -25,5 +28,10 @@ enum Haptics {
     /// The idle-island double-click easter egg fired.
     static func wave() {
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .drawCompleted)
+    }
+
+    /// A countdown the user started reached zero.
+    static func timerFinished() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
     }
 }

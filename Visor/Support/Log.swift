@@ -10,4 +10,6 @@ enum Log {
     static let calendar = Logger(subsystem: subsystem, category: "calendar")
     static let screenshot = Logger(subsystem: subsystem, category: "screenshot")
     static let greeting = Logger(subsystem: subsystem, category: "greeting")
+    static let volume = Logger(subsystem: subsystem, category: "volume")
+    static let deviceBattery = Logger(subsystem: subsystem, category: "deviceBattery")
 }

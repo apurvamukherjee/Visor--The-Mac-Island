@@ -4,3 +4,5 @@
 --self remove
 --importgrouping testable-bottom
 --commas inline
+# Read-only GPL-3.0 reference checkout. Not ours, not shipped, not formatted.
+--exclude DynamicNotch,build,dist

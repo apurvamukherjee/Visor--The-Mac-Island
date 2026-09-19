@@ -3,30 +3,44 @@ import SwiftUI
 
 struct NotchRootView: View {
     var store: NotchStore
-    var canvasWidth: CGFloat
+    var canvasSize: CGSize
 
+    /// The state's size with no squash applied. Content is laid out against
+    /// this, not `currentSize`: reflowing text every frame of a 100ms squash
+    /// both looks wrong and re-runs the layout pass in a loop.
+    private var restingSize: CGSize {
+        store.restingSize(for: store.state)
+    }
+
+    /// The resting size displaced by the two additive offsets: the collapse
+    /// squash and the in-progress swipe squeeze. Both ride their own springs
+    /// — that is the whole point of them being additive rather than extra
+    /// curves on the frame.
     private var currentSize: CGSize {
-        switch store.state {
-        case .expanded: NotchGeometry.expandedSize(hasNowPlaying: store.nowPlaying != nil)
-        case .compact: compactSize
-        case .closed: store.closedSize
-        }
+        let base = restingSize
+        let squeeze = Motion.SwipeFeedback.compression(for: base.width) * store.swipeProgress
+        return CGSize(
+            width: max(0, base.width + store.squashWidth - squeeze),
+            height: max(0, base.height + store.squashHeight)
+        )
     }
 
-    private var compactSize: CGSize {
-        CGSize(width: store.closedSize.width + NotchGeometry.compactExtraWidth, height: store.closedSize.height)
-    }
-
-    private var bottomRadius: CGFloat {
+    /// The closed state takes no shoulder, whatever the feature asks for:
+    /// material outside the physical cutout would make it visible.
+    private var radii: NotchRadii {
         switch store.state {
-        case .expanded: NotchShape.expandedBottomRadius
-        case .compact: NotchShape.compactBottomRadius
-        case .closed: NotchShape.closedBottomRadius
+        case .expanded: store.layout.expandedRadii
+        case .compact: store.layout.compactRadii
+        case .closed: .closed
         }
     }
 
     private var shape: NotchShape {
-        NotchShape(bottomRadius: bottomRadius)
+        var radii = radii
+        // The stretch bleeds into the radius so the island bulges under the
+        // squash instead of merely scaling.
+        radii.bottom += store.squashHeight * Motion.squashRadiusFraction
+        return NotchShape(radii)
     }
 
     /// Pure black, hard-edged, in every state. Two things were tried here and
@@ -46,7 +60,7 @@ struct NotchRootView: View {
                     .stroke(.white.opacity(store.isDropTargeted ? 0.55 : 0), lineWidth: 3)
                     .clipShape(shape)
             }
-            .animation(Motion.resolved(Motion.contentIn), value: store.isDropTargeted)
+            .animation(Motion.resolved(Motion.strokeVisibility), value: store.isDropTargeted)
     }
 
     var body: some View {
@@ -55,20 +69,36 @@ struct NotchRootView: View {
             .overlay(alignment: .top) {
                 if store.state == .expanded {
                     expandedContent
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 10)
+                        // The gutter every feature lays out inside. It was
+                        // 14/10 and read edge-to-edge: at the bottom corners
+                        // the shape curves in by its 28-34pt radius, so
+                        // content that clears the straight edge still runs
+                        // into the curve. Widened here rather than per
+                        // feature — one gutter is why no feature has to know
+                        // the radius it is sitting in.
+                        .padding(.horizontal, IslandSpacing.gutter)
+                        .padding(.bottom, IslandSpacing.bottom)
                         // Everything clears the camera housing in one place.
                         // The cutout hides the island's top-centre 185x33pt,
                         // so per-column clearance just moved the bug around.
-                        .padding(.top, store.closedSize.height + 6)
+                        .padding(.top, store.closedSize.height + IslandSpacing.cameraClearance)
+                        .frame(width: restingSize.width)
                         .transition(.island)
                 } else if store.state == .compact, store.currentActivity != nil {
                     CompactActivityView(store: store)
-                        .frame(width: compactSize.width, height: compactSize.height)
+                        .frame(width: restingSize.width, height: restingSize.height)
                         .transition(.island)
                 }
             }
-            .frame(width: canvasWidth, height: NotchGeometry.expandedSize.height, alignment: .top)
+            // Content recedes behind the squeeze rather than being squashed
+            // with it, so a swipe reads as pushing the island away.
+            .blur(radius: Motion.SwipeFeedback.blurRadius * store.swipeProgress)
+            .opacity(1 - Motion.SwipeFeedback.opacityReduction * store.swipeProgress)
+            // Enforces the rule the surface comment states: nothing paints
+            // outside the silhouette. It also lets content keep its resting
+            // width while the squash narrows the shape around it.
+            .clipShape(shape)
+            .frame(width: canvasSize.width, height: canvasSize.height, alignment: .top)
             // Drop an image on the notch and it becomes the current catch —
             // the same thing a fresh screenshot becomes.
             .dropDestination(for: URL.self) { urls, _ in
@@ -86,26 +116,63 @@ struct NotchRootView: View {
             .animation(Motion.resolved(Motion.layout), value: store.nowPlaying == nil)
     }
 
-    /// No clock/battery row here any more: the agenda and music columns need
-    /// the full height, and a row of their own pushed the content past the
-    /// shape's bottom edge. Time is already in the menu bar, and battery
-    /// lives in the compact wings.
+    /// Switched on the resolved owner rather than on the store's data, so
+    /// the view can never disagree with the layout the island was sized to.
+    ///
+    /// No clock/battery row here: the agenda and music columns need the full
+    /// height, and a row of their own pushed content past the shape's bottom
+    /// edge. Time is already in the menu bar, battery lives in the wings.
     @ViewBuilder
     private var expandedContent: some View {
-        if let shot = store.screenshot {
-            ScreenshotChip(
-                shot: shot,
-                height: 72,
-                showsLabel: true,
-                onOpen: {
+        switch store.expandedKind {
+        case .screenshot:
+            ExpandedShelfView(
+                shelf: store.shelf,
+                onOpen: { shot in
                     NSWorkspace.shared.open(shot.url)
-                    store.setScreenshot(nil)
+                    store.removeFromShelf(shot)
                 },
-                onDismiss: { store.setScreenshot(nil) },
-                onDropCompleted: { store.dismissScreenshot(shot) }
+                onDismiss: { store.removeFromShelf($0) },
+                onDropCompleted: { store.removeFromShelf($0) },
+                onClearAll: { store.clearShelf() }
             )
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } else if let info = store.nowPlaying {
+        case .network:
+            ExpandedNetworkView(onDismiss: { store.networkCommands?.dismiss() })
+        case .batteryAlert:
+            if let alert = store.batteryAlert {
+                ExpandedBatteryAlertView(alert: alert)
+            }
+        case .volume:
+            if let volume = store.volume {
+                ExpandedVolumeView(
+                    volume: volume,
+                    onScrub: { store.volumeCommands?.setLevel($0) },
+                    onToggleMute: { store.volumeCommands?.toggleMute() }
+                )
+            }
+        case .nowPlaying:
+            musicContent
+        case .timer:
+            if let timer = store.timer {
+                ExpandedTimerView(
+                    timer: timer,
+                    onTogglePause: { store.timerCommands?.togglePause() },
+                    onCancel: { store.timerCommands?.cancel() }
+                )
+            }
+        // `resolveExpandedKind` never returns the compact-only peeks, but
+        // the switch has to be total over the enum.
+        case .charging, .deviceBattery, .wave, .greeting, nil:
+            ExpandedIdleView(
+                events: store.calendarEvents,
+                onStartTimer: store.timerCommands.map { commands in { commands.start($0) } }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var musicContent: some View {
+        if let info = store.nowPlaying {
             ExpandedMusicView(
                 info: info,
                 artwork: store.nowPlayingArtwork,
@@ -115,8 +182,6 @@ struct NotchRootView: View {
                 hoverPoint: store.hoverPoint,
                 bleed: store.nowPlayingBleed
             )
-        } else {
-            ExpandedIdleView(events: store.calendarEvents)
         }
     }
 }

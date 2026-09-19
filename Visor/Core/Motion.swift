@@ -2,19 +2,85 @@ import AppKit
 import SwiftUI
 
 enum Motion {
-    /// closed/compact → expanded
-    static let open = Animation.spring(duration: 0.45, bounce: 0.22)
-    /// expanded → closed/compact
-    static let close = Animation.spring(duration: 0.34, bounce: 0.0)
+    /// Every spring below is derived from this. Read once at launch and on
+    /// change, not per access: these are read from view bodies.
+    private nonisolated(unsafe) static var cachedPreset = MotionPreset(
+        rawValue: UserDefaults.standard.string(forKey: Preferences.motionPresetKey) ?? ""
+    ) ?? .balanced
+
+    static var preset: MotionPreset {
+        get { cachedPreset }
+        set {
+            cachedPreset = newValue
+            UserDefaults.standard.set(newValue.rawValue, forKey: Preferences.motionPresetKey)
+        }
+    }
+
+    // MARK: - Shape
+
+    /// closed/compact → expanded. Arrival, so a touch quicker than the base
+    /// period and with enough bounce to read as mass.
+    static var open: Animation {
+        .spring(duration: preset.expandResponse, bounce: MotionPreset.standardBounce)
+    }
+
+    /// expanded → closed/compact. Monotonic, and quicker than the open.
+    /// The slower sprung close DynamicNotch uses shipped first and was
+    /// wrong on hardware: a spring on a dismissal bounces the shape back
+    /// toward someone who has already looked away, and the tail of that
+    /// bounce is visible in the shoulders after the body has settled.
+    static var close: Animation {
+        .spring(duration: preset.closeResponse, bounce: 0)
+    }
+
     /// closed ↔ compact (live activity appears/disappears)
-    static let morph = Animation.snappy(duration: 0.32)
-    /// content insertion
-    static let contentIn = Animation.smooth(duration: 0.28).delay(0.08)
-    /// content removal (always faster than the shape)
-    static let contentOut = Animation.smooth(duration: 0.14)
+    static var morph: Animation {
+        .spring(duration: preset.baseResponse, bounce: MotionPreset.closeBounce)
+    }
+
+    // MARK: - Content
+
+    /// Content insertion, delayed so the shape gets a head start. Without
+    /// it, text fades up while the island is still notch-sized.
+    static var contentIn: Animation {
+        .spring(duration: preset.baseResponse, bounce: MotionPreset.standardBounce)
+            .delay(contentRevealDelay)
+    }
+
+    /// Content removal, always faster than the shape: outgoing content has
+    /// to clear before the island closes over it.
+    static var contentOut: Animation {
+        .smooth(duration: preset.baseResponse * 0.3)
+    }
+
+    /// How long the shape leads the content in.
+    static var contentRevealDelay: Double {
+        preset.hideShowDelay * 0.24
+    }
+
+    /// How long an outgoing layout stays mounted. Strictly longer than the
+    /// close, or it tears down mid-morph.
+    static var unmountDelay: Double {
+        preset.unmountDelay
+    }
+
+    /// Minimum spacing between two queued island changes, so a burst of
+    /// activities does not stack transitions on top of each other.
+    static let queuePacing: Duration = .milliseconds(100)
+
     /// idle ↔ music expanded column redistribution — one coordinated layout
     /// change, not two sequential ones
-    static let layout = Animation.spring(duration: 0.40, bounce: 0.18)
+    static var layout: Animation {
+        .spring(duration: preset.baseResponse, bounce: MotionPreset.standardBounce)
+    }
+
+    /// The drop-target ring fading in and out.
+    static var strokeVisibility: Animation {
+        .spring(duration: preset.baseResponse, bounce: 0)
+    }
+
+    // MARK: - Feature-specific
+
     /// album art crossfade + scale-pop, used when Reduce Motion rules the
     /// flip out
     static let artSwap = Animation.spring(duration: 0.30, bounce: 0.20)
@@ -29,6 +95,50 @@ enum Motion {
     static let catchIn = Animation.spring(duration: 0.34, bounce: 0.24)
     /// title/artist swap — the new track's text rises into place
     static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
+
+    // MARK: - Squash and swipe feedback
+
+    /// The "gulp" before a collapse: the island narrows and stretches taller
+    /// for a beat, then releases into the close. It has to be an *additive
+    /// offset* on its own spring rather than a second animation on the frame
+    /// — measured, SwiftUI collapses a scoped `.animation(_:value:)` onto the
+    /// ambient `withAnimation` transaction, so the two axes cannot be given
+    /// different curves directly.
+    static var squash: Animation {
+        .spring(duration: preset.baseResponse, bounce: 0.30)
+    }
+
+    /// How long the squash is held before it releases and the shape closes.
+    /// Long enough to read as a beat, short enough to stay under the ~150ms
+    /// where a delay starts to read as lag.
+    static let squashHold: Duration = .milliseconds(100)
+    /// Fractions of the resting island the squash displaces, and how much of
+    /// the height stretch bleeds into the corner radius so the shape bulges
+    /// rather than merely scaling.
+    static let squashWidthFraction: CGFloat = 0.2
+    static let squashHeightFraction: CGFloat = 0.2
+    static let squashRadiusFraction: CGFloat = 0.3
+
+    /// Releasing a swipe: the rubber-banded island settling back.
+    static var stretchReset: Animation {
+        .spring(duration: preset.baseResponse, bounce: 0)
+    }
+
+    /// How far a swipe-in-progress squeezes the island, and how much the
+    /// content recedes behind it. The compression is clamped so the gesture
+    /// feels the same on a wing as on a full expanded card.
+    enum SwipeFeedback {
+        static let widthFactor: CGFloat = 0.18
+        static let minimumWidth: CGFloat = 28
+        static let maximumWidth: CGFloat = 44
+        static let blurRadius: CGFloat = 8
+        static let opacityReduction: Double = 0.2
+
+        /// Points of squeeze for a given island width at full progress.
+        static func compression(for width: CGFloat) -> CGFloat {
+            min(max(width * widthFactor, minimumWidth), maximumWidth)
+        }
+    }
 
     /// Cached, not queried per read. These are read from view bodies and from
     /// `mouseMoved`, and each raw access is an IPC round-trip into the

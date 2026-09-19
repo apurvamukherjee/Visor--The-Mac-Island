@@ -7,8 +7,12 @@ final class BatteryService: NotchService {
     private var runLoopSource: CFRunLoopSource?
     private var wasCharging: Bool?
     private var peekTask: Task<Void, Never>?
+    private var alertTask: Task<Void, Never>?
 
     private static let peekDuration: TimeInterval = 2.5
+    /// Longer than the plug/unplug peek: an alert is meant to be read, not
+    /// just noticed.
+    private static let alertDuration: TimeInterval = 6
 
     init(store: NotchStore) {
         self.store = store
@@ -37,6 +41,10 @@ final class BatteryService: NotchService {
     func stop() {
         peekTask?.cancel()
         peekTask = nil
+        alertTask?.cancel()
+        alertTask = nil
+        store.batteryAlert = nil
+        store.deactivate(.batteryAlert)
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         }
@@ -54,9 +62,15 @@ final class BatteryService: NotchService {
             Log.battery.error("Could not read power source info.")
             return
         }
+        let previous = store.battery
         // IOPS notifies far more often than the reading changes.
-        if info != store.battery {
+        if info != previous {
             store.battery = info
+        }
+        // Suppressed on the first read for the same reason the peek is: a
+        // machine that launches Visor at 15% has not just crossed anything.
+        if wasCharging != nil, let alert = BatteryAlert.crossing(from: previous, to: info) {
+            scheduleAlert(alert)
         }
         // Symmetric: a peek on plugging in and on unplugging, since both are
         // moments the user wants to see without having to hover. IOKit's
@@ -82,6 +96,19 @@ final class BatteryService: NotchService {
             try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(250))
             guard !Task.isCancelled else { return }
             self?.store.deactivate(.charging)
+        }
+    }
+
+    private func scheduleAlert(_ alert: BatteryAlert) {
+        store.batteryAlert = alert
+        store.activate(.batteryAlert)
+        alertTask?.cancel()
+        alertTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.alertDuration), tolerance: .milliseconds(250))
+            guard !Task.isCancelled, let self else { return }
+            alertTask = nil
+            store.batteryAlert = nil
+            store.deactivate(.batteryAlert)
         }
     }
 }

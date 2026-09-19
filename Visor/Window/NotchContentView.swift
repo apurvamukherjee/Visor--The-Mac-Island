@@ -73,10 +73,15 @@ final class NotchContentView: NSView {
         switch event.phase {
         case .began:
             scrollOffset = 0
+            setSwipeProgress(0, animated: false)
         case .changed:
             scrollOffset += delta
+            setSwipeProgress(min(1, abs(scrollOffset) / Self.swipeThreshold), animated: false)
         case .ended, .cancelled:
-            defer { scrollOffset = 0 }
+            defer {
+                scrollOffset = 0
+                setSwipeProgress(0, animated: true)
+            }
             guard abs(scrollOffset) > Self.swipeThreshold else { return }
             if scrollOffset < 0 {
                 commands.next()
@@ -151,7 +156,7 @@ final class NotchContentView: NSView {
         guard
             store.state == .expanded,
             store.nowPlaying != nil,
-            store.screenshot == nil,
+            store.shelf.isEmpty,
             !Motion.reduceMotion
         else {
             return
@@ -160,6 +165,18 @@ final class NotchContentView: NSView {
         let point = Self.normalized(local, in: islandRect)
         guard Self.isSignificantMove(from: store.hoverPoint, to: point) else { return }
         store.hoverPoint = point
+    }
+
+    /// Quantised like the hover parallax, and for the same reason: a
+    /// trackpad delivers scroll events far faster than the squeeze is
+    /// visible, and each write is a full view-graph pass.
+    private func setSwipeProgress(_ progress: CGFloat, animated: Bool) {
+        guard animated || abs(store.swipeProgress - progress) >= Self.hoverStep else { return }
+        if animated {
+            withAnimation(Motion.resolved(Motion.stretchReset)) { store.swipeProgress = progress }
+        } else {
+            store.swipeProgress = progress
+        }
     }
 
     /// Smallest cursor move worth re-rendering for, in normalised units.
@@ -187,12 +204,12 @@ final class NotchContentView: NSView {
     /// (closed/compact/expanded), matching NotchRootView's radii.
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: nil)
-        let bottomRadius: CGFloat = switch store.state {
-        case .expanded: NotchShape.expandedBottomRadius
-        case .compact: NotchShape.compactBottomRadius
-        case .closed: NotchShape.closedBottomRadius
+        let radii: NotchRadii = switch store.state {
+        case .expanded: store.layout.expandedRadii
+        case .compact: store.layout.compactRadii
+        case .closed: .closed
         }
-        let shape = NotchShape(bottomRadius: bottomRadius)
+        let shape = NotchShape(radii)
         return shape.path(in: islandRect).contains(local) ? super.hitTest(point) : nil
     }
 
@@ -202,8 +219,8 @@ final class NotchContentView: NSView {
     /// meant for whatever is behind it.
     private var islandRect: CGRect {
         let height = store.state == .expanded
-            ? NotchGeometry.expandedSize(hasNowPlaying: store.nowPlaying != nil).height
-            : NotchGeometry.expandedSize.height
+            ? store.layout.expandedSize(closed: store.closedSize).height
+            : NotchGeometry.expandedSize(closed: store.closedSize).height
         return CGRect(x: 0, y: 0, width: bounds.width, height: height)
     }
 }

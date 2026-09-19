@@ -18,6 +18,7 @@ final class NotchWindowController {
     private var isHovering = false
     private var isDisplayAsleep = false
     private var hoverIntentTask: Task<Void, Never>?
+    private var squashTask: Task<Void, Never>?
     private var screenObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
@@ -34,7 +35,7 @@ final class NotchWindowController {
         panel = NotchPanel(contentRect: closedRect)
         contentView = NotchContentView(
             store: store,
-            rootView: NotchRootView(store: store, canvasWidth: canvasSize.width),
+            rootView: NotchRootView(store: store, canvasSize: canvasSize),
             canvasSize: canvasSize
         )
         panel.contentView = contentView
@@ -84,6 +85,8 @@ final class NotchWindowController {
     func stop() {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
+        squashTask?.cancel()
+        squashTask = nil
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
         }
@@ -127,6 +130,7 @@ final class NotchWindowController {
         // collapsing back out — which can grow wider before it gets
         // shorter, since compact may exceed expandedSize's width — never
         // needs to widen the frame mid-animation. See collapseFromExpanded.
+        clearSquash()
         let canvasRect = NotchGeometry.expandedCanvasRect(for: screen)
         panel.setFrame(canvasRect, display: true)
         repositionHostingView(for: canvasRect.width)
@@ -139,24 +143,11 @@ final class NotchWindowController {
         }
     }
 
-    private func collapseFromExpanded() {
-        generation += 1
-        let gen = generation
-        let target: NotchState = store.currentActivity != nil ? .compact : .closed
-        withAnimation(
-            Motion.resolved(Motion.close),
-            completionCriteria: .logicallyComplete
-        ) {
-            store.state = target
-        } completion: { [weak self] in
-            guard let self, gen == generation else { return }
-            finishShrink(to: target)
-        }
-    }
-
     private func finishShrink(to target: NotchState) {
         guard let screen = Self.targetScreen() else { return }
-        let rect = target == .compact ? NotchGeometry.compactRect(for: screen) : NotchGeometry.closedRect(for: screen)
+        let rect = target == .compact
+            ? NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
+            : NotchGeometry.closedRect(for: screen)
         panel.setFrame(rect, display: true)
         if target == .closed {
             store.closedSize = rect.size
@@ -167,7 +158,7 @@ final class NotchWindowController {
     private func enterCompact() {
         guard let screen = Self.targetScreen() else { return }
         generation += 1
-        let rect = NotchGeometry.compactRect(for: screen)
+        let rect = NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
         panel.setFrame(rect, display: true)
         repositionHostingView(for: rect.width)
         withAnimation(Motion.resolved(Motion.morph)) {
@@ -180,7 +171,7 @@ final class NotchWindowController {
         let gen = generation
         withAnimation(
             Motion.resolved(Motion.morph),
-            completionCriteria: .logicallyComplete
+            completionCriteria: .removed
         ) {
             store.state = .closed
         } completion: { [weak self] in
@@ -237,6 +228,7 @@ final class NotchWindowController {
         isHovering = false
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
+        clearSquash()
         generation += 1
         store.state = .closed
         guard let screen = Self.targetScreen() else { return }
@@ -254,7 +246,7 @@ final class NotchWindowController {
         guard let screen = Self.targetScreen() else { return }
         let rect = switch store.state {
         case .expanded: NotchGeometry.expandedCanvasRect(for: screen)
-        case .compact: NotchGeometry.compactRect(for: screen)
+        case .compact: NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
         case .closed: NotchGeometry.closedRect(for: screen)
         }
         panel.setFrame(rect, display: true)
@@ -282,5 +274,70 @@ final class NotchWindowController {
 
     private static func targetScreen() -> NSScreen? {
         NSScreen.screens.first(where: { $0.auxiliaryTopLeftArea != nil }) ?? NSScreen.main
+    }
+}
+
+// MARK: - Collapse squash
+
+@MainActor
+extension NotchWindowController {
+    /// Squash, hold a beat, then close. The impulse is additive and rides its
+    /// own spring, so the two axes read as squash-and-stretch rather than a
+    /// uniform scale — SwiftUI folds a scoped `.animation(_:value:)` into the
+    /// ambient transaction, so giving the frame's axes different curves
+    /// directly does not work (measured).
+    func collapseFromExpanded() {
+        generation += 1
+        let gen = generation
+        let target: NotchState = store.currentActivity != nil ? .compact : .closed
+        squashTask?.cancel()
+        squashTask = nil
+
+        guard !Motion.reduceMotion else {
+            clearSquash()
+            runCollapse(to: target, generation: gen)
+            return
+        }
+
+        let resting = store.layout.expandedSize(closed: store.closedSize)
+        withAnimation(Motion.squash) {
+            store.squashWidth = -resting.width * Motion.squashWidthFraction
+            store.squashHeight = resting.height * Motion.squashHeightFraction
+        }
+        squashTask = Task { [weak self] in
+            try? await Task.sleep(for: Motion.squashHold)
+            guard !Task.isCancelled, let self, gen == generation else { return }
+            squashTask = nil
+            withAnimation(Motion.squash) {
+                store.squashWidth = 0
+                store.squashHeight = 0
+            }
+            runCollapse(to: target, generation: gen)
+        }
+    }
+
+    /// `.removed`, not `.logicallyComplete`. Measured on this exact spring:
+    /// `logicallyComplete` fires at t=0.355s with the shape still 3.7pt wider
+    /// and 2.6pt taller than its target, which it does not reach until
+    /// t=0.472s. Resizing the panel at the earlier mark clipped the only part
+    /// of the shape still sticking out — the bottom corners — so the island
+    /// snapped to a hard-edged rectangle and then visibly re-rounded.
+    func runCollapse(to target: NotchState, generation gen: Int) {
+        withAnimation(
+            Motion.resolved(Motion.close),
+            completionCriteria: .removed
+        ) {
+            store.state = target
+        } completion: { [weak self] in
+            guard let self, gen == generation else { return }
+            finishShrink(to: target)
+        }
+    }
+
+    func clearSquash() {
+        squashTask?.cancel()
+        squashTask = nil
+        store.squashWidth = 0
+        store.squashHeight = 0
     }
 }
