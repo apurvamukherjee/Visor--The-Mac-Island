@@ -8,10 +8,18 @@ import CoreGraphics
 /// it. Same reason every animation comes from `Motion`.
 enum IslandSpacing {
     /// Island edge to content, left and right. Has to clear the bottom
-    /// corners' own curvature, which cuts in by the expanded radius.
-    static let gutter: CGFloat = 20
-    /// Island bottom edge to content.
-    static let bottom: CGFloat = 14
+    /// corners' own curvature, which cuts in by the expanded radius — and
+    /// then some, or the content reads as edge-to-edge even when it is
+    /// technically inside the shape. 26 still read flush on hardware:
+    /// the artwork's halo and the date's digits are the widest things in
+    /// the row and both sit at the extremes, so the eye measures from the
+    /// glow, not the frame.
+    static let gutter: CGFloat = 34
+    /// Island bottom edge to content. Deliberately more than the gutter's
+    /// old value for the same reason the gutter grew: the bottom corners
+    /// are the roundest part of the shape, so content level with them needs
+    /// more clearance to look evenly inset.
+    static let bottom: CGFloat = 22
     /// Below the camera housing. Everything clears the cutout here rather
     /// than per column.
     static let cameraClearance: CGFloat = 10
