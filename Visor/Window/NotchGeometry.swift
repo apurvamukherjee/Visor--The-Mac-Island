@@ -74,10 +74,33 @@ enum NotchGeometry {
     /// off the screen's, so this one earns its place even at 0.
     static let closedHorizontalOffset: CGFloat = 0
 
+    /// The user's own trim from Settings, on top of the hardware
+    /// calibration above. Two separate numbers on purpose: the constants
+    /// above are "what this hardware actually measures" and are tuned once
+    /// against real machines; these are "what this person prefers", and
+    /// resetting one must not lose the other.
+    static func userWidthOffset() -> CGFloat {
+        CGFloat(UserDefaults.standard.double(forKey: Preferences.notchWidthOffsetKey))
+    }
+
+    static func userHeightOffset() -> CGFloat {
+        CGFloat(UserDefaults.standard.double(forKey: Preferences.notchHeightOffsetKey))
+    }
+
     /// Notch bounding box from the real hardware cutout, trimmed by the
     /// calibration above, or a centered pill-sized fallback on non-notched
     /// screens (which has no cutout to match, so it takes no trim).
     static func closedRect(for screen: ScreenGeometryProviding) -> CGRect {
+        closedRect(for: screen, widthOffset: userWidthOffset(), heightOffset: userHeightOffset())
+    }
+
+    /// The offsets are parameters rather than read inside, so the geometry
+    /// stays testable without touching `UserDefaults`.
+    static func closedRect(
+        for screen: ScreenGeometryProviding,
+        widthOffset: CGFloat,
+        heightOffset: CGFloat
+    ) -> CGRect {
         let reportedHeight = screen.safeAreaInsets.top
         guard
             reportedHeight > 0,
@@ -87,14 +110,29 @@ enum NotchGeometry {
         else {
             return fallbackRect(for: screen)
         }
-        let width = right.minX - left.maxX - closedWidthInset
-        let height = reportedHeight + closedHeightOffset
+        // Clamped so a stored value from an older build — or one edited by
+        // hand — cannot produce a zero-width island with no way back to
+        // Settings, which is right-click-on-the-island only.
+        let width = max(
+            8,
+            right.minX - left.maxX - closedWidthInset
+                + clamp(widthOffset, to: Preferences.notchWidthOffsetRange)
+        )
+        let height = max(
+            8,
+            reportedHeight + closedHeightOffset
+                + clamp(heightOffset, to: Preferences.notchHeightOffsetRange)
+        )
         return CGRect(
             x: left.maxX + closedWidthInset / 2 + closedHorizontalOffset,
             y: screen.frame.maxY - height,
             width: width,
             height: height
         )
+    }
+
+    private static func clamp(_ value: CGFloat, to range: ClosedRange<Double>) -> CGFloat {
+        min(max(value, CGFloat(range.lowerBound)), CGFloat(range.upperBound))
     }
 
     /// Shares the closed rect's horizontal center and top edge, per the
