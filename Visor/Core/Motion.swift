@@ -129,15 +129,17 @@ enum Motion {
         .spring(duration: preset.baseResponse, bounce: 0)
     }
 
-    /// How far a swipe-in-progress squeezes the island, and how much the
-    /// content recedes behind it. The compression is clamped so the gesture
-    /// feels the same on a wing as on a full expanded card.
+    /// How far a swipe-in-progress squeezes the island. The compression is
+    /// clamped so the gesture feels the same on a wing as on a full expanded
+    /// card.
+    ///
+    /// There is deliberately no blur or fade here any more: the squeeze is
+    /// the whole feedback. Blurring the content as well read as the island
+    /// losing focus rather than being pushed.
     enum SwipeFeedback {
         static let widthFactor: CGFloat = 0.18
         static let minimumWidth: CGFloat = 28
         static let maximumWidth: CGFloat = 44
-        static let blurRadius: CGFloat = 8
-        static let opacityReduction: Double = 0.2
 
         /// Points of squeeze for a given island width at full progress.
         static func compression(for width: CGFloat) -> CGFloat {
