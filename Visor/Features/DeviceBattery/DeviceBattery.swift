@@ -34,6 +34,21 @@ enum DeviceBatteryGlyph {
         case name.contains("mouse"): "magicmouse"
         case name.contains("trackpad"): "magictrackpad"
         case name.contains("keyboard"): "keyboard"
+        // Headphones before speakers: a "Bluetooth Headset" is a headphone,
+        // and several speaker brands put "sound" in a headphone's name too,
+        // so the more specific word has to win.
+        case name.contains("headphone"),
+             name.contains("headset"),
+             name.contains("buds"),
+             name.contains("beats"),
+             name.contains("wh-"),
+             name.contains("wf-"): "headphones"
+        case name.contains("speaker"),
+             name.contains("soundbar"),
+             name.contains("homepod"),
+             name.contains("boombox"),
+             name.contains("jbl"),
+             name.contains("sonos"): "hifispeaker.fill"
         default: "antenna.radiowaves.left.and.right"
         }
     }

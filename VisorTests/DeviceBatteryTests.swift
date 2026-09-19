@@ -11,7 +11,10 @@ struct DeviceBatteryTests {
         #expect(DeviceBatteryGlyph.symbolName(for: "Apurva's AirPods") == "airpods")
         #expect(DeviceBatteryGlyph.symbolName(for: "Magic Mouse") == "magicmouse")
         #expect(DeviceBatteryGlyph.symbolName(for: "Magic Keyboard") == "keyboard")
-        #expect(DeviceBatteryGlyph.symbolName(for: "Some Headset") == "antenna.radiowaves.left.and.right")
+        // Was the fallback until speakers and headphones got their own
+        // glyphs; a headset is a headphone, not an unknown accessory.
+        #expect(DeviceBatteryGlyph.symbolName(for: "Some Headset") == "headphones")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Unknown Gadget") == "antenna.radiowaves.left.and.right")
     }
 
     /// The lower bud is what you have left; the case is not charge you can
@@ -37,5 +40,32 @@ struct DeviceBatteryTests {
         #expect(DeviceBattery(product: "AirPods", percentage: 90).tint == .white)
         #expect(DeviceBattery(product: "AirPods", percentage: 25).tint == .orange)
         #expect(DeviceBattery(product: "AirPods", percentage: 9).tint == .red)
+    }
+
+    @Test
+    func headphonesAndSpeakersGetTheirOwnGlyphs() {
+        #expect(DeviceBatteryGlyph.symbolName(for: "Sony WH-1000XM5") == "headphones")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Galaxy Buds Pro") == "headphones")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Beats Studio") == "headphones")
+        #expect(DeviceBatteryGlyph.symbolName(for: "JBL Flip 6") == "hifispeaker.fill")
+        #expect(DeviceBatteryGlyph.symbolName(for: "HomePod mini") == "hifispeaker.fill")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Sonos Roam") == "hifispeaker.fill")
+    }
+
+    /// The ordering trap: several speaker brands ship headphones too, so the
+    /// headphone words are matched first. A "JBL Headphones" that came back
+    /// as a speaker would be this test failing.
+    @Test
+    func headphoneWordsBeatSpeakerBrands() {
+        #expect(DeviceBatteryGlyph.symbolName(for: "JBL Headphones") == "headphones")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Sonos Headset") == "headphones")
+    }
+
+    /// AirPods keep their own glyphs even though they are headphones — the
+    /// specific product art is better than the generic pair.
+    @Test
+    func airPodsKeepTheirOwnGlyphsOverTheGenericPair() {
+        #expect(DeviceBatteryGlyph.symbolName(for: "AirPods Pro") == "airpodspro")
+        #expect(DeviceBatteryGlyph.symbolName(for: "Beats Fit Pro") == "headphones")
     }
 }

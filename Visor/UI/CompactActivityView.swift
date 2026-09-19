@@ -22,6 +22,12 @@ struct CompactActivityView: View {
         }
         .foregroundStyle(.white)
         .animation(Motion.resolved(Motion.catchIn), value: store.shelf)
+        // Without this the wing's `.transition`s never run: swapping which
+        // branch of `leading` is built is an identity change, and an identity
+        // change only animates inside a transaction. This is what carries the
+        // unlock handoff — `.lock` deactivating to `.nowPlaying` dissolves the
+        // latch out and resolves the cover and bars in.
+        .animation(Motion.resolved(Motion.contentIn), value: store.currentActivity?.kind)
         // NotchShape's bottom corners round away with the compact radius —
         // at x=0/width exactly, the shape's fill stops short of the full
         // height, so edge-flush content pokes outside it. Inset past the
@@ -180,6 +186,13 @@ struct CompactActivityView: View {
                 PlaybackBars(isPlaying: info.isPlaying, height: 11, tint: store.nowPlayingTint)
             }
         }
+        // Resolves in rather than appearing. This is the receiving half of
+        // the unlock handoff: the padlock dissolves in its own window above
+        // the shield, `.lock` deactivates, and the cover and bars firm up
+        // here through the same `Materialize` the latch faded out through.
+        // The two cannot cross-fade as one view — they live in different
+        // windows — so they are sequenced to read as one.
+        .transition(.island)
     }
 
     private func label(_ systemName: String, _ text: String, tint: Color) -> some View {

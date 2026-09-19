@@ -35,15 +35,29 @@ enum SkyLightPin {
     /// desktop set. 100 is the lowest level above it, which is what the main
     /// island wants: above every normal window, but below the security agent
     /// (200) and the screen lock (300), so it cannot paint over a locked
-    /// screen. The lock-screen widget wants the opposite — it exists only
-    /// while the shield is up — so it pins above 300 instead.
-    enum Level: Int32 {
+    /// screen. The lock-screen windows want the opposite — they exist only
+    /// while the shield is up — so they pin well clear of it at 400/401,
+    /// matching the reference. 301 is *not* enough in practice: the shield
+    /// and its companions occupy the band just above 300.
+    enum Level: Int32, CaseIterable {
         /// The island proper: above the desktop, below the lock shield.
         case aboveDesktop = 100
         /// The lock-screen widget panel, above the shield.
-        case aboveLockShield = 301
+        case aboveLockShield = 400
         /// The lock-screen notch mirror, above the widget.
-        case aboveLockShieldNotch = 302
+        case aboveLockShieldNotch = 401
+    }
+
+    /// Creates every space up front. Levels above the shield must exist
+    /// *before* the shield goes up: creating and showing a space while the
+    /// screen is already locked does not reliably produce a visible space,
+    /// which is why the lock windows were pinned into nothing. The reference
+    /// builds all of its spaces in its operator's `init` for the same reason.
+    @MainActor
+    static func prepare() {
+        for level in Level.allCases {
+            _ = space(for: level)
+        }
     }
 
     /// The 7 is a flag whose meaning isn't documented; it is the value every
@@ -56,40 +70,23 @@ enum SkyLightPin {
     /// One space per level, created lazily and reused: a second space at the
     /// same level would be a second sibling the window server has to order,
     /// for no gain.
-    private nonisolated(unsafe) static var spacesByLevel: [Level: Int32] = [:]
+    @MainActor private static var spacesByLevel: [Level: Int32] = [:]
 
     /// The window must already be on screen — `windowNumber` is only valid
     /// once it has been ordered front.
+    @MainActor
     @discardableResult
     static func pin(_ window: NSWindow, level: Level = .aboveDesktop) -> Bool {
         guard
             let handle = dlopen(frameworkPath, RTLD_NOW),
             let connectionSymbol = dlsym(handle, "SLSMainConnectionID"),
-            let createSymbol = dlsym(handle, "SLSSpaceCreate"),
-            let levelSymbol = dlsym(handle, "SLSSpaceSetAbsoluteLevel"),
-            let showSymbol = dlsym(handle, "SLSShowSpaces"),
             let moveSymbol = dlsym(handle, "SLSSpaceAddWindowsAndRemoveFromSpaces")
         else {
             Log.window.notice("SkyLight unavailable; island stays a desktop window")
             return false
         }
         let connection = unsafeBitCast(connectionSymbol, to: SLSMainConnectionID.self)()
-        let space: Int32
-        if let existing = spacesByLevel[level] {
-            space = existing
-        } else {
-            let created = unsafeBitCast(createSymbol, to: SLSSpaceCreate.self)(connection, 1, 0)
-            guard created != 0 else {
-                Log.window.error("SkyLight space creation failed")
-                return false
-            }
-            _ = unsafeBitCast(levelSymbol, to: SLSSpaceSetAbsoluteLevel.self)(
-                connection, created, level.rawValue
-            )
-            _ = unsafeBitCast(showSymbol, to: SLSShowSpaces.self)(connection, [created] as CFArray)
-            spacesByLevel[level] = created
-            space = created
-        }
+        guard let space = space(for: level) else { return false }
 
         let moved = unsafeBitCast(moveSymbol, to: SLSSpaceAddWindowsAndRemoveFromSpaces.self)(
             connection, space, [window.windowNumber] as CFArray, moveWindowFlags
@@ -99,6 +96,37 @@ enum SkyLightPin {
             return false
         }
         return true
+    }
+
+    /// The space for a level, created on first use and reused after. A
+    /// second space at the same level would be a second sibling the window
+    /// server has to order, for no gain.
+    @MainActor
+    private static func space(for level: Level) -> Int32? {
+        if let existing = spacesByLevel[level] {
+            return existing
+        }
+        guard
+            let handle = dlopen(frameworkPath, RTLD_NOW),
+            let connectionSymbol = dlsym(handle, "SLSMainConnectionID"),
+            let createSymbol = dlsym(handle, "SLSSpaceCreate"),
+            let levelSymbol = dlsym(handle, "SLSSpaceSetAbsoluteLevel"),
+            let showSymbol = dlsym(handle, "SLSShowSpaces")
+        else {
+            return nil
+        }
+        let connection = unsafeBitCast(connectionSymbol, to: SLSMainConnectionID.self)()
+        let created = unsafeBitCast(createSymbol, to: SLSSpaceCreate.self)(connection, 1, 0)
+        guard created != 0 else {
+            Log.window.error("SkyLight space creation failed for level \(level.rawValue)")
+            return nil
+        }
+        _ = unsafeBitCast(levelSymbol, to: SLSSpaceSetAbsoluteLevel.self)(
+            connection, created, level.rawValue
+        )
+        _ = unsafeBitCast(showSymbol, to: SLSShowSpaces.self)(connection, [created] as CFArray)
+        spacesByLevel[level] = created
+        return created
     }
 
     /// True when the given screen is currently showing a full-screen space.

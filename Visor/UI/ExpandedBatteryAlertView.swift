@@ -9,12 +9,6 @@ struct ExpandedBatteryAlertView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: IslandSpacing.column) {
-            Image(systemName: alert.symbolName)
-                .font(.system(size: 26, weight: .medium))
-                .foregroundStyle(alert.tint)
-                .frame(width: IslandLayout.Column.alertIcon)
-                .contentTransition(.symbolEffect(.replace))
-
             VStack(alignment: .leading, spacing: 3) {
                 Text(alert.title)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
@@ -26,7 +20,13 @@ struct ExpandedBatteryAlertView: View {
                     // be clipped by the shape rather than shown.
                     .lineLimit(2)
             }
+
             Spacer(minLength: 0)
+
+            // The drawn battery sits on the trailing edge, as the reference
+            // has it: the text says what happened, the indicator shows it.
+            BatteryLevelIndicator(alert: alert)
+                .transition(.island)
         }
         .foregroundStyle(.white)
     }
