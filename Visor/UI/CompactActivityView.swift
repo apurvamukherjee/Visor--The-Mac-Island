@@ -69,6 +69,20 @@ struct CompactActivityView: View {
             if let greeting = store.greetingText {
                 label(greeting.symbolName, greeting.message, tint: .white)
             }
+        case .bluetooth:
+            if let alert = store.bluetoothAlert {
+                label(alert.symbolName, alert.detail, tint: alert.tint)
+            }
+        case .focus:
+            label(store.isFocusOn ? "moon.fill" : "moon", store.isFocusOn ? "Focus on" : "Focus off", tint: .purple)
+        case .airDrop:
+            if let transfer = store.airDropTransfer {
+                label(airDropSymbol(transfer.status), transfer.title, tint: .blue)
+            }
+        case .download:
+            downloadLabel
+        case .screenRecording:
+            recordingLabel
         // `.charging` shows nothing extra on the left: the battery glyph on
         // the right wing is the whole point of that peek.
         case .nowPlaying, .charging, nil:
@@ -97,6 +111,39 @@ struct CompactActivityView: View {
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.7))
             }
+        }
+    }
+
+    /// The count while several are arriving, the file's own name while one
+    /// is — a "1" on its own says nothing a glyph doesn't.
+    @ViewBuilder
+    private var downloadLabel: some View {
+        if store.downloads.count == 1, let only = store.downloads.first {
+            label("arrow.down.circle.fill", only.displayName, tint: .blue)
+        } else if !store.downloads.isEmpty {
+            label("arrow.down.circle.fill", "\(store.downloads.count) downloads", tint: .blue)
+        }
+    }
+
+    /// Ticks only while on screen, like the timer wing below it.
+    @ViewBuilder
+    private var recordingLabel: some View {
+        if let recording = store.screenRecording {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                label(
+                    "record.circle.fill",
+                    ScreenRecording.formatted(recording.elapsed(at: context.date)),
+                    tint: .red
+                )
+            }
+        }
+    }
+
+    private func airDropSymbol(_ status: AirDropTransfer.Status) -> String {
+        switch status {
+        case .sending: "airplayaudio"
+        case .completed: "checkmark.circle.fill"
+        case .failed: "exclamationmark.circle.fill"
         }
     }
 

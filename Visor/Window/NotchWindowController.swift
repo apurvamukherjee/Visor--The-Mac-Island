@@ -41,9 +41,12 @@ final class NotchWindowController {
         panel.contentView = contentView
         store.closedSize = closedRect.size
         repositionHostingView(for: closedRect.width)
+        store.isCapsule = screen.isDynamicIsland
         contentView.onShowSettings = { [weak self] in self?.onShowSettings?() }
         contentView.onMouseEntered = { [weak self] in self?.handleMouseEntered() }
         contentView.onMouseExited = { [weak self] in self?.handleMouseExited() }
+        contentView.onSwipeDismiss = { [weak self] in self?.handleSwipeDismiss() }
+        contentView.onSwipeRestore = { [weak self] in self?.store.restoreDismissedActivity() }
     }
 
     func start() {
@@ -53,6 +56,7 @@ final class NotchWindowController {
         registerDropObservation()
         registerActivityObservation()
         registerOnboardingObservation()
+        registerNotchSizeObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -101,6 +105,18 @@ final class NotchWindowController {
         sleepObserver = nil
         wakeObserver = nil
         panel.orderOut(nil)
+    }
+
+    /// Swipe up on the island: put the current activity away and collapse
+    /// out of whatever it was showing, so the gesture reads as pushing the
+    /// island back into the notch rather than merely changing its contents.
+    private func handleSwipeDismiss() {
+        store.dismissCurrentActivity()
+        Haptics.shapeChange()
+        if store.state == .expanded {
+            isHovering = false
+            collapseFromExpanded()
+        }
     }
 
     private func handleMouseEntered() {
@@ -212,6 +228,28 @@ final class NotchWindowController {
         }
     }
 
+    /// Settings moving a size trim re-measures the island in place, so the
+    /// sliders can be dialled in against the real notch.
+    private func registerNotchSizeObservation() {
+        withObservationTracking {
+            _ = store.notchSizeTick
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleNotchSizeChange() }
+        }
+    }
+
+    private func handleNotchSizeChange() {
+        registerNotchSizeObservation()
+        guard let screen = Self.targetScreen() else { return }
+        let closedRect = NotchGeometry.closedRect(for: screen)
+        store.closedSize = closedRect.size
+        // Only the resting frame is re-asserted; the state is left alone, so
+        // a peek showing while the slider moves is not snapped shut.
+        guard store.state == .closed else { return }
+        panel.setFrame(closedRect, display: true)
+        repositionHostingView(for: closedRect.width)
+    }
+
     /// A drag heading for the notch should be met, not waited out — the
     /// island opens the moment it becomes a drop target and closes again when
     /// the drag leaves or lands.
@@ -256,6 +294,7 @@ final class NotchWindowController {
         generation += 1
         store.state = .closed
         guard let screen = Self.targetScreen() else { return }
+        store.isCapsule = screen.isDynamicIsland
         let closedRect = NotchGeometry.closedRect(for: screen)
         panel.setFrame(closedRect, display: true)
         store.closedSize = closedRect.size
@@ -268,6 +307,15 @@ final class NotchWindowController {
     /// activity survives the switch instead of snapping closed.
     private func handleSpaceChange() {
         guard let screen = Self.targetScreen() else { return }
+        store.isCapsule = screen.isDynamicIsland
+        // A full-screen space is somebody watching or presenting something;
+        // the island sitting over it is exactly what they did not ask for.
+        // Checked here because a Space switch is the only way in or out.
+        if Preferences.hidesInFullscreen, SkyLightPin.isFullscreenSpaceActive(on: screen) {
+            panel.orderOut(nil)
+            return
+        }
+        panel.orderFrontRegardless()
         let rect = switch store.state {
         case .expanded: NotchGeometry.expandedCanvasRect(for: screen)
         case .compact: NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
@@ -275,7 +323,6 @@ final class NotchWindowController {
         }
         panel.setFrame(rect, display: true)
         repositionHostingView(for: rect.width)
-        panel.orderFrontRegardless()
     }
 
     private func handleDisplaySleep() {
@@ -296,8 +343,18 @@ final class NotchWindowController {
         )
     }
 
-    private static func targetScreen() -> NSScreen? {
-        NSScreen.screens.first(where: { $0.auxiliaryTopLeftArea != nil }) ?? NSScreen.main
+    /// Which screen the island lives on, honouring the Settings choice and
+    /// falling back the way it always did — a notched screen, then whatever
+    /// is main.
+    static func targetScreen() -> NSScreen? {
+        switch NotchScreenChoice.current {
+        case .automatic:
+            NSScreen.screens.first(where: { $0.auxiliaryTopLeftArea != nil }) ?? NSScreen.main
+        case .builtIn:
+            NSScreen.screens.first(where: \.isBuiltInDisplay) ?? NSScreen.main
+        case .main:
+            NSScreen.main
+        }
     }
 }
 

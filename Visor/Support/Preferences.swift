@@ -15,4 +15,63 @@ enum Preferences {
     static let lastGreetingDayKey = "lastGreetingDay"
     /// Set once the three-step welcome flow has been shown or dismissed.
     static let hasSeenWelcomeKey = "hasSeenWelcome"
+
+    // MARK: - Lock screen
+
+    static let lockScreenWidgetKey = "lockScreenWidget"
+    static let lockScreenNowPlayingKey = "lockScreenNowPlaying"
+    static let lockScreenClockKey = "lockScreenClock"
+
+    // MARK: - Notch customization
+
+    /// Outline around the island. Off by default: the island is a solid
+    /// black shape against a black cutout, and a stroke is what makes it
+    /// stop being invisible when closed.
+    static let strokeEnabledKey = "notchStroke"
+    static let strokeWidthKey = "notchStrokeWidth"
+    static let strokeOpacityKey = "notchStrokeOpacity"
+    /// Points added to the measured cutout, ±. A trim, not a size: the
+    /// cutout is still what everything is measured from.
+    static let notchWidthOffsetKey = "notchWidthOffset"
+    static let notchHeightOffsetKey = "notchHeightOffset"
+    static let hidesInFullscreenKey = "hidesInFullscreen"
+    /// `NotchScreenChoice.rawValue`.
+    static let screenChoiceKey = "notchScreen"
+    /// Tint style for the Now Playing progress bar.
+    static let progressTintKey = "nowPlayingProgressTint"
+    /// Show the (decorative) equaliser beside the artwork.
+    static let equalizerKey = "nowPlayingEqualizer"
+
+    static var hidesInFullscreen: Bool {
+        UserDefaults.standard.bool(forKey: hidesInFullscreenKey)
+    }
+
+    /// How far the width/height trims may run, matching the reference's own
+    /// ranges. Wide enough to correct a cutout macOS measures a point or two
+    /// off; narrow enough that the island cannot be dragged off the notch.
+    static let notchWidthOffsetRange: ClosedRange<Double> = -16 ... 16
+    static let notchHeightOffsetRange: ClosedRange<Double> = -4 ... 4
+}
+
+/// Which display the island lives on.
+enum NotchScreenChoice: String, CaseIterable, Sendable {
+    /// Whichever screen actually has a cutout, else the main one. What Visor
+    /// has always done, and right on every single-display Mac.
+    case automatic
+    case builtIn
+    case main
+
+    var title: String {
+        switch self {
+        case .automatic: "Automatic"
+        case .builtIn: "Built-in display"
+        case .main: "Main display"
+        }
+    }
+
+    static var current: NotchScreenChoice {
+        NotchScreenChoice(
+            rawValue: UserDefaults.standard.string(forKey: Preferences.screenChoiceKey) ?? ""
+        ) ?? .automatic
+    }
 }

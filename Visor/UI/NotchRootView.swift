@@ -40,7 +40,7 @@ struct NotchRootView: View {
         // The stretch bleeds into the radius so the island bulges under the
         // squash instead of merely scaling.
         radii.bottom += store.squashHeight * Motion.squashRadiusFraction
-        return NotchShape(radii)
+        return NotchShape(radii, isCapsule: store.isCapsule)
     }
 
     /// Pure black, hard-edged, in every state. Two things were tried here and
@@ -60,7 +60,29 @@ struct NotchRootView: View {
                     .stroke(.white.opacity(store.isDropTargeted ? 0.55 : 0), lineWidth: 3)
                     .clipShape(shape)
             }
+            // The user's own outline, off by default. Clipped the same way
+            // and skipped entirely while closed — an outline on the closed
+            // island is exactly what "invisible against the cutout" forbids.
+            .overlay {
+                if strokeOpacity > 0, store.state != .closed {
+                    shape
+                        .stroke(.white.opacity(strokeOpacity), lineWidth: strokeWidth)
+                        .clipShape(shape)
+                }
+            }
             .animation(Motion.resolved(Motion.strokeVisibility), value: store.isDropTargeted)
+    }
+
+    @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
+    @AppStorage(Preferences.strokeWidthKey) private var storedStrokeWidth = 1.0
+    @AppStorage(Preferences.strokeOpacityKey) private var storedStrokeOpacity = 0.25
+
+    private var strokeWidth: CGFloat {
+        CGFloat(min(max(storedStrokeWidth, 0.5), 4))
+    }
+
+    private var strokeOpacity: Double {
+        strokeEnabled ? min(max(storedStrokeOpacity, 0), 1) : 0
     }
 
     var body: some View {
@@ -100,10 +122,17 @@ struct NotchRootView: View {
             .clipShape(shape)
             .frame(width: canvasSize.width, height: canvasSize.height, alignment: .top)
             // Drop an image on the notch and it becomes the current catch —
-            // the same thing a fresh screenshot becomes.
+            // the same thing a fresh screenshot becomes. Holding Option
+            // while dropping sends the files via AirDrop instead, which is
+            // the one gesture that can tell the two apart without a mode
+            // switch the user has to remember.
             .dropDestination(for: URL.self) { urls, _ in
-                guard let url = urls.first else { return false }
-                store.screenshotCommands?.adopt(url)
+                guard let first = urls.first else { return false }
+                if NSEvent.modifierFlags.contains(.option) {
+                    store.airDropCommands?.send(urls)
+                } else {
+                    store.screenshotCommands?.adopt(first)
+                }
                 return true
             } isTargeted: { targeted in
                 store.isDropTargeted = targeted
@@ -151,6 +180,20 @@ struct NotchRootView: View {
             if let alert = store.batteryAlert {
                 ExpandedBatteryAlertView(alert: alert)
             }
+        case .bluetooth:
+            if let alert = store.bluetoothAlert {
+                ExpandedBluetoothView(alert: alert)
+            }
+        case .airDrop:
+            if let transfer = store.airDropTransfer {
+                ExpandedAirDropView(transfer: transfer)
+            }
+        case .download:
+            ExpandedDownloadView(downloads: store.downloads)
+        case .screenRecording:
+            if let recording = store.screenRecording {
+                ExpandedScreenRecordingView(recording: recording)
+            }
         case .volume:
             if let volume = store.volume {
                 ExpandedVolumeView(
@@ -171,7 +214,7 @@ struct NotchRootView: View {
             }
         // `resolveExpandedKind` never returns the compact-only peeks, but
         // the switch has to be total over the enum.
-        case .charging, .deviceBattery, .wave, .greeting, nil:
+        case .charging, .deviceBattery, .wave, .greeting, .focus, nil:
             ExpandedIdleView(
                 events: store.calendarEvents,
                 onStartTimer: store.timerCommands.map { commands in { commands.start($0) } }
