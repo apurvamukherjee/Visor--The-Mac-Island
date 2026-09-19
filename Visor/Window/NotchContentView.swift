@@ -155,10 +155,14 @@ final class NotchContentView: NSView {
         switch settledAxis {
         case .horizontal:
             guard let commands = store.nowPlayingCommands, abs(horizontal) > Self.swipeThreshold else { return }
+            // Swiping *right* advances, the way flicking a card off the top
+            // of a deck does — the previous track comes back from the left.
+            // This is the inverse of what shipped first, which followed the
+            // fingers instead of the content.
             if horizontal < 0 {
-                commands.next()
-            } else {
                 commands.previous()
+            } else {
+                commands.next()
             }
         case .vertical:
             guard abs(vertical) > Self.verticalSwipeThreshold else { return }
