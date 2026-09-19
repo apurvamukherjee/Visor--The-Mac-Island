@@ -205,7 +205,7 @@ struct NotchRootView: View {
                     onToggleMute: { store.volumeCommands?.toggleMute() }
                 )
             }
-        case .nowPlaying:
+        case .nowPlaying, .pausedTrack:
             musicContent
         case .timer:
             if let timer = store.timer {
@@ -235,8 +235,6 @@ struct NotchRootView: View {
                 tint: store.nowPlayingTint,
                 commands: store.nowPlayingCommands,
                 progress: store.nowPlayingProgress,
-                events: store.calendarEvents,
-                onLyricsVisibilityChange: { store.isShowingLyrics = $0 },
                 hoverPoint: store.hoverPoint,
                 bleed: store.nowPlayingBleed
             )

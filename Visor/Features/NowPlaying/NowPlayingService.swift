@@ -140,14 +140,21 @@ final class NowPlayingService: NotchService {
     /// after `pauseCollapseDelay`.
     ///
     /// The track itself is deliberately **not** cleared — only the activity
-    /// is deactivated. `store.nowPlaying` stays loaded, so the transport row
+    /// is swapped. `store.nowPlaying` stays loaded, so the transport row
     /// is still there the moment the island is opened by hand, and the lock
     /// screen's cached track survives. A track that actually goes away is a
     /// different event and still clears through `scheduleClear`.
+    ///
+    /// The collapse hands `.nowPlaying` over to `.pausedTrack` rather than
+    /// leaving the island with nothing: a paused track that vanished
+    /// completely gave no way back to it short of switching to the player
+    /// app. The dot is that way back — it is the same expanded card
+    /// underneath, so hovering it finds a play button.
     private func syncPresence(isPlaying: Bool) {
         guard !isPlaying else {
             pauseCollapseTask?.cancel()
             pauseCollapseTask = nil
+            store.deactivate(.pausedTrack)
             store.activate(.nowPlaying)
             return
         }
@@ -161,6 +168,7 @@ final class NowPlayingService: NotchService {
             pauseCollapseTask = nil
             guard store.nowPlaying?.isPlaying == false else { return }
             store.deactivate(.nowPlaying)
+            store.activate(.pausedTrack)
         }
     }
 
@@ -175,6 +183,7 @@ final class NowPlayingService: NotchService {
             store.setNowPlaying(nil)
             store.nowPlayingProgress = nil
             store.deactivate(.nowPlaying)
+            store.deactivate(.pausedTrack)
         }
     }
 }

@@ -39,6 +39,33 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   is `HEAD` *at build time*, so commit first.
 - Record every release in `CHANGELOG.md`: Added / Changed / Fixed, plus
   anything deliberately left out and why.
+- **Every `.dmg` ships the styled install window** — background art with the
+  drag arrow, both icons placed, no toolbar or status bar. `make-dmg.sh`
+  builds read-write, decorates via Finder/AppleScript, then converts to
+  compressed read-only; skipping the read-write step silently loses the
+  layout. The art is committed at `scripts/dmg/background{,@2x}.png`; a
+  release build never regenerates it. Change the art only by editing
+  `scripts/dmg/make-background.py` and re-running it (Pillow, dev-only —
+  never a build dependency). Icon positions in the AppleScript and the arrow
+  endpoints in the script must move together, or the arrow stops pointing at
+  anything.
+- **The volume ships exactly two visible entries**: `Visor.app` and the
+  `Applications` alias (plus `.DS_Store`). The background art lives **inside
+  the bundle** at `Visor.app/Contents/Resources/dmg-background.tiff`, so
+  nothing extra shows even with `AppleShowAllFiles=1` — `chflags hidden` does
+  not hide a root-level dotfile from that setting (verified). Assign it with
+  `(POSIX file "…") as alias`; `file "x" of folder "Visor.app" of vol` fails
+  -1728 because Finder treats a `.app` as an application, not a folder. The
+  art cannot instead be *deleted* before detach: `.DS_Store` stores it as a
+  Carbon alias, so the record survives, dangles, and the window paints plain
+  grey (measured). `.fseventsd` is deleted **after the rename, immediately
+  before detach** — macOS maintains it while the volume is mounted, so an
+  earlier delete silently comes back. The art is one multi-resolution `.tiff`
+  (`tiffutil -cathidpicheck`), not a `.background/` folder of 1x+2x PNGs.
+- **Never let the Finder pass fail silently.** `osascript` must abort the
+  build on error, and `.DS_Store` needs a settle before `chflags`/`sync` —
+  flagging it while Finder is still writing loses the whole layout, and the
+  image still builds, just unstyled.
 
 ## Architecture rules
 - Single source of truth: `NotchStore` (@Observable, @MainActor). Views read, services write.
@@ -309,6 +336,16 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   re-emits on every position tick, and re-arming per tick would push the
   deadline out forever. The lock-screen media panel gates on `isPlaying`
   too, so a paused track shows no panel there either.
+- **DMG background moved into the bundle (2026-09-20):** the volume no longer
+  carries a root-level `.background.tiff`, so anyone browsing with
+  `AppleShowAllFiles=1` sees two icons rather than three. Two candidate fixes
+  were measured on scratch images before the script changed: deleting the art
+  before detach **fails** (the `icvp` record holds a Carbon alias, which then
+  dangles and paints plain grey), and moving it into
+  `Visor.app/Contents/Resources/` **works** — which disproves the earlier note
+  that Finder drops a bundle-internal assignment. That note was really an
+  AppleScript bug: `folder "Visor.app" of vol` fails -1728 on an application
+  bundle, while a POSIX path is accepted. Verified end to end on build16.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

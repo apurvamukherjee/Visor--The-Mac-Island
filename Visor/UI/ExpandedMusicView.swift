@@ -1,9 +1,12 @@
 import SwiftUI
 
-/// Expanded with something playing: music on the left, date + a single-event
-/// calendar peek on the right. The calendar shrinks to make room — it never
-/// disappears — and the one-chip peek is what lets the island sit ~40pt
-/// shorter than the idle layout.
+/// Expanded with something playing: the player owns the whole island.
+///
+/// No calendar here at all. The date block and its one-event peek used to
+/// sit in the top-right corner, but the layout only budgeted the date's
+/// height while the view drew an `EventRow` under it — so a single event
+/// overflowed onto the seek bar. The agenda is what the *idle* island
+/// shows; with a track loaded this is the player and nothing else.
 struct ExpandedMusicView: View {
     let info: NowPlayingInfo
     let artwork: CGImage?
@@ -11,20 +14,16 @@ struct ExpandedMusicView: View {
     let commands: NotchStore.NowPlayingCommands?
     /// Anchor-based position, nil when the source app reports no duration.
     let progress: NowPlayingProgress?
-    let events: [CalendarEvent]
-    /// Reports the lyrics panel's state back to the store, so the island
-    /// can resize for the second column before it draws.
-    var onLyricsVisibilityChange: ((Bool) -> Void)?
     /// Cursor position for the parallax tilt, nil when the pointer is away.
     let hoverPoint: CGPoint?
     /// Pre-blurred artwork for the halo behind the cover.
     let bleed: CGImage?
 
     private static let artworkSide: CGFloat = 56
-    /// Fixed, so a long title can never reflow the rows beneath it. Wide
-    /// enough to clear the date box in the corner above it, since the title
-    /// row is the one row that shares its height.
-    private static let textWidth: CGFloat = 166
+    /// Fixed, so a long title can never reflow the rows beneath it. The
+    /// corner date box that used to constrain this is gone, so the title
+    /// now runs the width the card actually has.
+    private static let textWidth: CGFloat = 214
     /// The record runs larger than the cover it replaces: a disc reads as a
     /// disc only once the grooves and the tonearm have room. Still inside the
     /// existing 168pt island — the height comes out of the music column's
@@ -47,70 +46,12 @@ struct ExpandedMusicView: View {
     /// live CoreAudio callback for a glyph nobody is looking at.
     @State private var isMuted: Bool?
 
-    /// Fetched only while this is true — see `loadLyricsIfNeeded` — so
-    /// playing music never phones out to LRCLIB on its own.
-    @State private var showLyrics = false
-    @State private var lyricsResult: LyricsResult?
-    @State private var lyricsTask: Task<Void, Never>?
-
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
     @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
 
     var body: some View {
-        // The date is an overlay in the top-right corner, not a column.
-        // As a column it claimed full height for content that only fills the
-        // top of it, so the player was squeezed into the left while a tall
-        // strip of black sat beside it — and the full-height separator drew
-        // a line down the middle of that emptiness. The player now gets the
-        // whole width and the date sits in the corner it actually occupies.
-        //
-        // The lyrics panel is still a real column: it is full-height content.
-        HStack(alignment: .top, spacing: IslandSpacing.column) {
-            musicColumn
-            if showLyrics {
-                separator
-                lyricsColumn
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if !showLyrics {
-                datePeek
-            }
-        }
-        .foregroundStyle(.white)
-        .onChange(of: showLyrics) {
-            onLyricsVisibilityChange?(showLyrics)
-            loadLyricsIfNeeded()
-        }
-        .onDisappear { onLyricsVisibilityChange?(false) }
-        .onChange(of: info.trackIdentity) { loadLyricsIfNeeded() }
-    }
-
-    private func loadLyricsIfNeeded() {
-        lyricsTask?.cancel()
-        guard showLyrics else { return }
-        lyricsResult = nil
-        let title = info.title
-        let artist = info.artist
-        lyricsTask = Task {
-            let result = await LyricsFetcher.fetch(title: title, artist: artist)
-            guard !Task.isCancelled else { return }
-            lyricsResult = result
-        }
-    }
-
-    /// A hairline inset equally top and bottom, so it reads as centred
-    /// between the columns rather than a full-height rule cutting the island
-    /// in two.
-    private var separator: some View {
-        Capsule()
-            // Just enough to separate the columns. Anything brighter draws
-            // the eye to the divider instead of the content, and reads as a
-            // grey line laid over the black rather than part of it.
-            .fill(.white.opacity(0.07))
-            .frame(width: 1)
-            .frame(maxHeight: .infinity)
-            .padding(.vertical, 8)
+        musicColumn
+            .foregroundStyle(.white)
     }
 
     /// Art beside the title, scrub row and transport underneath.
@@ -162,20 +103,10 @@ struct ExpandedMusicView: View {
                 }
                 Spacer(minLength: 0)
             }
-            // The date box sits above this row, so it stops short of it.
-            // The scrub and transport rows below run the full width.
-            .padding(.trailing, showLyrics ? 0 : dateBoxWidth + Self.dateBoxGap)
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
             if let progress {
-                MusicSeekRow(
-                    shuffleMode: info.shuffleMode,
-                    repeatMode: info.repeatMode,
-                    progress: progress,
-                    tint: tint,
-                    showLyrics: $showLyrics,
-                    commands: commands
-                )
+                MusicSeekRow(progress: progress, tint: tint, commands: commands)
             }
             controls
             Spacer(minLength: 0)
@@ -382,46 +313,5 @@ struct ExpandedMusicView: View {
         }
         .onAppear { isMuted = SystemMute.isMuted }
         .frame(maxWidth: .infinity)
-    }
-
-    /// The date, and at most one upcoming event under it. With nothing
-    /// upcoming this is the date block alone and the column narrows, so a
-    /// clear day does not hold an empty panel open.
-    /// The date, and the single next event under it when there is one.
-    /// A fixed box in the corner: it takes only the height it draws, so
-    /// nothing below it is dead space, and it never resizes the island
-    /// under the player.
-    private var datePeek: some View {
-        VStack(alignment: .trailing, spacing: IslandSpacing.row) {
-            DateBlock(alignment: .trailing)
-            if let next = peek.first {
-                EventRow(event: next)
-                    .frame(width: IslandLayout.Column.datePeek, alignment: .leading)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(width: IslandLayout.Column.datePeek, alignment: .trailing)
-        .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
-        .transition(.island)
-    }
-
-    /// What the corner box occupies, so the title row can stop short of it.
-    private var dateBoxWidth: CGFloat {
-        IslandLayout.Column.datePeek
-    }
-
-    /// Clear air between the title and the date box. A column gap is too
-    /// tight here — the two are unrelated pieces of information sitting on
-    /// the same line, not adjacent columns of one thing.
-    private static let dateBoxGap: CGFloat = 22
-
-    private var peek: [CalendarEvent] {
-        CalendarEventMapper.upcoming(events, now: .now, limit: 1)
-    }
-
-    private var lyricsColumn: some View {
-        LyricsPanelView(result: lyricsResult, progress: progress)
-            .frame(width: IslandLayout.Column.musicPeek, alignment: .leading)
-            .transition(.island)
     }
 }

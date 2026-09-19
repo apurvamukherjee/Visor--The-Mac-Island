@@ -193,10 +193,6 @@ final class NotchStore {
         return activities.filter { $0.key != dismissedActivity }
     }
 
-    /// Set by the music view when the lyrics panel is toggled, so the island
-    /// can size itself for the second column before the panel draws into it.
-    var isShowingLyrics = false
-
     /// True while the welcome flow owns the island. `NotchWindowController`
     /// consults this to force-expand and to suspend the normal hover-out
     /// collapse, and `GreetingService` to skip a peek nobody would see.
@@ -251,8 +247,7 @@ final class NotchStore {
             agendaRows: min(upcoming, IslandLayout.maxEventRows),
             hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
             hasTimerPresets: timerCommands != nil,
-            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows),
-            hasLyrics: isShowingLyrics
+            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows)
         )
     }
 
