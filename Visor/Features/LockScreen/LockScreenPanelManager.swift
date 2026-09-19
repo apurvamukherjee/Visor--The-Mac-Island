@@ -12,8 +12,9 @@ import SwiftUI
 /// * It only appears **when a track is loaded**. No track, no panel — there
 ///   is no calendar or clock fallback, because the reference's panel is the
 ///   media panel and nothing else.
-/// * The last track is **cached**, so locking the Mac while paused still
-///   shows the player rather than nothing.
+/// * The last track is **cached**, so a track that ends behind the lock
+///   screen does not blank the panel mid-look. A *paused* track hides the
+///   panel outright, matching the island's own pause collapse.
 @MainActor
 final class LockScreenPanelManager {
     private let store: NotchStore
@@ -93,6 +94,14 @@ final class LockScreenPanelManager {
             return
         }
         guard store.isLockPresenting, let info = store.nowPlaying ?? cachedInfo else {
+            hide()
+            return
+        }
+        // Paused hides the panel, the same way a paused track collapses the
+        // island — see `NowPlayingService.syncPresence`. Gated on the live
+        // track rather than the cache so that locking while already paused
+        // shows nothing, instead of showing a player for silence.
+        guard info.isPlaying else {
             hide()
             return
         }

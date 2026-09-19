@@ -307,6 +307,13 @@ final class NotchStore {
         activities[kind] = Activity(kind: kind)
     }
 
+    /// Whether a kind is currently active, dismissed or not. Services that
+    /// arm a delayed deactivation read this to avoid re-arming against an
+    /// island that has already collapsed.
+    func isActive(_ kind: ActivityKind) -> Bool {
+        activities[kind] != nil
+    }
+
     func deactivate(_ kind: ActivityKind) {
         guard activities[kind] != nil else { return }
         activities.removeValue(forKey: kind)
