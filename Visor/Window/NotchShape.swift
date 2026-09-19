@@ -11,17 +11,26 @@ import SwiftUI
 ///   it is a concave fillet, not a corner radius. `topRadius` is 0 in the
 ///   closed state and only there: any material outside the physical cutout
 ///   would break closed-island invisibility.
+/// On a screen with no physical cutout there is no hardware to hide the top
+/// edge behind, so the same shape resolves symmetric corners instead of
+/// shoulders and reads as a free-floating capsule — iPhone's Dynamic Island.
+/// A branch here rather than a second `Shape` type: one silhouette morphs
+/// between every state, and two shapes could only cross-fade.
 struct NotchShape: Shape {
     var topRadius: CGFloat
     var bottomRadius: CGFloat
+    /// Not animatable, and deliberately so: it follows which screen the
+    /// island is on, which never changes mid-animation.
+    var isCapsule = false
 
-    init(topRadius: CGFloat, bottomRadius: CGFloat) {
+    init(topRadius: CGFloat, bottomRadius: CGFloat, isCapsule: Bool = false) {
         self.topRadius = topRadius
         self.bottomRadius = bottomRadius
+        self.isCapsule = isCapsule
     }
 
-    init(_ radii: NotchRadii) {
-        self.init(topRadius: radii.top, bottomRadius: radii.bottom)
+    init(_ radii: NotchRadii, isCapsule: Bool = false) {
+        self.init(topRadius: radii.top, bottomRadius: radii.bottom, isCapsule: isCapsule)
     }
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
@@ -33,6 +42,13 @@ struct NotchShape: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
+        if isCapsule {
+            // Both ends equally round, capped at a true pill. The bottom
+            // radius drives it: it is the one the layouts already tune, and
+            // the shoulder has no meaning without a cutout to flare out of.
+            let radius = min(max(bottomRadius, 0), rect.height / 2, rect.width / 2)
+            return RoundedRectangle(cornerRadius: radius, style: .continuous).path(in: rect)
+        }
         let top = max(0, min(topRadius, rect.width / 4, rect.height))
         // The body is inset by the shoulder on both sides; the shoulders then
         // add that material back at the very top only, so the silhouette is
