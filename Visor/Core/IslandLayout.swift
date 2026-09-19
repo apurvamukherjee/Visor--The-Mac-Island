@@ -32,6 +32,9 @@ struct IslandContent: Equatable, Sendable {
     var hasTimerPresets = false
     /// Download rows that will really be drawn, already clamped.
     var downloadRows = 0
+    /// Whether the lyrics panel is open beside the player, which is the only
+    /// thing that still claims the music layout's second column.
+    var hasLyrics = false
 
     static let empty = IslandContent()
 }
@@ -80,10 +83,12 @@ extension IslandLayout {
         /// The "+N more" line under the agenda.
         static let agendaOverflow: CGFloat = 20
         static let timerPresets: CGFloat = 24
-        /// Artwork (72 in vinyl mode, the taller of the two), the scrub bar,
-        /// and the transport row stacked. +26 over the pre-scrub-bar number
-        /// for the new row plus its own block spacing.
-        static let musicColumn: CGFloat = 140
+        /// Artwork (56, or 72 in vinyl mode) beside the title, then the
+        /// scrub row (18) and the transport row (30), with 8pt between each.
+        /// Measured against what the column actually draws — it was 128,
+        /// which left 8pt of dead space under the transport row, visible as
+        /// a gap along the bottom of the expanded island.
+        static let musicColumn: CGFloat = 120
         static let shelfHeader: CGFloat = 18
         static let shelfTile: CGFloat = 76
         /// Title over two lines of detail.
@@ -93,10 +98,18 @@ extension IslandLayout {
         /// The countdown figure and its label; the buttons are shorter.
         static let countdown: CGFloat = 52
         static let volumeBar: CGFloat = 32
-        /// Glyph, title and two lines of body text.
-        static let onboardingBody: CGFloat = 92
-        /// The primary button plus the secondary link underneath it.
-        static let onboardingButtons: CGFloat = 56
+        /// Glyph tile (44), title (20) and three lines of body text (43.5),
+        /// plus the 6pt gaps between them. Measured against what the view
+        /// actually draws: it was 92, which is 27pt short of the copy block
+        /// alone, and the shortfall came out of the bottom of the island —
+        /// clipping the secondary "View GitHub" link clean in half.
+        static let onboardingBody: CGFloat = 120
+        /// The primary capsule (30) plus the secondary link (18) and the
+        /// 6pt between them.
+        static let onboardingButtons: CGFloat = 54
+        /// The step dots between the copy and the buttons. Never reserved
+        /// before, so every step was one row shorter than it drew.
+        static let onboardingDots: CGFloat = 5
         /// One download: name over a progress bar.
         static let downloadRow: CGFloat = 34
         /// The AirDrop card: glyph over the file name and its status.
@@ -112,7 +125,7 @@ extension IslandLayout {
         static let agenda: CGFloat = 240
         /// The agenda's empty state, which needs a sentence, not a list.
         static let emptyAgenda: CGFloat = 150
-        static let music: CGFloat = 190
+        static let music: CGFloat = 240
         /// Date block plus the one-event peek beside music.
         static let musicPeek: CGFloat = 140
         /// The same peek with nothing to peek at: the date block alone.
@@ -178,17 +191,35 @@ extension IslandLayout {
         )
     }
 
-    /// Playing: music on the left, date and at most one event on the right.
-    /// The peek column narrows to the date alone when the day is clear.
+    /// Playing *or paused*: the player owns the whole island. The calendar
+    /// peek that used to sit beside it is gone — with a track loaded the
+    /// island is the player, and the agenda is what the idle island shows
+    /// instead. The second column only returns for the lyrics panel.
+    ///
+    /// The width has a floor: dropping the calendar column left the player
+    /// narrower than the compact wing it grows out of, so expanding *shrank*
+    /// the island sideways, which read as cramped and wrong. The card is now
+    /// at least as wide as the wing plus a margin, so opening it always
+    /// feels like it is opening.
     static func nowPlaying(_ content: IslandContent) -> IslandLayout {
-        let peek = content.agendaRows > 0 ? Column.musicPeek : Column.datePeek
-        let columns = Column.music + IslandSpacing.column + 1 + IslandSpacing.column + peek
+        let compactExtra: CGFloat = 160
+        // The date is an overlay in the corner, not a column, so it costs
+        // the island width only insofar as the title row stops short of it
+        // — which `Column.music` already accounts for. Only the lyrics
+        // panel is a real second column.
+        let columns = content.hasLyrics
+            ? Column.music + IslandSpacing.column + 1 + IslandSpacing.column + Column.musicPeek
+            : Column.music + IslandSpacing.column + Column.datePeek
         return IslandLayout(
-            expandedExtraWidth: extraWidth(content: columns),
+            expandedExtraWidth: max(extraWidth(content: columns), compactExtra + musicExpandMargin),
             expandedExtraHeight: extraHeight(Block.musicColumn),
-            compactExtraWidth: 160
+            compactExtraWidth: compactExtra
         )
     }
+
+    /// How much wider than its own compact wing the player opens. Enough to
+    /// read as a panel rather than a slightly larger pill.
+    private static let musicExpandMargin: CGFloat = 60
 
     /// A header over a row of thumbnails. Width stays fixed: a chip is as
     /// wide as its screenshot's aspect ratio makes it, which is not known
@@ -254,6 +285,15 @@ extension IslandLayout {
         compactExtraWidth: 176
     )
 
+    /// The padlock wing. `compactExtraWidth` is the reference's own figure
+    /// for the compact style (baseWidth + 55); it never expands, so its
+    /// expanded numbers only exist to satisfy the type.
+    static let lock = IslandLayout(
+        expandedExtraWidth: 0,
+        expandedExtraHeight: 0,
+        compactExtraWidth: 55
+    )
+
     /// A pill, like the timer and the volume bar: one glyph and one clock.
     static let screenRecording = IslandLayout(
         expandedExtraWidth: extraWidth(content: Column.recording),
@@ -269,7 +309,11 @@ extension IslandLayout {
     static func onboarding(_: OnboardingStep) -> IslandLayout {
         IslandLayout(
             expandedExtraWidth: extraWidth(content: Column.onboarding),
-            expandedExtraHeight: extraHeight(Block.onboardingBody, Block.onboardingButtons),
+            expandedExtraHeight: extraHeight(
+                Block.onboardingBody,
+                Block.onboardingDots,
+                Block.onboardingButtons
+            ),
             compactExtraWidth: 160
         )
     }
@@ -291,14 +335,15 @@ extension IslandLayout {
         case .volume: volume
         // The compact-only peeks never reach here — `resolveExpandedKind`
         // does not return them — but the island behind them is the idle one.
-        case .charging, .deviceBattery, .wave, .greeting, .focus, nil: idle(content)
+        // `.lock` is compact-only, like the peeks below it.
+        case .charging, .deviceBattery, .wave, .greeting, .focus, .lock, nil: idle(content)
         }
     }
 
     /// Every layout at its largest, which is what the canvas is sized from.
     static let all: [IslandLayout] = [
         idle(IslandContent(agendaRows: maxEventRows, hasAgendaOverflow: true, hasTimerPresets: true)),
-        nowPlaying(IslandContent(agendaRows: 1)),
+        nowPlaying(IslandContent(hasLyrics: true)),
         shelf,
         networkAlert,
         batteryAlert,
@@ -308,7 +353,8 @@ extension IslandLayout {
         downloads(IslandContent(downloadRows: maxDownloadRows)),
         airDrop,
         bluetoothAlert,
-        screenRecording
+        screenRecording,
+        lock
     ]
 
     static let maxExpandedExtraWidth = all.map(\.expandedExtraWidth).max() ?? 0

@@ -120,10 +120,15 @@ final class NotchStore {
     /// Set by `LockScreenService`. True from the moment the screen locks
     /// until it unlocks.
     var isLocked = false
-    /// True while a lock or unlock is still animating, including the
-    /// fast-user-switch edge before the shield actually appears. The overlay
-    /// outlives `isLocked` by this much so the unlock animation can finish
-    /// instead of being cut off.
+    /// True on the fast-user-switch edge *before* the shield appears, so the
+    /// padlock is already there when it lands. Cleared the moment the lock
+    /// resolves either way — this is the reference's `isPreparingLock`.
+    var isPreparingLock = false
+    /// True through the unlock animation only. Nothing that is *drawn on the
+    /// lock screen* may read this: the shield is already gone by then, so
+    /// anything gated on it hangs around over the desktop for its duration.
+    /// That is the reference's `isLockIdle`, and it gates the padlock's own
+    /// fade-out, nothing else.
     var isLockTransitioning = false
 
     // MARK: - Ported live activities
@@ -192,6 +197,10 @@ final class NotchStore {
         return activities.filter { $0.key != dismissedActivity }
     }
 
+    /// Set by the music view when the lyrics panel is toggled, so the island
+    /// can size itself for the second column before the panel draws into it.
+    var isShowingLyrics = false
+
     /// True while the welcome flow owns the island. `NotchWindowController`
     /// consults this to force-expand and to suspend the normal hover-out
     /// collapse, and `GreetingService` to skip a peek nobody would see.
@@ -246,14 +255,20 @@ final class NotchStore {
             agendaRows: min(upcoming, IslandLayout.maxEventRows),
             hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
             hasTimerPresets: timerCommands != nil,
-            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows)
+            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows),
+            hasLyrics: isShowingLyrics
         )
     }
 
-    /// True while either lock overlay should be on screen. It stays true
-    /// through the unlock animation, which is why it is not just `isLocked`.
+    /// Whether anything should be drawn on the lock screen right now.
+    ///
+    /// Deliberately **not** `|| isLockTransitioning`. The unlock settle is a
+    /// delay for the padlock's own animation; folding it in here kept the
+    /// media panel on screen for most of a second after the desktop was
+    /// already back, which is exactly what it looked like. The reference
+    /// gates on `isLocked || isPreparingLock` and nothing else.
     var isLockPresenting: Bool {
-        isLocked || isLockTransitioning
+        isLocked || isPreparingLock
     }
 
     /// The island's resting size for the current state, before the squash
