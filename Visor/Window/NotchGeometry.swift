@@ -88,8 +88,13 @@ enum NotchGeometry {
     }
 
     /// Notch bounding box from the real hardware cutout, trimmed by the
-    /// calibration above, or a centered pill-sized fallback on non-notched
-    /// screens (which has no cutout to match, so it takes no trim).
+    /// calibration above *and* by the user's own trim from Settings, or a
+    /// centered pill-sized fallback on non-notched screens (which has no
+    /// cutout to match, so it takes no trim).
+    ///
+    /// This overload reads `UserDefaults`, so it is for app code only —
+    /// tests call the explicit-offset form below, or they would measure
+    /// whatever the developer last left the sliders on.
     static func closedRect(for screen: ScreenGeometryProviding) -> CGRect {
         closedRect(for: screen, widthOffset: userWidthOffset(), heightOffset: userHeightOffset())
     }
