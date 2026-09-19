@@ -34,7 +34,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Visor.entitlements
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.6"
-        CURRENT_PROJECT_VERSION: "12"
+        CURRENT_PROJECT_VERSION: "13"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # Ad-hoc signing gives the app a new identity on every build, so TCC
         # re-asks for calendar access each time. A stable identity fixes it.

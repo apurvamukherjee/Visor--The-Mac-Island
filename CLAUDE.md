@@ -18,7 +18,17 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - Build: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 - Test: `xcodebuild -scheme Visor test | xcbeautify`
 - Format: `swiftformat .`   Lint: `swiftlint`
+- Release: `bash scripts/make-dmg.sh`
 - Run build, tests, format and lint before saying a task is done.
+
+## Releases
+- Every release build goes in `new-releases/` as a new `.dmg`, committed.
+- **Never delete or overwrite an old build.** They are permanent history:
+  `make-dmg.sh` refuses to overwrite a release already on disk, and the
+  folder is meant to accumulate. Removing one is a regression, not tidying.
+- Bump `CURRENT_PROJECT_VERSION` in project.yml before building, so each
+  DMG gets its own version — the filename carries version, timestamp and
+  commit hash, and the hash is `HEAD` *at build time*, so commit first.
 
 ## Architecture rules
 - Single source of truth: `NotchStore` (@Observable, @MainActor). Views read, services write.
@@ -263,6 +273,32 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   Fixes the transport row jumping on track change: the reference's fixed
   `MarqueeText` frame widths and constant card height are what stop a longer
   title reflowing the layout under the controls.
+- **Lock-screen pin + insets + pause collapse (2026-09-20):** three fixes.
+  — **Neither lock window appeared.** A prior pass removed `SkyLightPin.pin`
+  from both lock managers, reasoning that `CGShieldingWindowLevel()` is
+  already above the shield. It is not: the real shield sits at that same
+  level and is ordered above, so only a SkyLight space past absolute level
+  300 paints over it. Restored in both, with the `hasPinned` bookkeeping —
+  the pin must follow `orderFrontRegardless`, since `windowNumber` is only
+  valid once a window is on screen.
+  — **Expanded content read edge-to-edge** at a 26pt gutter: the artwork's
+  halo and the date's digits sit at the extremes, so the eye measures from
+  the glow, not the frame. Gutter 26 -> 34, bottom 18 -> 22. Raising the
+  gutter alone would have squeezed the player instead of insetting it —
+  `nowPlaying` resolves `max(content, floor)` and the floor was binding, so
+  `musicExpandMargin` went 60 -> 76. Music 421x193 (473 with lyrics).
+  — **Pause now collapses the island** to the bare notch after 5s, which
+  *reverses* the "playing or paused, the island is the player" rule above.
+  Ported from old-code's pause-hide timer (same 5s), minus its setting and
+  its defer-while-expanded: collapse is unconditional here. The delay is the
+  point — a pause is usually a step on the way to a skip or a seek, and an
+  island that shuts instantly flaps around every one of them. The track is
+  **not** cleared, only `.nowPlaying` deactivated, so opening the island by
+  hand still finds a transport row to press play on; `PauseCollapseTests`
+  pins that seam. Re-arming is gated on `store.isActive` — the adapter
+  re-emits on every position tick, and re-arming per tick would push the
+  deadline out forever. The lock-screen media panel gates on `isPlaying`
+  too, so a paused track shows no panel there either.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
