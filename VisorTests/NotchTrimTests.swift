@@ -59,6 +59,33 @@ struct NotchTrimTests {
         )
         #expect(far.size == edge.size)
     }
+
+    /// The bug this pins: `x` was `left.maxX + closedWidthInset / 2`, which
+    /// ignores `widthOffset` entirely — so a trim took its width off the
+    /// **right** edge only and walked the island left of the cutout. At the
+    /// -13.65 a real user had stored, the island sat 6.8pt off centre with a
+    /// 0.5pt gap one side and 14.15pt the other, which reads as the island
+    /// collapsing too far and landing out of line with the hardware.
+    @Test
+    func everyTrimStaysCentredOnTheCutout() {
+        // The cutout this fake screen describes: 656...856, midpoint 756.
+        let cutoutMidX: CGFloat = 756
+        for offset in [CGFloat(-16), -13.65, -8, 0, 8, 16] {
+            let rect = NotchGeometry.closedRect(for: screen, widthOffset: offset, heightOffset: 0)
+            #expect(abs(rect.midX - cutoutMidX) < 0.001)
+        }
+    }
+
+    /// A trim must come off both sides equally, which is the same property
+    /// stated as a gap rather than a centre.
+    @Test
+    func aTrimNarrowsBothEdgesEqually() {
+        let full = NotchGeometry.closedRect(for: screen, widthOffset: 0, heightOffset: 0)
+        let trimmed = NotchGeometry.closedRect(for: screen, widthOffset: -12, heightOffset: 0)
+        let leftGap = trimmed.minX - full.minX
+        let rightGap = full.maxX - trimmed.maxX
+        #expect(abs(leftGap - rightGap) < 0.001)
+    }
 }
 
 private struct TrimFakeScreen: ScreenGeometryProviding {
