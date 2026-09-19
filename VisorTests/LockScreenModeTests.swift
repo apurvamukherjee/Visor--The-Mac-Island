@@ -19,26 +19,53 @@ struct LockScreenModeTests {
         #expect(store.currentActivity?.kind == .nowPlaying)
     }
 
+    /// The padlock is a compact activity, the way the reference has it —
+    /// `LockScreenNotchContent` with its own priority. What must not happen
+    /// is it claiming the *expanded* island: it is a wing, not a panel.
     @Test
-    func lockIsNotAnActivityKind() {
-        // If lock ever became an ActivityKind this stops compiling, which is
-        // the point: the ladder and the mode must stay separate.
-        #expect(!ActivityKind.allCases.contains { "\($0)".lowercased().contains("lock") })
+    func theLockWingNeverOwnsTheExpandedIsland() {
+        #expect(resolveExpandedKind([.lock: Activity(kind: .lock)]) == nil)
     }
 
-    /// The overlay outlives the unlock so its animation can finish — which
-    /// is why the presenting flag is not just `isLocked`.
+    /// And it outranks everything else in the wings: while the screen is
+    /// locked, nothing else about the machine is the headline.
     @Test
-    func theOverlayStaysPresentingThroughTheUnlockAnimation() {
+    func theLockWingOutranksEveryOtherPeek() {
+        let active: [ActivityKind: Activity] = [
+            .lock: Activity(kind: .lock),
+            .nowPlaying: Activity(kind: .nowPlaying),
+            .screenshot: Activity(kind: .screenshot)
+        ]
+        #expect(resolveCurrentActivity(active)?.kind == .lock)
+    }
+
+    /// The bug this guards: the lock-screen panel used to be gated on the
+    /// unlock *settle* as well, so it stayed on screen for most of a second
+    /// after the desktop was already back. The settle is for the padlock's
+    /// own animation, which plays over the desktop — nothing drawn on the
+    /// lock screen may read it.
+    @Test
+    func nothingIsPresentedOnTheLockScreenOnceItUnlocks() {
         let store = NotchStore()
         store.isLocked = true
-        store.isLockTransitioning = true
         #expect(store.isLockPresenting)
 
         store.isLocked = false
+        // Still true: the padlock is still animating open over the desktop.
+        store.isLockTransitioning = true
+        #expect(!store.isLockPresenting)
+    }
+
+    /// The pre-lock edge is what puts the padlock up *before* the shield
+    /// lands, so it has to count as presenting.
+    @Test
+    func thePreLockEdgeCountsAsPresenting() {
+        let store = NotchStore()
+        store.isPreparingLock = true
         #expect(store.isLockPresenting)
 
-        store.isLockTransitioning = false
+        // A session that goes active again without ever locking clears it.
+        store.isPreparingLock = false
         #expect(!store.isLockPresenting)
     }
 }
