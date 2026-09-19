@@ -4,4 +4,4 @@
 --self remove
 --importgrouping testable-bottom
 --commas inline
---exclude build,dist
+--exclude build,dist,old-code,DynamicNotch

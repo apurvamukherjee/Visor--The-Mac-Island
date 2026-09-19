@@ -3,6 +3,10 @@ excluded:
   - build
   - dist
   - Visor.xcodeproj
+  # Reference checkouts, not Visor's source. Kept for porting from, so
+  # their style is theirs, not ours.
+  - old-code
+  - DynamicNotch
 
 opt_in_rules:
   - force_unwrapping
