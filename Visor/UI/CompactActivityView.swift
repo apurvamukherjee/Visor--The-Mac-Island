@@ -32,6 +32,12 @@ struct CompactActivityView: View {
     @ViewBuilder
     private var leading: some View {
         switch store.currentActivity?.kind {
+        case .lock:
+            // Drawn by `LockScreenNotchWindowManager` in its own window above
+            // the lock shield, not here: this panel is pinned *below* the
+            // shield, so while locked it is invisible. The activity still
+            // exists so the island reserves the wing's width.
+            LockScreenNotchView(isLocked: store.isLocked, style: LockScreenSettings.style())
         case .screenshot:
             shelfChips
         case .wave:

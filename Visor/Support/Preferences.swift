@@ -16,12 +16,6 @@ enum Preferences {
     /// Set once the three-step welcome flow has been shown or dismissed.
     static let hasSeenWelcomeKey = "hasSeenWelcome"
 
-    // MARK: - Lock screen
-
-    static let lockScreenWidgetKey = "lockScreenWidget"
-    static let lockScreenNowPlayingKey = "lockScreenNowPlaying"
-    static let lockScreenClockKey = "lockScreenClock"
-
     // MARK: - Notch customization
 
     /// Outline around the island. Off by default: the island is a solid
