@@ -22,13 +22,22 @@ struct ExpandedOnboardingView: View {
 
     private var copy: some View {
         VStack(spacing: 6) {
-            Image(systemName: step.glyph)
-                .font(.system(size: 26, weight: .semibold))
-                .frame(width: 44, height: 44)
-                .background(.white.opacity(0.12), in: Circle())
-                .scaleEffect(iconScale)
-                .onAppear { animateIconIn() }
-                .onChange(of: step) { animateIconIn() }
+            // The first step gets the reference's own animated wordmark —
+            // a cursive "Welcome" whose gradient stroke draws itself on and
+            // loops. The later steps keep their SF Symbol: the animation is
+            // the greeting, not a decoration to repeat three times.
+            if step == .welcome {
+                AnimateImage(name: "welcome")
+                    .frame(width: 170, height: 44)
+            } else {
+                Image(systemName: step.glyph)
+                    .font(.system(size: 26, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.12), in: Circle())
+                    .scaleEffect(iconScale)
+                    .onAppear { animateIconIn() }
+                    .onChange(of: step) { animateIconIn() }
+            }
             Text(step.title)
                 .font(.system(size: 15, weight: .bold, design: .rounded))
             Text(step.body)
