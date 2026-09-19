@@ -145,7 +145,10 @@ final class LockScreenNotchWindowManager {
             // After ordering front: `windowNumber` is only valid then.
             // The window level alone is not enough — the real lock shield
             // sits at CGShieldingWindowLevel() too and is ordered above us,
-            // so only a SkyLight space above 300 actually paints over it.
+            // so only a SkyLight space well clear of 300 actually paints
+            // over it — 401, matching the reference. The space itself is
+            // created at launch by `SkyLightPin.prepare()`: one made while
+            // the shield is already up does not reliably become visible.
             SkyLightPin.pin(window, level: .aboveLockShieldNotch)
             hasPinned = true
         }
@@ -259,6 +262,12 @@ struct LockScreenNotchOverlayView: View {
                         .transition(.island)
                 }
             }
+            // The latch dissolves — fades, blurs and eases back — *before*
+            // the wing collapses under it, so unlocking hands over to the
+            // island's own music wing rather than cutting to it. The shape
+            // still leads and the content still follows; this is the content
+            // half of that, running on the way out.
+            .modifier(Materialize(progress: isPresented ? 0 : 1))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .animation(Motion.resolved(Motion.morph), value: isLocked)
             .animation(Motion.resolved(isPresented ? Motion.open : Motion.close), value: isPresented)

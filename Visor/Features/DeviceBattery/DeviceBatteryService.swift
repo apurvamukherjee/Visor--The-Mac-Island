@@ -19,7 +19,9 @@ final class DeviceBatteryService: NotchService {
     private var iterator: io_iterator_t = 0
     private var peekTask: Task<Void, Never>?
 
-    private static let peekDuration: TimeInterval = 2.5
+    /// Long enough to read a glyph and a figure and look away. 2.5s was the
+    /// original and reads as a flash once the wing carries a device name.
+    private static let peekDuration: TimeInterval = 4
     private static let serviceClass = "AppleDeviceManagementHIDEventService"
 
     init(store: NotchStore) {

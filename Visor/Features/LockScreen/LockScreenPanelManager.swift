@@ -142,11 +142,18 @@ final class LockScreenPanelManager {
         }
 
         panel.orderFrontRegardless()
+        // The transport buttons are live on the lock screen, and a panel the
+        // shield never hands key status to draws its controls inactive. The
+        // reference's `OverlayPanelWindow` forces the same thing.
+        panel.makeKey()
         if !hasPinned {
             // After ordering front: `windowNumber` is only valid then.
             // The window level alone is not enough — the real lock shield
             // sits at CGShieldingWindowLevel() too and is ordered above us,
-            // so only a SkyLight space above 300 actually paints over it.
+            // so only a SkyLight space well clear of 300 actually paints
+            // over it — 400, matching the reference. The space itself is
+            // created at launch by `SkyLightPin.prepare()`: one made while
+            // the shield is already up does not reliably become visible.
             SkyLightPin.pin(panel, level: .aboveLockShield)
             hasPinned = true
         }
@@ -197,7 +204,7 @@ final class LockScreenPanelManager {
         if let panel {
             return panel
         }
-        let panel = NSPanel(
+        let panel = LockScreenOverlayPanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -222,5 +229,27 @@ final class LockScreenPanelManager {
         NSScreen.screens.first(where: { $0.auxiliaryTopLeftArea != nil })
             ?? NSScreen.main
             ?? NSScreen.screens.first
+    }
+}
+
+/// Reports itself key and main whatever the window server thinks. While the
+/// lock shield is up nothing else will hand a panel key status, and without
+/// it SwiftUI draws every control in its inactive state. Copied in behaviour
+/// from the reference's `OverlayPanelWindow`.
+final class LockScreenOverlayPanel: NSPanel {
+    override var canBecomeKey: Bool {
+        true
+    }
+
+    override var canBecomeMain: Bool {
+        true
+    }
+
+    override var isKeyWindow: Bool {
+        true
+    }
+
+    override var isMainWindow: Bool {
+        true
     }
 }

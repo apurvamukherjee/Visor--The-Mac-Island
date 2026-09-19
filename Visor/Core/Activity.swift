@@ -3,7 +3,7 @@
 /// deliberate double-click) is user-initiated like `.screenshot`;
 /// `.greeting` is the most passive of all — it only ever activates when
 /// nothing else is, so its low rank is really just documentation.
-enum ActivityKind: Sendable, CaseIterable {
+enum ActivityKind: Sendable, CaseIterable, Equatable {
     /// The screen locking or unlocking. Outranks everything in the wings:
     /// while the padlock is showing, nothing else about the machine matters.
     case lock

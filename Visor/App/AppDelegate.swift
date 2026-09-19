@@ -11,6 +11,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         Motion.startObservingAccessibility()
+        // Before any window exists, and crucially before the shield ever goes
+        // up: a space created while the screen is already locked does not
+        // reliably become visible.
+        SkyLightPin.prepare()
         guard let controller = NotchWindowController(store: store) else {
             Log.app.error("No screen available; Visor cannot display the island.")
             NSApp.terminate(nil)

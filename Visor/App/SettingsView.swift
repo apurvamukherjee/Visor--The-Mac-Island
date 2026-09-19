@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchAtLoginFailed = false
+    @State private var isConfirmingRestore = false
     /// `@AppStorage`, not `@State`: the island reads the same key and has to
     /// pick the change up while this window is still open.
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
@@ -220,6 +221,21 @@ struct SettingsView: View {
                 Button("Replay welcome tour") {
                     store.onboardingCommands?.replay()
                 }
+
+                Button("Restore original settings") {
+                    isConfirmingRestore = true
+                }
+                .confirmationDialog(
+                    "Restore original settings?",
+                    isPresented: $isConfirmingRestore,
+                    titleVisibility: .visible
+                ) {
+                    Button("Restore", role: .destructive, action: restoreDefaults)
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Every setting here goes back to how it shipped. "
+                        + "Launch at login is left alone.")
+                }
             }
 
             Button("Quit Visor") {
@@ -237,6 +253,36 @@ struct SettingsView: View {
         store.notchWidthOffset = notchWidthOffset
         store.notchHeightOffset = notchHeightOffset
         store.previewNotchSize()
+    }
+
+    /// Clears the stored keys, then pulls this window's `@AppStorage` values
+    /// back to the defaults by hand. `removeObject` does not notify the
+    /// property wrappers — they would keep showing the cleared values until
+    /// the window was reopened — and `Motion.preset` and the store's trim are
+    /// caches of those same keys, so both are refreshed here too.
+    private func restoreDefaults() {
+        Preferences.restoreDefaults()
+
+        vinylMode = false
+        motionPreset = MotionPreset.balanced.rawValue
+        progressTint = ProgressTintStyle.standard.rawValue
+        showEqualizer = false
+        lockLiveActivity = true
+        lockMediaPanel = true
+        lockStyle = LockScreenStyle.compact.rawValue
+        lockWidgetAppearance = LockScreenWidgetAppearanceStyle.ultraThinMaterial.rawValue
+        lockPanelBackground = LockScreenMediaPanelBackgroundStyle.animatedArtwork.rawValue
+        lockPanelOffset = 0
+        strokeEnabled = false
+        strokeWidth = 1
+        strokeOpacity = 0.25
+        notchWidthOffset = 0
+        notchHeightOffset = 0
+        hidesInFullscreen = false
+        screenChoice = NotchScreenChoice.automatic.rawValue
+
+        Motion.preset = .balanced
+        showSizeFeedback()
     }
 
     private func updateLaunchAtLogin(to enabled: Bool) {

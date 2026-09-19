@@ -131,6 +131,9 @@ extension IslandLayout {
         static let datePeek: CGFloat = 92
         static let alertIcon: CGFloat = 40
         static let alertText: CGFloat = 250
+        /// The drawn battery is wider than the symbol the other alerts use,
+        /// so it gets its own column rather than widening theirs.
+        static let batteryIndicator: CGFloat = 75
         /// The preset row sets a floor under the idle island even when the
         /// agenda is empty.
         static let timerPresets: CGFloat = 200
@@ -240,7 +243,9 @@ extension IslandLayout {
     )
 
     static let batteryAlert = IslandLayout(
-        expandedExtraWidth: extraWidth(content: Column.alertIcon + IslandSpacing.column + Column.alertText),
+        expandedExtraWidth: extraWidth(
+            content: Column.alertText + IslandSpacing.column + Column.batteryIndicator
+        ),
         expandedExtraHeight: extraHeight(Block.alert),
         compactExtraWidth: 176
     )

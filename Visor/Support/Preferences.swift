@@ -45,6 +45,51 @@ enum Preferences {
     /// off; narrow enough that the island cannot be dragged off the notch.
     static let notchWidthOffsetRange: ClosedRange<Double> = -16 ... 16
     static let notchHeightOffsetRange: ClosedRange<Double> = -4 ... 4
+
+    /// Every key "Restore defaults" clears. Removing a key rather than
+    /// writing a default back is what keeps this honest: each accessor
+    /// already states its own default, so a second table of defaults here
+    /// would be one more thing to drift out of sync.
+    ///
+    /// `hasSeenWelcomeKey` and `lastGreetingDayKey` are deliberately absent.
+    /// Neither is a setting — clearing them would replay the onboarding flow
+    /// and re-fire today's greeting, which is not what "restore defaults"
+    /// means to anyone pressing it.
+    static let resettableKeys: [String] = [
+        vinylModeKey,
+        motionPresetKey,
+        strokeEnabledKey,
+        strokeWidthKey,
+        strokeOpacityKey,
+        notchWidthOffsetKey,
+        notchHeightOffsetKey,
+        hidesInFullscreenKey,
+        screenChoiceKey,
+        progressTintKey,
+        equalizerKey,
+        LockScreenSettings.liveActivityKey,
+        LockScreenSettings.mediaPanelKey,
+        LockScreenSettings.soundKey,
+        LockScreenSettings.customSoundPathKey,
+        LockScreenSettings.customLockSoundPathKey,
+        LockScreenSettings.customUnlockSoundPathKey,
+        LockScreenSettings.styleKey,
+        LockScreenSettings.widgetAppearanceStyleKey,
+        LockScreenSettings.widgetTintStyleKey,
+        LockScreenSettings.widgetBackgroundBrightnessKey,
+        LockScreenSettings.liquidGlassVariantKey,
+        LockScreenSettings.mediaPanelBackgroundStyleKey,
+        LockScreenSettings.lyricsEnabledKey,
+        LockScreenSettings.artworkExpandedKey,
+        LockScreenSettings.mediaPanelVerticalOffsetKey
+    ]
+
+    /// Clears every resettable key. Launch-at-login is *not* touched: it is a
+    /// macOS login item, not a default of ours, and silently unregistering it
+    /// is a surprise rather than a restore.
+    static func restoreDefaults(in defaults: UserDefaults = .standard) {
+        resettableKeys.forEach(defaults.removeObject(forKey:))
+    }
 }
 
 /// Which display the island lives on.
