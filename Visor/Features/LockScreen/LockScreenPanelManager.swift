@@ -135,6 +135,9 @@ final class LockScreenPanelManager {
         panel.orderFrontRegardless()
         if !hasPinned {
             // After ordering front: `windowNumber` is only valid then.
+            // The window level alone is not enough — the real lock shield
+            // sits at CGShieldingWindowLevel() too and is ordered above us,
+            // so only a SkyLight space above 300 actually paints over it.
             SkyLightPin.pin(panel, level: .aboveLockShield)
             hasPinned = true
         }
