@@ -10,7 +10,8 @@
 [![Swift](https://img.shields.io/badge/Swift%206-strict%20concurrency-orange?style=flat-square)](https://swift.org)
 [![CPU](https://img.shields.io/badge/idle%20CPU-0.0%25-brightgreen?style=flat-square)](#power)
 [![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#built-with)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-158%20passing-brightgreen?style=flat-square)](#build)
+[![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 <br />
 
@@ -108,14 +109,40 @@ Take a screenshot anywhere on the system and it slides into the notch and waits 
 
 ## What it does
 
+### On the island
+
 |  | |
 | --- | --- |
-| **Now Playing** | Artwork, title, artist and transport for whatever's playing, in any app. The cover flips like a card when the track changes. |
+| **Now Playing** | Artwork, title, artist and transport for whatever's playing, in any app. The cover flips like a card when the track changes. Scrub bar, shuffle, repeat, and a lyrics panel that only fetches while it's open. |
 | **Your day** | The next events from your calendars, colour-matched to their source calendar. |
-| **Screenshot catcher** | Every screenshot lands in the notch for a minute, ready to drag anywhere. |
-| **Battery** | Percentage in the wing, and a bolt that bounces the moment you plug in. |
-| **Playback bars** | Four capsules bouncing in staggered phase, stopping dead when the music pauses. They take the album's colour, the way the iPhone tints its waveform — and stay white when the cover has no colour worth borrowing. |
-| **Album halo** | A soft bloom of the cover's own colour behind the artwork, radial-masked so it never becomes a visible rectangle. The island's surface stays pure black. |
+| **Screenshot shelf** | Every screenshot lands in the notch for a minute — up to four at once, each draggable straight into another app. |
+| **Downloads** | Files arriving in `~/Downloads` show a row each with real progress, read from the same attribute Safari writes. No progress reported means an honest indeterminate bar, never a guessed number. |
+| **AirDrop** | Hold <kbd>⌥</kbd> while dropping files on the island to send them. |
+| **Screen recording** | A red dot and a running clock whenever the screen is being recorded or shared. |
+| **Timer** | Presets from the idle island, deadline-based so nothing ticks behind a closed notch. |
+| **Volume** | The system HUD, in the notch, with a draggable bar — and no permission prompt, because it listens to CoreAudio's result rather than watching your keys. |
+| **Battery** | Percentage in the wing, a bolt that bounces the moment you plug in, and Low / Full alerts. |
+| **Accessory battery** | AirPods and friends announce their charge when they connect. |
+| **Bluetooth** | A peek when a device connects or drops. |
+| **Network** | An offline alert, and a VPN indicator gated on the connection actually being up — not merely on a `utun` interface existing, which macOS creates for Handoff on a machine with no VPN at all. |
+| **Focus** | A peek when Focus turns on or off. |
+| **Greeting** | One "Good morning" a day, on the first idle after you log in. |
+
+### On the lock screen
+
+Lock the Mac and the island follows you there: the notch mirrors into a padlock that latches shut, and a card slides in below it.
+
+The card shows **one thing at a time, on purpose** — the player when something is playing, the clock and your agenda when nothing is. They never share the space, and neither collapses into a row of the other.
+
+This runs in its own pair of windows above the lock shield. The island's own panel stays pinned *below* it, where it has always been — an island that could paint over a locked screen is a security hole, not a feature.
+
+### Everywhere
+
+| | |
+| --- | --- |
+| **Capsule mode** | On a screen with no cutout, the same shape resolves symmetric corners and floats as a capsule. One shape morphing, never two cross-fading. |
+| **Customisation** | Optional outline, ±16pt width and ±4pt height trims with live feedback, hide-in-fullscreen, display selection, and five animation speeds. |
+| **Swipe to dismiss** | Push the island away with a two-finger swipe up; pull it back with a swipe down. |
 
 <br />
 
@@ -159,18 +186,23 @@ The rules that get it there:
 | Gesture | Does |
 | --- | --- |
 | Hover the notch | Expand |
-| Two-finger swipe | Previous / next track |
+| Two-finger swipe sideways | Previous / next track |
+| Two-finger swipe up | Dismiss whatever the island is showing |
+| Two-finger swipe down | Bring it back |
 | Double-click | Play / pause *(on the island's surface — buttons keep their own clicks)* |
 | Right-click | Settings |
-| Drag an image onto it | The notch opens and takes it |
+| Drag a file onto it | The notch opens and takes it |
+| <kbd>⌥</kbd> + drag a file onto it | Send it via AirDrop |
 | Drag the thumbnail out | Drops the screenshot into any app |
+
+Swipes lock to whichever axis you commit to first, so a diagonal flick can change the track *or* dismiss the island — never both.
 
 <br />
 
 ## Requirements
 
-- A MacBook with a notch, on Apple silicon
-- macOS 14 or later
+- Apple silicon, macOS 14 or later
+- A MacBook with a notch — or any other screen, where the island becomes a floating capsule
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) — `brew install xcodegen`
 
 <br />
@@ -207,11 +239,63 @@ Drag it to `/Applications` and launch. Visor lives entirely in the notch — no 
 
 <br />
 
-## Built with
+## Permissions
 
-Swift 6 with strict concurrency. SwiftUI for every view, AppKit confined to the window layer. No third-party dependencies beyond the Now Playing adapter.
+Visor asks for **one** permission: Calendar, and only so the agenda has something to show. Say no and everything else still works.
 
-Architecture is one store, one shape, and a service per feature — a feature never imports another feature. The full design record, including every decision that was tried and reversed, lives in [`docs/RESEARCH.md`](docs/RESEARCH.md).
+Nothing else here needs a prompt, and that is a design constraint rather than a happy accident. Several features were cut or rebuilt to keep it:
+
+- **Volume** listens to CoreAudio's *result*, not your keypresses. A media-key HUD would need a global event tap and Accessibility access.
+- **Bluetooth** reads the connect/disconnect notification's own payload. Enumerating paired devices is privacy-gated and would prompt — for a name macOS is already handing over.
+- **Focus** reports on and off only. Naming the active mode means Full Disk Access and parsing an undocumented database.
+- **Downloads** reads a public extended attribute. It does not open your browser's history.
+- **Notifications are not mirrored** at all, for the same reason.
+
+Where a feature could not be built honestly without a permission it didn't deserve, it was left out rather than shipped as something that guesses. The full reasoning is in [`docs/RESEARCH.md`](docs/RESEARCH.md).
+
+<br />
+
+## Tech stack
+
+| | |
+| --- | --- |
+| **Language** | Swift 6, language mode 6, strict concurrency `complete` |
+| **UI** | SwiftUI for every view; AppKit confined to `Window/` and `App/` |
+| **State** | One `@Observable @MainActor` store. Views read, services write. Combine appears only *inside* services that merge several system signals, never in the view layer. |
+| **Platform** | macOS 14+, Apple silicon. App Sandbox off (it spawns the media adapter), `LSUIElement` |
+| **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation |
+| **Private frameworks** | SkyLight, for pinning the island above the desktop and the lock overlay above the shield. Every symbol is resolved at runtime — a macOS that renames one degrades the feature instead of crashing the app. |
+| **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
+| **Tests** | Swift Testing — 158 covering geometry, layout maths, activity priority, adapter parsing, gesture axis locking and alert edge detection |
+| **Tooling** | SwiftFormat, SwiftLint |
+| **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter) for Now Playing metadata |
+
+<br />
+
+## Architecture
+
+One store, one shape, and a service per feature — a feature never imports another feature.
+
+```
+Visor/
+├── Core/          NotchStore, Activity ladder, IslandLayout, Motion tokens
+├── Window/        NotchPanel, NotchShape, geometry, SkyLight pinning
+├── Features/      One folder per feature: service + models + views
+├── UI/            The expanded and compact views the island fills itself with
+└── App/           AppDelegate, Settings
+```
+
+Every service conforms to `NotchService` with `start()` / `stop()`, and `stop()` must release every process, observer and run-loop source. Every animation comes from `Motion`, so no feature can invent its own timing. Every size is a *delta from the measured cutout*, so the same layout lands correctly on any notch.
+
+The full design record, including every decision that was tried and reversed, lives in [`docs/RESEARCH.md`](docs/RESEARCH.md).
+
+<br />
+
+## License
+
+[GPL-3.0](LICENSE). Copyright © 2026 Apurva Mukherjee.
+
+Visor is GPL-3.0 specifically so code from GPL-3.0 reference projects can be ported into it rather than only read for ideas. Any redistribution of the source must stay GPL-3.0-compatible.
 
 <br />
 
