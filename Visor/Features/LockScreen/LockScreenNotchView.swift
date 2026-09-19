@@ -1,64 +1,40 @@
+//
+//  LockScreenNotchView.swift
+//  DynamicNotch
+//
+//  Created by Евгений Петрукович on 4/14/26.
+//
+
 import SwiftUI
 
-/// The notch mirror on the lock screen: the same silhouette the island draws,
-/// wearing a padlock that latches as the screen locks and springs open as it
-/// unlocks.
+/// The padlock the island wears while the screen is locked. Ported from the
+/// reference's `LockScreenNotchView`.
 ///
-/// It reuses `NotchShape` and the `Motion` springs rather than drawing its
-/// own — the whole point is that it is recognisably the same island, and one
-/// shape morphing is the rule the rest of the app follows.
+/// This is a *compact activity inside the island*, the way the reference has
+/// it — not a separate floating panel, which is what a first pass at this
+/// built and why it sat in the wrong place.
 struct LockScreenNotchView: View {
-    var store: NotchStore
-    let closedSize: CGSize
+    @Environment(\.notchScale) private var scale
+    @Environment(\.isDynamicIsland) private var isDynamicIsland
 
-    /// How much wider than the cutout the latched state runs, and how much
-    /// taller. Small: this is a glyph in a notch, not a panel.
-    private static let extraWidth: CGFloat = 76
-    private static let extraHeight: CGFloat = 8
-
-    private var isLatched: Bool {
-        store.isLocked
-    }
-
-    private var size: CGSize {
-        CGSize(
-            width: closedSize.width + (isLatched ? Self.extraWidth : 0),
-            height: closedSize.height + (isLatched ? Self.extraHeight : 0)
-        )
-    }
+    let isLocked: Bool
+    let style: LockScreenStyle
 
     var body: some View {
-        NotchShape(
-            topRadius: isLatched ? NotchRadii.compact.top : 0,
-            bottomRadius: isLatched ? NotchRadii.compact.bottom : NotchRadii.closed.bottom,
-            isCapsule: store.isCapsule
-        )
-        .fill(.black)
-        .frame(width: size.width, height: size.height)
-        .overlay {
-            if isLatched {
-                LockLatchGlyph(isLocked: store.isLocked)
-                    .frame(width: size.width, height: size.height)
-                    .transition(.island)
+        HStack {
+            Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                .font(.system(size: isDynamicIsland ? 14 : 16, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Spacer()
+
+            if style == .enlarged {
+                Text(verbatim: isLocked ? "Locked" : "Unlocked")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(Motion.resolved(isLatched ? Motion.open : Motion.close), value: isLatched)
-    }
-}
-
-/// The padlock itself. A symbol transition, not a Lottie file: SF Symbols
-/// already ship `lock`/`lock.open` as a matched pair with a built-in
-/// `.replace` transition, and shipping an animation asset to draw a padlock
-/// the system already draws would be a dependency for its own sake.
-private struct LockLatchGlyph: View {
-    let isLocked: Bool
-
-    var body: some View {
-        Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
-            .contentTransition(.symbolEffect(.replace))
-            .padding(.top, 2)
+        .padding(.leading, isDynamicIsland ? 6.scaled(by: scale) : 14.scaled(by: scale))
+        .padding(.trailing, isDynamicIsland ? 8.scaled(by: scale) : 14.scaled(by: scale))
     }
 }

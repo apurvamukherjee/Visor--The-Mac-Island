@@ -81,31 +81,45 @@ final class LockScreenService: NotchService {
         workspaceObservers.forEach(workspace.removeObserver)
         workspaceObservers.removeAll()
         store.isLocked = false
+        store.isPreparingLock = false
         store.isLockTransitioning = false
+        store.deactivate(.lock)
     }
 
     /// The session going inactive means a lock is *probably* coming — a fast
-    /// user switch does it too. The overlay starts transitioning so it is
+    /// user switch does it too. The wing starts transitioning so it is
     /// already there when the shield lands; if no lock follows, the next
     /// session-active notification clears it.
     private func handleSessionResigned() {
         guard !store.isLocked else { return }
-        store.isLockTransitioning = true
+        store.isPreparingLock = true
+        store.activate(.lock)
     }
 
     private func apply(isLocked: Bool) {
         settleTask?.cancel()
         settleTask = nil
         store.isLocked = isLocked
+        // Resolved either way, so the "a lock is probably coming" guess is
+        // over. Clearing it here is what takes the media panel off the
+        // screen on the unlock edge rather than a beat later.
+        store.isPreparingLock = false
+        // The padlock is a compact activity in the island itself, the way the
+        // reference has it — `LockScreenNotchContent` with its own priority.
+        store.activate(.lock)
         if isLocked {
             store.isLockTransitioning = true
             return
         }
-        // Unlocking: hold the overlay while the animation plays backwards.
+        // Unlocking: the open padlock is held in the island — over the
+        // desktop, not the lock screen — for the reference's own
+        // `unlockCollapseDelay`, so the latch reads as opening rather than
+        // simply vanishing.
         settleTask = Task { [weak self] in
             try? await Task.sleep(for: Self.unlockCollapseDelay, tolerance: .milliseconds(80))
             guard !Task.isCancelled else { return }
             self?.store.isLockTransitioning = false
+            self?.store.deactivate(.lock)
         }
     }
 }
