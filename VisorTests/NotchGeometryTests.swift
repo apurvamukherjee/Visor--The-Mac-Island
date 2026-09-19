@@ -3,6 +3,14 @@ import Testing
 @testable import Visor
 
 struct NotchGeometryTests {
+    /// The untrimmed rect. The plain `closedRect(for:)` reads the user's own
+    /// width/height trim out of `UserDefaults`, so calling it here would
+    /// measure whatever the sliders were last left on — which is exactly
+    /// what made these fail once the trim setting existed.
+    private func closedRect(for screen: ScreenGeometryProviding) -> CGRect {
+        NotchGeometry.closedRect(for: screen, widthOffset: 0, heightOffset: 0)
+    }
+
     @Test
     func closedRectUsesAuxiliaryAreasAndSafeAreaInset() {
         let screen = FakeScreen(
@@ -12,7 +20,7 @@ struct NotchGeometryTests {
             auxiliaryTopRightArea: CGRect(x: 856, y: 950, width: 656, height: 32)
         )
 
-        let rect = NotchGeometry.closedRect(for: screen)
+        let rect = closedRect(for: screen)
 
         // Reported cutout is 200x32 at x 656; the hardware trim narrows and
         // lengthens it, keeping it centred on the same midpoint.
@@ -31,7 +39,7 @@ struct NotchGeometryTests {
             auxiliaryTopRightArea: nil
         )
 
-        let rect = NotchGeometry.closedRect(for: screen)
+        let rect = closedRect(for: screen)
 
         #expect(rect.size == NotchGeometry.fallbackClosedSize)
         #expect(rect.midX == screen.frame.midX)
@@ -47,6 +55,7 @@ struct NotchGeometryTests {
             auxiliaryTopRightArea: CGRect(x: 856, y: 950, width: 656, height: 32)
         )
 
+        // Trimmed, to match what `expandedRect` resolves internally.
         let closed = NotchGeometry.closedRect(for: screen)
         let expanded = NotchGeometry.expandedRect(for: screen)
 
@@ -91,8 +100,14 @@ struct NotchGeometryTests {
         // taller than its window gets clipped.
         #expect(canvas.width >= expanded.width)
         #expect(canvas.width >= NotchGeometry.compactRect(for: screen).width)
-        #expect(canvas.height == expanded.height + NotchGeometry.squashAllowance)
+        // Compared with a tolerance, not exactly: the canvas is built by
+        // unioning two rects and so goes through a subtract-then-re-add of
+        // the screen's maxY, which a fractional notch trim makes lossy by a
+        // few ULPs. The geometry is right; the last bit of the mantissa is
+        // not worth asserting on.
+        #expect(abs(canvas.height - (expanded.height + NotchGeometry.squashAllowance)) < 0.0001)
         #expect(canvas.minY < expanded.minY)
+        // Trimmed, to match the rects above, which resolve it themselves.
         let closed = NotchGeometry.closedRect(for: screen).size
         #expect(expanded.height == IslandLayout.maxExpandedSize(closed: closed).height)
         // Every declared layout fits the canvas, so no feature can force a
