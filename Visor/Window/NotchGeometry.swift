@@ -128,8 +128,20 @@ enum NotchGeometry {
             reportedHeight + closedHeightOffset
                 + clamp(heightOffset, to: Preferences.notchHeightOffsetRange)
         )
+        // Centred on the cutout's own midpoint, *not* pinned to its left
+        // edge. `x` used to be `left.maxX + closedWidthInset / 2`, which
+        // accounts for the hardware inset but not for `widthOffset` — so a
+        // user trim shrank the island entirely off its **right** edge while
+        // the left edge stayed put. At the stored -13.65 that left a 0.5pt
+        // gap on the left against a 14.15pt gap on the right, and the island
+        // sat 6.8pt left of the notch: it read as collapsing too far and
+        // landing out of line with the hardware.
+        //
+        // Deriving `x` from the midpoint makes every trim symmetric, which
+        // is what both the slider and the calibration constants always meant.
+        let midX = (left.maxX + right.minX) / 2 + closedHorizontalOffset
         return CGRect(
-            x: left.maxX + closedWidthInset / 2 + closedHorizontalOffset,
+            x: midX - width / 2,
             y: screen.frame.maxY - height,
             width: width,
             height: height

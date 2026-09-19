@@ -141,6 +141,11 @@ final class NotchWindowController {
     }
 
     private func expand() {
+        // Already open: nothing to do, and re-running would buzz a second
+        // haptic and restart the open spring mid-flight. Rebuilding the
+        // tracking area re-delivers `mouseEntered` under a stationary
+        // cursor, so this is reached routinely, not just on a fast re-hover.
+        guard store.state != .expanded else { return }
         guard let screen = Self.targetScreen() else { return }
         generation += 1
         // Widened to expandedCanvasRect (not just expandedRect) so that

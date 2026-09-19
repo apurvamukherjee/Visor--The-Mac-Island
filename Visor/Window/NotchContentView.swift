@@ -93,7 +93,15 @@ final class NotchContentView: NSView {
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
+        // Rebuilt only when the rect actually moved. Replacing a tracking
+        // area makes AppKit re-evaluate the cursor against it, which
+        // re-delivers `mouseEntered` even though the pointer never moved —
+        // and that read as the island opening twice, with two haptics. The
+        // island resizes on every state change, so this is the difference
+        // between one rebuild and one per open.
+        let rect = islandRect
         if let trackingArea {
+            guard trackingArea.rect != rect else { return }
             removeTrackingArea(trackingArea)
         }
         // `.mouseMoved` is still event-driven — AppKit delivers it only while
@@ -107,7 +115,7 @@ final class NotchContentView: NSView {
         // `.inVisibleRect` is dropped with it: that option pins the area to
         // `bounds` and would undo this.
         let area = NSTrackingArea(
-            rect: islandRect,
+            rect: rect,
             options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways],
             owner: self,
             userInfo: nil
