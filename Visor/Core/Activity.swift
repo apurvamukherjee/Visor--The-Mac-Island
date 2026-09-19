@@ -4,6 +4,9 @@
 /// `.greeting` is the most passive of all — it only ever activates when
 /// nothing else is, so its low rank is really just documentation.
 enum ActivityKind: Sendable, CaseIterable {
+    /// The screen locking or unlocking. Outranks everything in the wings:
+    /// while the padlock is showing, nothing else about the machine matters.
+    case lock
     case screenshot
     case airDrop
     case wave
@@ -30,7 +33,7 @@ struct Activity: Equatable, Sendable {
 /// expiry clock here would never fire a re-render anyway, since
 /// `@Observable` only notifies on mutation.
 private let compactPriority: [ActivityKind] = [
-    .screenshot, .airDrop, .wave, .volume, .network, .batteryAlert, .bluetooth, .focus,
+    .lock, .screenshot, .airDrop, .wave, .volume, .network, .batteryAlert, .bluetooth, .focus,
     .charging, .deviceBattery, .screenRecording, .download, .nowPlaying, .timer, .greeting
 ]
 
