@@ -15,9 +15,17 @@ struct IslandLayoutTests {
             IslandLayout.idle(IslandContent(agendaRows: 3, hasTimerPresets: true))
                 .expandedSize(closed: referenceNotch) == CGSize(width: 338, height: 212)
         )
+        // The player no longer reserves a calendar column. It is still wide,
+        // because the card has a floor: dropping the column once left it
+        // narrower than the compact wing it grows out of, so expanding
+        // visibly *shrank* the island sideways.
         #expect(
-            IslandLayout.nowPlaying(IslandContent(agendaRows: 1))
-                .expandedSize(closed: referenceNotch) == CGSize(width: 395, height: 197)
+            IslandLayout.nowPlaying(IslandContent())
+                .expandedSize(closed: referenceNotch) == CGSize(width: 405, height: 177)
+        )
+        #expect(
+            IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
+                .expandedSize(closed: referenceNotch) == CGSize(width: 445, height: 177)
         )
         #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 109))
     }
@@ -58,11 +66,33 @@ struct IslandLayoutTests {
         )
     }
 
+    /// The date is a fixed box in the corner, not a column that grows and
+    /// shrinks: whether there is an event or not, the island is the same
+    /// size. It used to resize under the player as the day changed, which
+    /// moved the transport row for a reason nothing on screen explained.
     @Test
-    func musicNarrowsWhenThereIsNothingToPeekAt() {
+    func theDateBoxNeverResizesTheMusicIsland() {
+        let sizes = [0, 1, 3].map { IslandLayout.nowPlaying(IslandContent(agendaRows: $0)) }
+        #expect(Set(sizes.map(\.expandedExtraWidth)).count == 1)
+        #expect(Set(sizes.map(\.expandedExtraHeight)).count == 1)
+    }
+
+    /// The bug the width floor exists for: expanding must never make the
+    /// island narrower than the wing it opened from.
+    @Test
+    func theExpandedPlayerIsNeverNarrowerThanItsOwnCompactWing() {
+        let layout = IslandLayout.nowPlaying(IslandContent())
         #expect(
-            IslandLayout.nowPlaying(IslandContent(agendaRows: 0)).expandedExtraWidth
-                < IslandLayout.nowPlaying(IslandContent(agendaRows: 1)).expandedExtraWidth
+            layout.expandedSize(closed: referenceNotch).width
+                > layout.compactSize(closed: referenceNotch).width
+        )
+    }
+
+    @Test
+    func openingLyricsWidensTheMusicIsland() {
+        #expect(
+            IslandLayout.nowPlaying(IslandContent()).expandedExtraWidth
+                < IslandLayout.nowPlaying(IslandContent(hasLyrics: true)).expandedExtraWidth
         )
     }
 
@@ -71,7 +101,7 @@ struct IslandLayoutTests {
     /// view, which falls through to `ExpandedIdleView` for exactly these.
     @Test
     func compactOnlyPeeksAreSizedAsTheIdleIsland() {
-        for kind in [ActivityKind.charging, .wave, .greeting] {
+        for kind in [ActivityKind.charging, .wave, .greeting, .lock] {
             #expect(IslandLayout.resolved(for: kind, content: .empty) == IslandLayout.idle(.empty))
         }
         #expect(IslandLayout.resolved(for: nil, content: .empty) == IslandLayout.idle(.empty))
@@ -91,7 +121,9 @@ struct IslandLayoutTests {
     /// that plus its content padding would draw underneath the hardware.
     @Test
     func everyExpandedLayoutClearsTheCameraHousing() {
-        for layout in IslandLayout.all {
+        // `.lock` is compact-only — it never expands, so it declares no
+        // expanded height to clear the housing with.
+        for layout in IslandLayout.all where layout != IslandLayout.lock {
             #expect(layout.expandedSize(closed: referenceNotch).height > referenceNotch.height + 40)
         }
     }
