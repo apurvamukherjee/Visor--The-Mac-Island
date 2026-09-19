@@ -28,7 +28,17 @@ hdiutil create -volname Visor -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/
 # Keep a dated copy in the repo so a build is downloadable straight from
 # GitHub. dist/ is gitignored and gets overwritten; this one is permanent.
 VERSION="$(sed -n 's/.*MARKETING_VERSION: "\(.*\)".*/\1/p' project.yml)"
-[ -n "$VERSION" ] || VERSION="0.0"
+[ -n "$VERSION" ] || VERSION="0.0.0"
+# Semantic versioning, MAJOR.MINOR.PATCH, enforced here rather than trusted:
+# the filename is the permanent record, and a "1.6" that should have been
+# "1.6.0" cannot be corrected later without rewriting history.
+case "$VERSION" in
+    [0-9]*.[0-9]*.[0-9]*) ;;
+    *)
+        echo "MARKETING_VERSION must be MAJOR.MINOR.PATCH (got \"$VERSION\")" >&2
+        exit 1
+        ;;
+esac
 BUILD="$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)".*/\1/p' project.yml)"
 [ -n "$BUILD" ] || BUILD="1"
 # Seconds, not just the date: several builds a day is the normal case, and the
@@ -38,7 +48,7 @@ BUILD="$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)".*/\1/p' project.yml)"
 STAMP="$(date +%Y-%m-%d-%H%M%S)"
 COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo nogit)"
 mkdir -p "$RELEASES"
-RELEASE="$RELEASES/Visor-$VERSION($BUILD)-$STAMP-$COMMIT.dmg"
+RELEASE="$RELEASES/Visor-$VERSION-build$BUILD-$STAMP-$COMMIT.dmg"
 # These are permanent, and a release that is already on disk is history:
 # refuse rather than overwrite it.
 if [ -e "$RELEASE" ]; then

@@ -22,13 +22,23 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - Run build, tests, format and lint before saying a task is done.
 
 ## Releases
-- Every release build goes in `new-releases/` as a new `.dmg`, committed.
+- **Semantic versioning, always.** `MARKETING_VERSION` is `MAJOR.MINOR.PATCH`:
+  MAJOR changes how the island behaves for someone already using it, MINOR
+  adds a feature, PATCH fixes without adding one. `make-dmg.sh` *rejects* a
+  version that is not three numbers, so the convention cannot lapse quietly.
+- Every release build goes in `new-releases/` as a new `.dmg`, committed,
+  named `Visor-<version>-build<n>-<date>-<time>-<commit>.dmg`.
 - **Never delete or overwrite an old build.** They are permanent history:
   `make-dmg.sh` refuses to overwrite a release already on disk, and the
   folder is meant to accumulate. Removing one is a regression, not tidying.
-- Bump `CURRENT_PROJECT_VERSION` in project.yml before building, so each
-  DMG gets its own version — the filename carries version, timestamp and
-  commit hash, and the hash is `HEAD` *at build time*, so commit first.
+  (Builds up to 1.6.0 used an older `Visor-1.6(12)-…` name and were renamed
+  in place with `git mv` when this convention was adopted — bytes and history
+  unchanged. That was a rename, not a deletion.)
+- Bump `MARKETING_VERSION` *and* `CURRENT_PROJECT_VERSION` in project.yml
+  before building, so each DMG gets its own name — the hash in the filename
+  is `HEAD` *at build time*, so commit first.
+- Record every release in `CHANGELOG.md`: Added / Changed / Fixed, plus
+  anything deliberately left out and why.
 
 ## Architecture rules
 - Single source of truth: `NotchStore` (@Observable, @MainActor). Views read, services write.

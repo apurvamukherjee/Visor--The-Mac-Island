@@ -209,7 +209,9 @@ Swipes lock to whichever axis you commit to first, so a diagonal flick can chang
 
 ## Download
 
-Built disk images live in [`new-releases/`](new-releases), newest at the bottom. Grab the latest `.dmg`, open it, and drag Visor to Applications.
+Built disk images live in [`new-releases/`](new-releases), named `Visor-<version>-build<n>-<date>-<time>-<commit>.dmg`. Versions follow [semantic versioning](https://semver.org); the **build number** is what orders them, since `1.5.1` sorts after `1.6.0` alphabetically but came before it. Grab the highest build, open it, and drag Visor to Applications.
+
+Old builds are never deleted — see [`CHANGELOG.md`](CHANGELOG.md) for what landed in each.
 
 Builds are ad-hoc signed, so macOS quarantines a downloaded image. After copying it across:
 
