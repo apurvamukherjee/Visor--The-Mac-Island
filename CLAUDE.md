@@ -3,6 +3,7 @@
 Native macOS Dynamic Island–style app for the MacBook notch.
 Priorities, in order: feels like iOS → near-zero idle power → clean, small codebase.
 Full design: docs/RESEARCH.md (source of truth; update it if a decision changes).
+License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code can be ported in — see Progress).
 
 ## Stack
 - Swift 6 language mode, strict concurrency: complete
@@ -42,7 +43,7 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
 - No commented-out code, no TODOs without an issue reference, no placeholder "example" code left behind.
 - Comments explain *why*, not *what*.
 - Unit-test pure logic: geometry, activity priority, adapter JSON parsing.
-- Do not copy code from GPL projects (boring.notch, Atoll). Reading them for ideas is fine.
+- Visor is GPL-3.0 (see `LICENSE`), so porting code from other GPL-3.0 projects (boring.notch, Atoll, DynamicNotch) is allowed — still reimplement rather than blind-paste where Visor's own architecture (NotchService, Motion tokens, @Observable store) differs, and still no third-party packages without approval (line above) even if the reference project uses one.
 - If something is uncertain (private API behavior, macOS version quirks), say so and verify instead of guessing.
 
 ## Workflow
@@ -218,9 +219,9 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   enforcing the "nothing paints outside the shape" rule. Build, 61/61 tests,
   swiftformat, swiftlint (2 known large_tuple) all pass. **Not yet seen on
   hardware.**
-- **Reference checkout:** `DynamicNotch/` is a GPL-3.0 clone kept for ideas
-  only (CLAUDE.md forbids copying its code). Now gitignored and swiftlint-
-  excluded — committing it would vendor GPL source into Visor.
+- **Reference checkout:** `DynamicNotch/` (and a second copy under
+  `main code/`) is a GPL-3.0 clone. Originally kept for ideas only; superseded
+  2026-09-19 (see License bullet below) — porting its code is now allowed.
 - **Per-feature layout (2026-09-19):** `IslandLayout` replaces the two
   hardcoded expanded sizes and the `hasNowPlaying` branch. Each feature
   declares `expandedExtraWidth/Height`, `compactExtraWidth` and both radii;
@@ -343,6 +344,53 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
   check false-positives, and the reliable signal (NetworkExtension) needs an
   entitlement Visor will not ask for. Left out rather than shipped as a
   badge that lies.
+- **License (2026-09-19):** relicensed GPL-3.0 (`LICENSE` added, copyright
+  Apurva Mukherjee) specifically so code from the GPL-3.0 `DynamicNotch`
+  reference project can be ported into Visor rather than only read for ideas.
+  This reverses the earlier "reading for ideas only" stance. Consequence: any
+  future distribution of Visor's source must stay GPL-3.0-compatible.
+- **Welcome/Player/Settings pass (2026-09-19):** ported ideas from
+  `main code/DynamicNotch` (now deleted — everything needed was pulled out
+  first) into Visor's own architecture; nothing copied verbatim where
+  Visor's shape differs. No paid/premium features existed in the reference
+  to exclude; Telegram links (About + onboarding step 4) and donation/crypto
+  links (Support screen) were dropped rather than ported.
+  — **Welcome**: three-step flow (`OnboardingService`, `OnboardingStep`,
+  `ExpandedOnboardingView`) that lives *inside* the notch panel as a mode
+  orthogonal to the activity ladder — `NotchStore.layout`/`expandedContent`
+  check `onboardingStep` before touching `expandedKind` at all, so it never
+  competes for priority. `NotchWindowController` force-expands on
+  `isOnboardingActive` and `collapseFromExpanded` now refuses to fire while
+  it's true, so a mouse-out mid-sentence can't close it. First-launch flag
+  plus a "Replay welcome tour" row in Settings. Dropped the reference's
+  GitHub-star step content but kept the *shape* of a third step, re-pointed
+  at Visor's own repo — the Telegram step has no equivalent.
+  — **Player**: `NowPlayingSeekBar` (scrub + elapsed/duration), shuffle and
+  repeat (`MusicSeekRow`, state already exposed by the existing
+  `mediaremote-adapter` dependency — `setTime`/`setShuffleMode`/
+  `setRepeatMode` were already there, unused), and a lyrics panel
+  (`LyricsFetcher` against LRCLIB, free/keyless, fetched only while the
+  panel is open — never on every track change) that takes over the calendar
+  column when toggled. The real risk here was re-introducing the per-tick
+  store rewrite the Power fix pass already paid to remove: position is a
+  `NowPlayingProgress` anchor (duration/elapsedAtAnchor/anchorDate/rate),
+  written only when `shouldReplace` detects a real event (track/duration
+  change, play/pause flip, or a jump the projected drift can't explain) —
+  everything else reads it live through `TimelineView`, the same pattern
+  `IslandTimer`/`ExpandedTimerView` already used for the countdown.
+  Dropped an AirPlay output-route button: `AVRoutePickerView` routes the
+  *calling app's own* audio session, and Visor produces no audio of its
+  own — it would have controlled nothing.
+  — **Settings**: grown from a flat list into labelled sections (General /
+  Now Playing / shortcuts / About) in the same file — still one screen, not
+  the reference's sidebar/factory architecture, which would be pure
+  overhead at Visor's current preference count.
+  `Block.musicColumn` grew 114→140 for the new scrub row
+  (`IslandLayoutTests` updated: music layout 395×171 → 395×197). Build,
+  124/124 tests, swiftformat, swiftlint (2 known large_tuple) all pass.
+  **None of it seen on hardware** — the seek bar's drag feel, the lyrics
+  panel's readability at real size, and the onboarding force-expand
+  interaction all need the user's eyes.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

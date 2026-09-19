@@ -95,6 +95,11 @@ enum Motion {
     static let catchIn = Animation.spring(duration: 0.34, bounce: 0.24)
     /// title/artist swap — the new track's text rises into place
     static let textSwap = Animation.spring(duration: 0.34, bounce: 0.18)
+    /// Onboarding step glyph entrance — a light bounce as each step's icon
+    /// appears, ported from the reference flow's own timing.
+    static let onboardingIconIn = Animation.spring(duration: 0.4, bounce: 0.35)
+    /// Onboarding button press feedback: a small scale/opacity dip.
+    static let onboardingPress = Animation.easeOut(duration: 0.12)
 
     // MARK: - Squash and swipe feedback
 

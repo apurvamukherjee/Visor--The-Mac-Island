@@ -34,4 +34,11 @@ enum Haptics {
     static func timerFinished() {
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
     }
+
+    /// A step of the first-launch welcome flow advanced. Fires at most three
+    /// times ever under normal use, so it stays well under the "chattery" bar
+    /// the other exceptions here were held to.
+    static func onboardingAdvance() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .drawCompleted)
+    }
 }

@@ -11,6 +11,10 @@ struct NowPlayingInfo: Equatable {
     let isPlaying: Bool
     /// Cache key for artwork — changes only when the actual track changes.
     let trackIdentity: String
+    /// Safe to compare unlike elapsed/timestamp: a player only changes these
+    /// on a real toggle, not on every position tick.
+    let shuffleMode: TrackInfo.ShuffleMode
+    let repeatMode: TrackInfo.RepeatMode
 
     static func from(_ payload: TrackInfo.Payload) -> NowPlayingInfo? {
         guard let title = payload.title else { return nil }
@@ -19,7 +23,9 @@ struct NowPlayingInfo: Equatable {
             title: title,
             artist: payload.artist,
             isPlaying: isPlaying,
-            trackIdentity: "\(payload.bundleIdentifier ?? ""):\(title):\(payload.artist ?? "")"
+            trackIdentity: "\(payload.bundleIdentifier ?? ""):\(title):\(payload.artist ?? "")",
+            shuffleMode: payload.shuffleMode ?? .off,
+            repeatMode: payload.repeatMode ?? .off
         )
     }
 }

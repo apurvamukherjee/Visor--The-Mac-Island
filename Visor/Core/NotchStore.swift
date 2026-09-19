@@ -35,6 +35,15 @@ final class NotchStore {
         let togglePlayPause: () -> Void
         let next: () -> Void
         let previous: () -> Void
+        let seek: (TimeInterval) -> Void
+        let toggleShuffle: () -> Void
+        let cycleRepeat: () -> Void
+    }
+
+    struct OnboardingCommands {
+        let advance: () -> Void
+        let finish: () -> Void
+        let replay: () -> Void
     }
 
     var state: NotchState = .closed
@@ -47,6 +56,9 @@ final class NotchStore {
     /// charging (a screenshot catch, the wave, the greeting).
     var batteryBounceTick = 0
     var nowPlayingCommands: NowPlayingCommands?
+    /// Anchor-based, not live — written only on a real event. See
+    /// `NowPlayingProgress` for why.
+    var nowPlayingProgress: NowPlayingProgress?
     var networkCommands: NetworkCommands?
     /// Set by `NetworkService`; the `.network` activity follows it, except
     /// while the user has dismissed the alert for this offline episode.
@@ -85,6 +97,11 @@ final class NotchStore {
     /// activation/dismissal — same split as `battery`, whose peek is likewise
     /// driven by its service rather than the store.
     var greetingText: Greeting?
+    /// Owned by `OnboardingService`. Non-nil means the welcome flow is
+    /// showing, which overrides the normal activity ladder outright rather
+    /// than competing inside it — see `layout` and `expandedKind` below.
+    var onboardingStep: OnboardingStep?
+    var onboardingCommands: OnboardingCommands?
 
     /// These three keep their setters because the setters do something:
     /// `activate`/`deactivate` own the dictionary's shape, and `setNowPlaying`
@@ -111,16 +128,28 @@ final class NotchStore {
         resolveCurrentActivity(activities)
     }
 
+    /// True while the welcome flow owns the island. `NotchWindowController`
+    /// consults this to force-expand and to suspend the normal hover-out
+    /// collapse, and `GreetingService` to skip a peek nobody would see.
+    var isOnboardingActive: Bool {
+        onboardingStep != nil
+    }
+
     /// The feature that owns the expanded island, or nil for the idle
     /// agenda. Read by both the layout and the view, so they cannot drift.
     var expandedKind: ActivityKind? {
         resolveExpandedKind(activities)
     }
 
-    /// The shape the island takes right now, resolved from both the feature
-    /// on top and what that feature actually has to show.
+    /// The shape the island takes right now. Onboarding is checked first and
+    /// unconditionally: it is not one more activity competing in the
+    /// priority ladder, it is a different mode the island is in, the same
+    /// way `state` is.
     var layout: IslandLayout {
-        IslandLayout.resolved(for: expandedKind, content: islandContent)
+        if let onboardingStep {
+            return IslandLayout.onboarding(onboardingStep)
+        }
+        return IslandLayout.resolved(for: expandedKind, content: islandContent)
     }
 
     /// Filtered exactly the way the agenda view filters, so the island can

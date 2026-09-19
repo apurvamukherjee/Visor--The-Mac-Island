@@ -14,11 +14,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
-        controller.onShowSettings = { [weak self] in self?.settingsWindow.show() }
+        controller.onShowSettings = { [weak self] in
+            guard let self else { return }
+            settingsWindow.show(store: store)
+        }
         windowController = controller
         controller.start()
 
         services = [
+            OnboardingService(store: store),
             BatteryService(store: store),
             NowPlayingService(store: store),
             CalendarService(store: store),

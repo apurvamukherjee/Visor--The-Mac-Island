@@ -1,3 +1,4 @@
+import Foundation
 import MediaRemoteAdapter
 
 @MainActor
@@ -26,7 +27,10 @@ final class NowPlayingService: NotchService {
         store.nowPlayingCommands = NotchStore.NowPlayingCommands(
             togglePlayPause: { [weak self] in self?.togglePlayPause() },
             next: { [weak self] in self?.mediaController.nextTrack() },
-            previous: { [weak self] in self?.mediaController.previousTrack() }
+            previous: { [weak self] in self?.mediaController.previousTrack() },
+            seek: { [weak self] seconds in self?.mediaController.setTime(seconds: seconds) },
+            toggleShuffle: { [weak self] in self?.cycleShuffle() },
+            cycleRepeat: { [weak self] in self?.cycleRepeat() }
         )
         mediaController.startListening()
     }
@@ -37,6 +41,7 @@ final class NowPlayingService: NotchService {
         mediaController.stopListening()
         store.nowPlayingCommands = nil
         store.setNowPlaying(nil)
+        store.nowPlayingProgress = nil
         store.deactivate(.nowPlaying)
     }
 
@@ -81,6 +86,48 @@ final class NowPlayingService: NotchService {
         // itself in. A track that actually goes away still clears through
         // `scheduleClear`.
         store.activate(.nowPlaying)
+        updateProgress(from: payload)
+    }
+
+    /// Only written on a real event — see `NowPlayingProgress.shouldReplace`
+    /// — so the scrub bar can exist without the store rewrite this file's
+    /// own history already paid to remove once.
+    private func updateProgress(from payload: TrackInfo.Payload) {
+        guard let durationMicros = payload.durationMicros, durationMicros > 0,
+              let elapsedMicros = payload.elapsedTimeMicros,
+              let timestampMicros = payload.timestampEpochMicros
+        else {
+            store.nowPlayingProgress = nil
+            return
+        }
+        let isPlaying = payload.isPlaying ?? false
+        let incoming = NowPlayingProgress(
+            duration: durationMicros / 1_000_000,
+            elapsedAtAnchor: elapsedMicros / 1_000_000,
+            anchorDate: Date(timeIntervalSince1970: timestampMicros / 1_000_000),
+            isPlaying: isPlaying,
+            rate: payload.playbackRate ?? (isPlaying ? 1 : 0)
+        )
+        if NowPlayingProgress.shouldReplace(store.nowPlayingProgress, with: incoming) {
+            store.nowPlayingProgress = incoming
+        }
+    }
+
+    /// Explicit target mode rather than a blind toggle, for the same reason
+    /// `togglePlayPause` picks a direction instead of calling the adapter's
+    /// own toggle: we already know the current mode.
+    private func cycleShuffle() {
+        let next: TrackInfo.ShuffleMode = (store.nowPlaying?.shuffleMode ?? .off) == .off ? .songs : .off
+        mediaController.setShuffleMode(next)
+    }
+
+    private func cycleRepeat() {
+        let next: TrackInfo.RepeatMode = switch store.nowPlaying?.repeatMode ?? .off {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+        mediaController.setRepeatMode(next)
     }
 
     private func scheduleClear() {
@@ -90,6 +137,7 @@ final class NowPlayingService: NotchService {
             guard !Task.isCancelled, let self else { return }
             clearTask = nil
             store.setNowPlaying(nil)
+            store.nowPlayingProgress = nil
             store.deactivate(.nowPlaying)
         }
     }

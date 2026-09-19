@@ -9,7 +9,7 @@ import SwiftUI
 final class SettingsWindowController {
     private var window: NSWindow?
 
-    func show() {
+    func show(store: NotchStore) {
         NSApplication.shared.activate(ignoringOtherApps: true)
         if let window {
             window.makeKeyAndOrderFront(nil)
@@ -22,7 +22,7 @@ final class SettingsWindowController {
             defer: false
         )
         window.title = "Visor"
-        window.contentView = NSHostingView(rootView: SettingsView())
+        window.contentView = NSHostingView(rootView: SettingsView(store: store))
         window.isReleasedWhenClosed = false
         window.center()
         self.window = window

@@ -17,7 +17,7 @@ struct IslandLayoutTests {
         )
         #expect(
             IslandLayout.nowPlaying(IslandContent(agendaRows: 1))
-                .expandedSize(closed: referenceNotch) == CGSize(width: 395, height: 171)
+                .expandedSize(closed: referenceNotch) == CGSize(width: 395, height: 197)
         )
         #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 109))
     }

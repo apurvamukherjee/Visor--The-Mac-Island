@@ -9,6 +9,8 @@ struct ExpandedMusicView: View {
     let artwork: CGImage?
     let tint: Color?
     let commands: NotchStore.NowPlayingCommands?
+    /// Anchor-based position, nil when the source app reports no duration.
+    let progress: NowPlayingProgress?
     let events: [CalendarEvent]
     /// Cursor position for the parallax tilt, nil when the pointer is away.
     let hoverPoint: CGPoint?
@@ -39,6 +41,12 @@ struct ExpandedMusicView: View {
     /// live CoreAudio callback for a glyph nobody is looking at.
     @State private var isMuted: Bool?
 
+    /// Fetched only while this is true — see `loadLyricsIfNeeded` — so
+    /// playing music never phones out to LRCLIB on its own.
+    @State private var showLyrics = false
+    @State private var lyricsResult: LyricsResult?
+    @State private var lyricsTask: Task<Void, Never>?
+
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
 
     var body: some View {
@@ -48,6 +56,21 @@ struct ExpandedMusicView: View {
             calendarColumn
         }
         .foregroundStyle(.white)
+        .onChange(of: showLyrics) { loadLyricsIfNeeded() }
+        .onChange(of: info.trackIdentity) { loadLyricsIfNeeded() }
+    }
+
+    private func loadLyricsIfNeeded() {
+        lyricsTask?.cancel()
+        guard showLyrics else { return }
+        lyricsResult = nil
+        let title = info.title
+        let artist = info.artist
+        lyricsTask = Task {
+            let result = await LyricsFetcher.fetch(title: title, artist: artist)
+            guard !Task.isCancelled else { return }
+            lyricsResult = result
+        }
     }
 
     /// A hairline inset equally top and bottom, so it reads as centred
@@ -95,6 +118,17 @@ struct ExpandedMusicView: View {
                 )
                 .frame(height: 32, alignment: .leading)
                 .clipped()
+            }
+            // Hidden outright when the source app reports no duration,
+            // rather than drawing a bar with nothing to show.
+            if let progress {
+                MusicSeekRow(
+                    shuffleMode: info.shuffleMode,
+                    repeatMode: info.repeatMode,
+                    progress: progress,
+                    showLyrics: $showLyrics,
+                    commands: commands
+                )
             }
             controls
             Spacer(minLength: 0)
@@ -272,19 +306,27 @@ struct ExpandedMusicView: View {
         }
     }
 
+    @ViewBuilder
     private var calendarColumn: some View {
-        VStack(alignment: .leading, spacing: IslandSpacing.row) {
-            DateBlock(alignment: .trailing)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-            ForEach(peek) { EventRow(event: $0) }
-            Spacer(minLength: 0)
+        if showLyrics {
+            LyricsPanelView(result: lyricsResult, progress: progress)
+                .frame(width: IslandLayout.Column.musicPeek, alignment: .leading)
+                .transition(.island)
+        } else {
+            VStack(alignment: .leading, spacing: IslandSpacing.row) {
+                DateBlock(alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                ForEach(peek) { EventRow(event: $0) }
+                Spacer(minLength: 0)
+            }
+            // Only as wide as it has anything to put there: with nothing
+            // upcoming this is the date block alone, and the island comes in
+            // by the difference rather than holding an empty column open.
+            .frame(width: peek.isEmpty ? IslandLayout.Column.datePeek : IslandLayout.Column.musicPeek,
+                   alignment: .leading)
+            .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
+            .transition(.island)
         }
-        // Only as wide as it has anything to put there: with nothing
-        // upcoming this is the date block alone, and the island comes in by
-        // the difference rather than holding an empty column open.
-        .frame(width: peek.isEmpty ? IslandLayout.Column.datePeek : IslandLayout.Column.musicPeek,
-               alignment: .leading)
-        .animation(Motion.resolved(Motion.layout), value: peek.isEmpty)
     }
 
     private var peek: [CalendarEvent] {

@@ -124,6 +124,15 @@ struct NotchRootView: View {
     /// edge. Time is already in the menu bar, battery lives in the wings.
     @ViewBuilder
     private var expandedContent: some View {
+        if let step = store.onboardingStep {
+            ExpandedOnboardingView(step: step, commands: store.onboardingCommands)
+        } else {
+            expandedActivityContent
+        }
+    }
+
+    @ViewBuilder
+    private var expandedActivityContent: some View {
         switch store.expandedKind {
         case .screenshot:
             ExpandedShelfView(
@@ -178,6 +187,7 @@ struct NotchRootView: View {
                 artwork: store.nowPlayingArtwork,
                 tint: store.nowPlayingTint,
                 commands: store.nowPlayingCommands,
+                progress: store.nowPlayingProgress,
                 events: store.calendarEvents,
                 hoverPoint: store.hoverPoint,
                 bleed: store.nowPlayingBleed

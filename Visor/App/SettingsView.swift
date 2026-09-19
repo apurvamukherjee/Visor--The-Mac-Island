@@ -4,6 +4,8 @@ import SwiftUI
 /// that animates or ticks, and nothing here does: the toggle reads its state
 /// once when the window opens.
 struct SettingsView: View {
+    var store: NotchStore
+
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchAtLoginFailed = false
     /// `@AppStorage`, not `@State`: the island reads the same key and has to
@@ -42,32 +44,38 @@ struct SettingsView: View {
 
             Divider()
 
-            Picker("Animation speed", selection: $motionPreset) {
-                ForEach(MotionPreset.allCases, id: \.rawValue) { preset in
-                    Text(preset.title).tag(preset.rawValue)
+            SettingsSection("General") {
+                Picker("Animation speed", selection: $motionPreset) {
+                    ForEach(MotionPreset.allCases, id: \.rawValue) { preset in
+                        Text(preset.title).tag(preset.rawValue)
+                    }
                 }
-            }
-            .onChange(of: motionPreset) { _, raw in
-                Motion.preset = MotionPreset(rawValue: raw) ?? .balanced
-            }
-
-            Toggle("Launch at login", isOn: $launchAtLogin)
-                .onChange(of: launchAtLogin) { _, enabled in
-                    updateLaunchAtLogin(to: enabled)
+                .onChange(of: motionPreset) { _, raw in
+                    Motion.preset = MotionPreset(rawValue: raw) ?? .balanced
                 }
 
-            if launchAtLoginFailed {
-                Text(launchAtLoginHint)
+                Toggle("Launch at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, enabled in
+                        updateLaunchAtLogin(to: enabled)
+                    }
+
+                if launchAtLoginFailed {
+                    Text(launchAtLoginHint)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            Divider()
+
+            SettingsSection("Now Playing") {
+                Toggle("Vinyl mode", isOn: $vinylMode)
+
+                Text("Show a turning record instead of the album cover.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
-
-            Toggle("Vinyl mode", isOn: $vinylMode)
-
-            Text("Show a turning record instead of the album cover.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
 
             Divider()
 
@@ -77,6 +85,14 @@ struct SettingsView: View {
                 ShortcutRow(symbol: "hand.draw.fill", label: "Two-finger swipe to change track")
                 ShortcutRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
                 ShortcutRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
+            }
+
+            Divider()
+
+            SettingsSection("About") {
+                Button("Replay welcome tour") {
+                    store.onboardingCommands?.replay()
+                }
             }
 
             Button("Quit Visor") {
@@ -96,6 +112,29 @@ struct SettingsView: View {
             launchAtLoginFailed = true
             launchAtLogin = LaunchAtLogin.isEnabled
         }
+    }
+}
+
+/// A labelled group of rows. Purely visual — every row still owns its own
+/// state — introduced once the flat list grew past a glance's worth of
+/// unrelated toggles.
+private struct SettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(.secondary)
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

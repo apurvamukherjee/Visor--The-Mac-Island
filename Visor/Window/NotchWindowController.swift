@@ -52,6 +52,7 @@ final class NotchWindowController {
         SkyLightPin.pin(panel)
         registerDropObservation()
         registerActivityObservation()
+        registerOnboardingObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -188,6 +189,29 @@ final class NotchWindowController {
         }
     }
 
+    /// The welcome flow force-opens the island itself rather than waiting
+    /// for a hover, and holds it open until it finishes — see
+    /// `collapseFromExpanded`'s guard below.
+    private func registerOnboardingObservation() {
+        withObservationTracking {
+            _ = store.isOnboardingActive
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleOnboardingChange() }
+        }
+    }
+
+    private func handleOnboardingChange() {
+        registerOnboardingObservation()
+        if store.isOnboardingActive {
+            hoverIntentTask?.cancel()
+            hoverIntentTask = nil
+            guard store.state != .expanded else { return }
+            expand()
+        } else if !isHovering {
+            collapseFromExpanded()
+        }
+    }
+
     /// A drag heading for the notch should be met, not waited out — the
     /// island opens the moment it becomes a drop target and closes again when
     /// the drag leaves or lands.
@@ -287,6 +311,10 @@ extension NotchWindowController {
     /// ambient transaction, so giving the frame's axes different curves
     /// directly does not work (measured).
     func collapseFromExpanded() {
+        // The welcome flow holds the island open until the user finishes it
+        // or replays it from Settings — a mouse-out mid-explanation should
+        // not yank the island shut under an unread sentence.
+        guard !store.isOnboardingActive else { return }
         generation += 1
         let gen = generation
         let target: NotchState = store.currentActivity != nil ? .compact : .closed

@@ -53,7 +53,7 @@ final class GreetingService: NotchService {
     /// screenshot catch or mid-playback would read as an interruption, not a
     /// welcome.
     private func scheduleIfDue() {
-        guard isDueToday, store.currentActivity == nil else { return }
+        guard isDueToday, store.currentActivity == nil, !store.isOnboardingActive else { return }
         showTask?.cancel()
         showTask = Task { [weak self] in
             try? await Task.sleep(for: Self.settleDelay, tolerance: .milliseconds(200))

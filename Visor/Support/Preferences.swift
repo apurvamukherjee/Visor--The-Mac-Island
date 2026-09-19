@@ -13,4 +13,6 @@ enum Preferences {
     /// `yyyy-MM-dd` of the last wake/login greeting shown, so it fires at
     /// most once a day regardless of how many times the Mac wakes.
     static let lastGreetingDayKey = "lastGreetingDay"
+    /// Set once the three-step welcome flow has been shown or dismissed.
+    static let hasSeenWelcomeKey = "hasSeenWelcome"
 }

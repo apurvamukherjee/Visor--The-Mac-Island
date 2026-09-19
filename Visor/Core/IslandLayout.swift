@@ -78,9 +78,10 @@ extension IslandLayout {
         /// The "+N more" line under the agenda.
         static let agendaOverflow: CGFloat = 20
         static let timerPresets: CGFloat = 24
-        /// Artwork (72 in vinyl mode, the taller of the two) over the
-        /// transport row.
-        static let musicColumn: CGFloat = 114
+        /// Artwork (72 in vinyl mode, the taller of the two), the scrub bar,
+        /// and the transport row stacked. +26 over the pre-scrub-bar number
+        /// for the new row plus its own block spacing.
+        static let musicColumn: CGFloat = 140
         static let shelfHeader: CGFloat = 18
         static let shelfTile: CGFloat = 76
         /// Title over two lines of detail.
@@ -90,6 +91,10 @@ extension IslandLayout {
         /// The countdown figure and its label; the buttons are shorter.
         static let countdown: CGFloat = 52
         static let volumeBar: CGFloat = 32
+        /// Glyph, title and two lines of body text.
+        static let onboardingBody: CGFloat = 92
+        /// The primary button plus the secondary link underneath it.
+        static let onboardingButtons: CGFloat = 56
     }
 
     /// Column widths, absolute because columns hold real text at real
@@ -109,6 +114,8 @@ extension IslandLayout {
         /// The preset row sets a floor under the idle island even when the
         /// agenda is empty.
         static let timerPresets: CGFloat = 200
+        /// A sentence of body copy, centred, plus a full-width button.
+        static let onboarding: CGFloat = 230
     }
 
     static let maxEventRows = 3
@@ -209,6 +216,18 @@ extension IslandLayout {
         expandedRadii: NotchRadii(top: 11, bottom: 34)
     )
 
+    /// The welcome flow. One size for all three steps rather than resizing
+    /// step to step — the copy is written to fit the same box, and a flow
+    /// the user cannot yet dismiss on their own is the wrong place for the
+    /// island to also be resizing under them.
+    static func onboarding(_: OnboardingStep) -> IslandLayout {
+        IslandLayout(
+            expandedExtraWidth: extraWidth(content: Column.onboarding),
+            expandedExtraHeight: extraHeight(Block.onboardingBody, Block.onboardingButtons),
+            compactExtraWidth: 160
+        )
+    }
+
     /// The single resolution both the panel geometry and the view read, so
     /// the island can never be sized for one feature and filled with
     /// another.
@@ -234,7 +253,8 @@ extension IslandLayout {
         networkAlert,
         batteryAlert,
         timer,
-        volume
+        volume,
+        onboarding(.welcome)
     ]
 
     static let maxExpandedExtraWidth = all.map(\.expandedExtraWidth).max() ?? 0
