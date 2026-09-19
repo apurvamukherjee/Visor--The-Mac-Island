@@ -7,6 +7,10 @@ excluded:
   # their style is theirs, not ours.
   - old-code
   - DynamicNotch
+  # Ported verbatim from the GPL-3.0 reference so behaviour matches it
+  # exactly. Reformatting them to Visor's house style would defeat the
+  # point of copying them, and re-porting a fix upstream would conflict.
+  - Visor/UI/Player
 
 opt_in_rules:
   - force_unwrapping
