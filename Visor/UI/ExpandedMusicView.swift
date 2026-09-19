@@ -48,6 +48,7 @@ struct ExpandedMusicView: View {
     @State private var lyricsTask: Task<Void, Never>?
 
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
+    @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
 
     var body: some View {
         HStack(alignment: .top, spacing: IslandSpacing.column) {
@@ -118,6 +119,10 @@ struct ExpandedMusicView: View {
                 )
                 .frame(height: 32, alignment: .leading)
                 .clipped()
+
+                if showEqualizer {
+                    NowPlayingEqualizer(isPlaying: info.isPlaying, tint: tint)
+                }
             }
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
@@ -126,6 +131,7 @@ struct ExpandedMusicView: View {
                     shuffleMode: info.shuffleMode,
                     repeatMode: info.repeatMode,
                     progress: progress,
+                    tint: tint,
                     showLyrics: $showLyrics,
                     commands: commands
                 )

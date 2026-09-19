@@ -9,7 +9,16 @@ import SwiftUI
 /// to the pointer.
 struct NowPlayingSeekBar: View {
     let progress: NowPlayingProgress
+    /// The album's colour, for the `.artwork` tint style. Nil until the
+    /// artwork has been decoded.
+    var tint: Color?
     var onSeek: (TimeInterval) -> Void
+
+    @AppStorage(Preferences.progressTintKey) private var tintStyle = ProgressTintStyle.standard.rawValue
+
+    private var fillColor: Color {
+        (ProgressTintStyle(rawValue: tintStyle) ?? .standard).resolved(tint: tint)
+    }
 
     @State private var dragElapsed: TimeInterval?
 
@@ -39,7 +48,7 @@ struct NowPlayingSeekBar: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(.white.opacity(0.16))
                 Capsule()
-                    .fill(.white.opacity(0.85))
+                    .fill(fillColor)
                     .frame(width: width * CGFloat(fraction))
             }
             // The whole track is the target, not just the filled part —

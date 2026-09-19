@@ -8,6 +8,8 @@ struct MusicSeekRow: View {
     let shuffleMode: TrackInfo.ShuffleMode
     let repeatMode: TrackInfo.RepeatMode
     let progress: NowPlayingProgress
+    /// Passed through to the bar for the `.artwork` tint style.
+    var tint: Color?
     @Binding var showLyrics: Bool
     var commands: NotchStore.NowPlayingCommands?
 
@@ -16,7 +18,7 @@ struct MusicSeekRow: View {
             miniButton("shuffle", isOn: shuffleMode != .off) {
                 commands?.toggleShuffle()
             }
-            NowPlayingSeekBar(progress: progress, onSeek: { commands?.seek($0) })
+            NowPlayingSeekBar(progress: progress, tint: tint, onSeek: { commands?.seek($0) })
             miniButton(repeatGlyph, isOn: repeatMode != .off) {
                 commands?.cycleRepeat()
             }
