@@ -18,6 +18,48 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.0.1] — 2026-09-20 (build 19)
+
+### Fixed
+- **A width trim moved the island off the notch instead of shrinking it
+  evenly.** `NotchGeometry.closedRect` subtracted `widthOffset` from the
+  width but computed `x` as `left.maxX + closedWidthInset / 2`, which does
+  not account for that offset at all — so every trim came off the **right
+  edge only** and walked the island leftwards. Against a real stored trim of
+  −13.65pt the island measured 170.35pt inside a 185pt cutout, with a 0.5pt
+  gap on the left and 14.15pt on the right, sitting 6.8pt left of centre.
+  `x` now derives from the cutout's own midpoint, so a trim is symmetric.
+
+  This is what 2.0.0's "collapsed off-centre" fix was aiming at and missed:
+  that pass corrected dead space *inside* the idle island (real, and kept),
+  but the island itself was mis-placed for every layout — which is why the
+  player looked wrong too. Diagnosed by instrumenting the running app rather
+  than by reading: a standalone probe reported the cutout at midX 855.5 while
+  the app was placing the island at 848.675, and the gap between those two
+  numbers was the stored trim. Three plausible causes were measured and
+  discarded first — a stale hosting-view origin during `setFrame` (a probe
+  showed `display: true` does not draw synchronously), the collapse squash,
+  and a non-symmetric canvas. `NotchTrimTests` now pins both the centring and
+  the equal-gap property across six offsets.
+
+- **The island opened twice, with two haptics, on a single hover.**
+  Introduced in 2.0.0 by the hover-area fix. Tracking the island's own rect
+  rather than `bounds` meant the area had to be rebuilt whenever the island
+  resized — but replacing an `NSTrackingArea` makes AppKit re-evaluate the
+  cursor against it and re-deliver `mouseEntered` under a stationary pointer,
+  so opening the island re-triggered the open. Fixed at both ends: `expand()`
+  returns early when already expanded, and `updateTrackingAreas` skips the
+  rebuild when the rect has not actually changed. Verified by driving three
+  scripted hover cycles and counting exactly three opens and three collapses.
+
+### Left out, deliberately
+- **A Mac-model picker for notch dimensions**, asked for again and measured
+  again before answering. macOS reports the true cutout through
+  `auxiliaryTopLeftArea` / `auxiliaryTopRightArea`; the geometry was right all
+  along and a stored trim was corrupting it. A preset table would override
+  measured truth and go stale every hardware generation. The ±16pt/±4pt
+  sliders remain for per-machine taste, and now behave symmetrically.
+
 ## [2.0.0] — 2026-09-20 (build 18)
 
 Major because three things an existing user relies on are gone or moved: the
