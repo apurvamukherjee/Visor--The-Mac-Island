@@ -24,7 +24,7 @@ struct ExpandedMusicView: View {
     /// Fixed, so a long title can never reflow the rows beneath it. Wide
     /// enough to clear the date box in the corner above it, since the title
     /// row is the one row that shares its height.
-    private static let textWidth: CGFloat = 190
+    private static let textWidth: CGFloat = 166
     /// The record runs larger than the cover it replaces: a disc reads as a
     /// disc only once the grooves and the tonearm have room. Still inside the
     /// existing 168pt island — the height comes out of the music column's
@@ -120,10 +120,10 @@ struct ExpandedMusicView: View {
     /// that sizes itself to its content reflows the whole column every time
     /// a longer title arrives, and the transport row visibly moves.
     private var musicColumn: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 14) {
                 artworkView
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 3) {
                     MarqueeText(
                         .constant(info.title),
                         font: .system(size: 14, weight: .bold, design: .rounded),
@@ -164,7 +164,7 @@ struct ExpandedMusicView: View {
             }
             // The date box sits above this row, so it stops short of it.
             // The scrub and transport rows below run the full width.
-            .padding(.trailing, showLyrics ? 0 : dateBoxWidth + IslandSpacing.column)
+            .padding(.trailing, showLyrics ? 0 : dateBoxWidth + Self.dateBoxGap)
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
             if let progress {
@@ -409,6 +409,11 @@ struct ExpandedMusicView: View {
     private var dateBoxWidth: CGFloat {
         IslandLayout.Column.datePeek
     }
+
+    /// Clear air between the title and the date box. A column gap is too
+    /// tight here — the two are unrelated pieces of information sitting on
+    /// the same line, not adjacent columns of one thing.
+    private static let dateBoxGap: CGFloat = 22
 
     private var peek: [CalendarEvent] {
         CalendarEventMapper.upcoming(events, now: .now, limit: 1)
