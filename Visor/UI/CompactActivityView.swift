@@ -95,11 +95,25 @@ struct CompactActivityView: View {
             downloadLabel
         case .screenRecording:
             recordingLabel
+        case .pausedTrack:
+            pausedDot
         // `.charging` shows nothing extra on the left: the battery glyph on
         // the right wing is the whole point of that peek.
         case .nowPlaying, .charging, nil:
             nowPlayingGlyphs
         }
+    }
+
+    /// A paused track, after the island has collapsed: one dot, tinted from
+    /// the album so it reads as *this* track rather than a generic
+    /// indicator. Deliberately not the artwork and bars `.nowPlaying` shows
+    /// — the island has already said it is done with this track, and the dot
+    /// is only the handle to get back to it.
+    private var pausedDot: some View {
+        Circle()
+            .fill(store.nowPlayingTint ?? .white.opacity(0.45))
+            .frame(width: 6, height: 6)
+            .transition(.island)
     }
 
     /// Two thumbnails at wing size, then a count for the rest — four tiles

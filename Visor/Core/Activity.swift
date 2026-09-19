@@ -21,6 +21,11 @@ enum ActivityKind: Sendable, CaseIterable, Equatable {
     case download
     case nowPlaying
     case timer
+    /// A track is loaded but paused, and the 5s collapse has run. Not
+    /// `.nowPlaying`: that one owns the wings and the expanded card, while
+    /// this is a single dot saying "music is still here". Ranked below
+    /// everything real so it can never displace an actual activity.
+    case pausedTrack
     case greeting
 }
 
@@ -34,7 +39,8 @@ struct Activity: Equatable, Sendable {
 /// `@Observable` only notifies on mutation.
 private let compactPriority: [ActivityKind] = [
     .lock, .screenshot, .airDrop, .wave, .volume, .network, .batteryAlert, .bluetooth, .focus,
-    .charging, .deviceBattery, .screenRecording, .download, .nowPlaying, .timer, .greeting
+    .charging, .deviceBattery, .screenRecording, .download, .nowPlaying, .timer, .pausedTrack,
+    .greeting
 ]
 
 /// Who gets the *expanded* island, which is not the same question: a
@@ -44,9 +50,12 @@ private let compactPriority: [ActivityKind] = [
 /// `.screenRecording` sits below music for the same reason `.timer` does:
 /// a recording runs for minutes, and hiding the music card for all of it
 /// would be worse than showing the recording only in the wings.
+/// `.pausedTrack` is here too, and resolves to the same player card: the
+/// whole point of the dot is that hovering it opens a transport row you can
+/// press play on. Below `.timer` for the reason the comment above gives.
 private let expandedPriority: [ActivityKind] = [
     .screenshot, .airDrop, .volume, .network, .batteryAlert, .bluetooth, .download,
-    .nowPlaying, .timer, .screenRecording
+    .nowPlaying, .timer, .screenRecording, .pausedTrack
 ]
 
 func resolveCurrentActivity(_ activities: [ActivityKind: Activity]) -> Activity? {

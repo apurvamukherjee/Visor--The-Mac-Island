@@ -4,7 +4,6 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = NotchStore()
     private var windowController: NotchWindowController?
-    private var lockScreenController: LockScreenPanelManager?
     private var lockNotchController: LockScreenNotchWindowManager?
     private let settingsWindow = SettingsWindowController()
     private var services: [any NotchService] = []
@@ -26,13 +25,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windowController = controller
         controller.start()
-
-        // Its own controller, not the island's: the lock overlay lives in
-        // separate panels above the lock shield, while the island's panel
-        // stays pinned below it. See `LockScreenWindowController`.
-        let lockController = LockScreenPanelManager(store: store)
-        lockScreenController = lockController
-        lockController.start()
 
         // The padlock needs a window of its own *above* the shield: the
         // island's panel is pinned below it and is therefore invisible while
@@ -64,7 +56,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_: Notification) {
         windowController?.stop()
-        lockScreenController?.stop()
         lockNotchController?.stop()
         services.forEach { $0.stop() }
     }

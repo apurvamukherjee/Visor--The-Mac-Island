@@ -32,10 +32,6 @@ struct IslandContent: Equatable, Sendable {
     var hasTimerPresets = false
     /// Download rows that will really be drawn, already clamped.
     var downloadRows = 0
-    /// Whether the lyrics panel is open beside the player, which is the only
-    /// thing that still claims the music layout's second column.
-    var hasLyrics = false
-
     static let empty = IslandContent()
 }
 
@@ -125,10 +121,6 @@ extension IslandLayout {
         /// The agenda's empty state, which needs a sentence, not a list.
         static let emptyAgenda: CGFloat = 150
         static let music: CGFloat = 240
-        /// Date block plus the one-event peek beside music.
-        static let musicPeek: CGFloat = 140
-        /// The same peek with nothing to peek at: the date block alone.
-        static let datePeek: CGFloat = 92
         static let alertIcon: CGFloat = 40
         static let alertText: CGFloat = 250
         /// The drawn battery is wider than the symbol the other alerts use,
@@ -180,18 +172,35 @@ extension IslandLayout {
     /// underneath. Both axes follow the agenda — an empty one takes the
     /// island down to a pill rather than leaving a screen of black.
     static func idle(_ content: IslandContent) -> IslandLayout {
+        let compactExtra: CGFloat = 160
         let rows = min(max(content.agendaRows, 0), maxEventRows)
         let body = max(Block.date, agendaHeight(rows: rows, overflow: content.hasAgendaOverflow))
         let agendaWidth = rows > 0 ? Column.agenda : Column.emptyAgenda
         let columns = Column.date + IslandSpacing.column + agendaWidth
         return IslandLayout(
-            expandedExtraWidth: extraWidth(content: max(columns, Column.timerPresets)),
+            // Same floor the player carries, and for the same reason: an
+            // empty agenda resolved to 275pt against a 344pt compact wing,
+            // so opening the island made it *narrower* than the wing it grew
+            // out of. Measured on the reference cutout.
+            expandedExtraWidth: max(
+                extraWidth(content: max(columns, Column.timerPresets)),
+                compactExtra + idleExpandMargin
+            ),
             expandedExtraHeight: content.hasTimerPresets
                 ? extraHeight(body, Block.timerPresets)
                 : extraHeight(body),
-            compactExtraWidth: 160
+            compactExtraWidth: compactExtra
         )
     }
+
+    /// How much wider than its own compact wing the idle island opens. Same
+    /// job as `musicExpandMargin`, but deliberately small: this is a floor
+    /// for the degenerate case, not a target. At 40 it exceeded even the
+    /// three-row island's own content width, so every agenda resolved to the
+    /// same size and the content-resolved sizing this file exists for
+    /// stopped doing anything. At 12 only the genuinely-too-narrow layouts
+    /// are caught, and an empty agenda still visibly shrinks.
+    private static let idleExpandMargin: CGFloat = 12
 
     /// Playing *or paused*: the player owns the whole island. The calendar
     /// peek that used to sit beside it is gone — with a track loaded the
@@ -203,20 +212,27 @@ extension IslandLayout {
     /// the island sideways, which read as cramped and wrong. The card is now
     /// at least as wide as the wing plus a margin, so opening it always
     /// feels like it is opening.
-    static func nowPlaying(_ content: IslandContent) -> IslandLayout {
+    static func nowPlaying(_: IslandContent) -> IslandLayout {
         let compactExtra: CGFloat = 160
-        // The date is an overlay in the corner, not a column, so it costs
-        // the island width only insofar as the title row stops short of it
-        // — which `Column.music` already accounts for. Only the lyrics
-        // panel is a real second column.
-        let columns = content.hasLyrics
-            ? Column.music + IslandSpacing.column + 1 + IslandSpacing.column + Column.musicPeek
-            : Column.music + IslandSpacing.column + Column.datePeek
+        // One column now: the player. The corner date box and the lyrics
+        // panel are both gone, so nothing else claims width here — the
+        // floor below is what actually sizes the card.
+        let columns = Column.music
         return IslandLayout(
             expandedExtraWidth: max(extraWidth(content: columns), compactExtra + musicExpandMargin),
             expandedExtraHeight: extraHeight(Block.musicColumn),
             compactExtraWidth: compactExtra
         )
+    }
+
+    /// The paused hint: the player's expanded card over a wing just wide
+    /// enough for a dot. `.nowPlaying`'s 160pt wing is sized for artwork and
+    /// playback bars, and reserving that for a single dot left the island
+    /// looking like it was still showing something.
+    static func pausedTrack(_ content: IslandContent) -> IslandLayout {
+        var layout = nowPlaying(content)
+        layout.compactExtraWidth = 22
+        return layout
     }
 
     /// How much wider than its own compact wing the player opens. Enough to
@@ -338,6 +354,9 @@ extension IslandLayout {
         case .download: downloads(content)
         case .screenRecording: screenRecording
         case .nowPlaying: nowPlaying(content)
+        // The same expanded card — the dot's whole purpose is that opening
+        // it finds a transport row — over a much narrower wing.
+        case .pausedTrack: pausedTrack(content)
         case .timer: timer
         case .volume: volume
         // The compact-only peeks never reach here — `resolveExpandedKind`
@@ -350,7 +369,8 @@ extension IslandLayout {
     /// Every layout at its largest, which is what the canvas is sized from.
     static let all: [IslandLayout] = [
         idle(IslandContent(agendaRows: maxEventRows, hasAgendaOverflow: true, hasTimerPresets: true)),
-        nowPlaying(IslandContent(hasLyrics: true)),
+        nowPlaying(IslandContent()),
+        pausedTrack(IslandContent()),
         shelf,
         networkAlert,
         batteryAlert,

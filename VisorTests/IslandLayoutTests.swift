@@ -23,10 +23,6 @@ struct IslandLayoutTests {
             IslandLayout.nowPlaying(IslandContent())
                 .expandedSize(closed: referenceNotch) == CGSize(width: 421, height: 193)
         )
-        #expect(
-            IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
-                .expandedSize(closed: referenceNotch) == CGSize(width: 473, height: 193)
-        )
         #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 117))
     }
 
@@ -88,12 +84,23 @@ struct IslandLayoutTests {
         )
     }
 
+    /// Expanding must never make the island *narrower* than the compact
+    /// wing it grows out of. The player had a floor for this; the idle
+    /// island did not, so an empty agenda resolved to 275pt against a 344pt
+    /// wing and opening it visibly shrank the island sideways.
     @Test
-    func openingLyricsWidensTheMusicIsland() {
-        #expect(
-            IslandLayout.nowPlaying(IslandContent()).expandedExtraWidth
-                < IslandLayout.nowPlaying(IslandContent(hasLyrics: true)).expandedExtraWidth
-        )
+    func expandingIsNeverNarrowerThanTheCompactWing() {
+        let contents = [
+            IslandContent(),
+            IslandContent(agendaRows: 0, hasTimerPresets: true),
+            IslandContent(agendaRows: 1, hasTimerPresets: true),
+            IslandContent(agendaRows: 3, hasAgendaOverflow: true, hasTimerPresets: true)
+        ]
+        for content in contents {
+            for layout in [IslandLayout.idle(content), IslandLayout.nowPlaying(content)] {
+                #expect(layout.expandedExtraWidth > layout.compactExtraWidth)
+            }
+        }
     }
 
     /// The compact-only peeks never own the expanded island, so whatever
