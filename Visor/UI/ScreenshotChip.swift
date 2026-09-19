@@ -39,26 +39,43 @@ struct ScreenshotChip: View {
             }
         }
         // `.onDrag`, not `.draggable`: the catch has done its job once the
-        // file is somewhere else, and the provider's `loadHandler` is the
-        // hook that tells us a receiver actually took it. `.draggable` leaves
-        // the chip sitting in the notch afterwards with nothing left to do.
+        // file is somewhere else, and the drag is what tells us so.
         .onDrag {
-            let provider = NSItemProvider()
+            // Dismiss on the drag itself rather than waiting for a receiver
+            // to confirm. The old completion-handler route only fired for
+            // apps that asked for the file *by URL*, so the chip stayed put
+            // for every other receiver — and for image apps the handler was
+            // never reached at all. The reference dismisses on drag start for
+            // the same reason.
+            Task { @MainActor in onDropCompleted() }
+            return Self.itemProvider(for: shot)
+        }
+    }
+
+    /// The file offered to whatever the chip is dropped on.
+    ///
+    /// `NSItemProvider(contentsOf:)`, not a hand-registered file
+    /// representation. Registering only `public.fileURL` — which is what this
+    /// did — advertises exactly one type, and Finder, Slack and Figma all ask
+    /// for the image's *content* type instead, find nothing they accept and
+    /// refuse the drop. Measured: the old provider advertised 1 type, this
+    /// one advertises `public.png` alongside the URL types.
+    ///
+    /// The `NSImage` fallback covers a file that has since been moved or
+    /// deleted: the thumbnail is still in memory, so the drag can still
+    /// deliver a picture rather than nothing.
+    private static func itemProvider(for shot: ScreenshotCatch) -> NSItemProvider {
+        let exists = FileManager.default.fileExists(atPath: shot.url.path)
+        if exists, let provider = NSItemProvider(contentsOf: shot.url) {
             provider.suggestedName = shot.url.lastPathComponent
-            provider.registerFileRepresentation(
-                forTypeIdentifier: UTType.fileURL.identifier,
-                fileOptions: .openInPlace,
-                visibility: .all
-            ) { completion in
-                completion(shot.url, true, nil)
-                // The receiver has the file; the notch no longer needs to
-                // offer it. A cancelled drag never reaches here, so the chip
-                // survives to be tried again.
-                Task { @MainActor in onDropCompleted() }
-                return nil
-            }
             return provider
         }
+        guard let thumbnail = shot.thumbnail else { return NSItemProvider() }
+        let image = NSImage(cgImage: thumbnail, size: .zero)
+        let provider = NSItemProvider()
+        provider.suggestedName = shot.url.lastPathComponent
+        provider.registerObject(image, visibility: .all)
+        return provider
     }
 
     /// iOS's close badge: only while the pointer is over the chip, so the
