@@ -195,6 +195,74 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   exclusions — reference checkouts, not Visor's source.
   **None of it seen on hardware.** Highest-uncertainty item by far: whether
   the lock overlay actually paints above the real lock shield.
+- **Lock-screen correction (2026-09-19):** the first pass built the lock
+  screen from the plan's description rather than from old-code, and got three
+  structural things wrong. Rewritten by copying the reference's files.
+  — The padlock is a **compact activity inside the island**
+  (`LockScreenNotchContent`, its own priority, `baseWidth + 55`), not a
+  floating panel. That is why it was misplaced.
+  — The media panel's window is the **whole screen** (`screen.frame`); the
+  card positions itself with offsets from the centre
+  (`panelCenterYOffset = panelSize.height / 2 + 80`). A small window under
+  the notch puts it in the wrong place on every screen size.
+  — The panel is **music-only and music-gated**: no calendar, no clock
+  fallback, and it appears only when a track is loaded. The last track is
+  cached so locking while paused still shows the player.
+  Copied verbatim from old-code: `LightweightNowPlayingEqualizerView`
+  (CALayer + CABasicAnimation at a capped 24fps, not the sine version the
+  first pass invented), `PlayerControlButton`, `PlayerProgressBar`,
+  `MarqueeText`, `LiquidGlassBackground`, `NowPlayingArtworkBackground`,
+  `LockScreenClockView`, `LockScreenWidgetSurface`, `LockScreenSettings` and
+  its style enums. They live in `Visor/UI/Player/` and are **excluded from
+  swiftformat/swiftlint** — reformatting them would defeat the point of
+  copying them. Three edits were unavoidable: `internal import` -> `import`,
+  `AnimatableModifier` -> `ViewModifier + Animatable`, and a
+  `PreferenceKey`'s `static var` -> `static let`, all forced by Visor's
+  Swift 6 strict concurrency, which old-code does not build with.
+- **Lock-screen bugs + player pass (2026-09-19):** three reported faults,
+  all real.
+  — **The notch did not appear while locked.** The island's own panel is
+  pinned *below* the lock shield by design, so it is invisible there. The
+  padlock therefore needs a window of its own above the shield, which is
+  what the reference's `LockScreenLiveActivityWindowManager` is for — a file
+  the first pass missed entirely. Added as
+  `LockScreenNotchWindowManager` at `CGShieldingWindowLevel() + 1`, pinned
+  `.aboveLockShieldNotch`, `ignoresMouseEvents`.
+  — **The widget lingered ~1s after unlock.** `isLockPresenting` was
+  `isLocked || isLockTransitioning`, and the transition flag carries the
+  820ms unlock settle. The reference gates its panel on
+  `isLocked || isPreparingLock` and lets the settle drive only
+  `isLockIdle`, which nothing drawn on the lock screen reads. Split into
+  `isPreparingLock` (pre-lock edge) and `isLockTransitioning` (unlock
+  animation, over the desktop); `isLockPresenting` no longer reads the
+  latter.
+  — **The expanded player was too thin.** Dropping the calendar column left
+  it at 230pt — *narrower than the 345pt compact wing it opens from*, so
+  expanding shrank the island sideways. `nowPlaying` now floors
+  `expandedExtraWidth` at `compactExtraWidth + 60`; music resolves to
+  405x185 (445 with lyrics), and `IslandLayoutTests` pins that the expanded
+  player is never narrower than its own wing.
+  Player rebuilt on old-code's components throughout: `PlayerControlButton`
+  (press pulse, scale, directional nudge), `PlayerProgressBar` (inline
+  times, thickens under a drag) and `MarqueeText` at a **fixed** width —
+  that last one is what stops the transport row jumping on track change,
+  since a self-sizing `Text` reflows the column under it. `Block.musicColumn`
+  140 -> 128, `Column.music` 190 -> 240.
+  — Also found by the tests, not by hand: `NotchGeometry.closedRect(for:)`
+  reads the user's trim from `UserDefaults`, so the developer's own slider
+  values leaked into the geometry suite. Tests now call the explicit-offset
+  overload. One canvas assertion needed a tolerance: unioning two rects
+  round-trips through the screen's maxY, which a fractional trim makes lossy
+  by a few ULPs.
+- **Calendar/music exclusivity (2026-09-19):** `ExpandedMusicView` carried a
+  date-and-agenda column beside the player. Removed: with a track loaded —
+  **playing or paused** — the island is the player and nothing else, and the
+  agenda is what the *idle* island shows. The second column now returns only
+  for the lyrics panel, which `IslandContent.hasLyrics` sizes the island for.
+  Music went 395x197 -> 230x197, widening back to 395 with lyrics open.
+  Fixes the transport row jumping on track change: the reference's fixed
+  `MarqueeText` frame widths and constant card height are what stop a longer
+  title reflowing the layout under the controls.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
