@@ -113,8 +113,8 @@ Take a screenshot anywhere on the system and it slides into the notch and waits 
 
 |  | |
 | --- | --- |
-| **Now Playing** | Artwork, title, artist and transport for whatever's playing, in any app. The cover flips like a card when the track changes. Scrub bar, shuffle, repeat, and a lyrics panel that only fetches while it's open. |
-| **Your day** | The next events from your calendars, colour-matched to their source calendar. |
+| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport, scrub bar, shuffle, repeat, and a lyrics panel that only fetches while it's open. The cover flips like a card when the track changes. |
+| **Your day** | With nothing loaded, the island is your agenda instead: the next events from your calendars, colour-matched to their source. The two never share the island. |
 | **Screenshot shelf** | Every screenshot lands in the notch for a minute — up to four at once, each draggable straight into another app. |
 | **Downloads** | Files arriving in `~/Downloads` show a row each with real progress, read from the same attribute Safari writes. No progress reported means an honest indeterminate bar, never a guessed number. |
 | **AirDrop** | Hold <kbd>⌥</kbd> while dropping files on the island to send them. |
@@ -130,11 +130,11 @@ Take a screenshot anywhere on the system and it slides into the notch and waits 
 
 ### On the lock screen
 
-Lock the Mac and the island follows you there: the notch mirrors into a padlock that latches shut, and a card slides in below it.
+Lock the Mac and the island wears a padlock. If a track is loaded, a full player card appears on the lock screen — artwork, scrubbable progress, transport. Tap the artwork and it blows up to full screen with the clock above it and the cover drifting behind.
 
-The card shows **one thing at a time, on purpose** — the player when something is playing, the clock and your agenda when nothing is. They never share the space, and neither collapses into a row of the other.
+It shows up **only when there's something playing**. No track, no panel — there's no half-empty widget waiting for you.
 
-This runs in its own pair of windows above the lock shield. The island's own panel stays pinned *below* it, where it has always been — an island that could paint over a locked screen is a security hole, not a feature.
+The panel runs in its own window above the lock shield. The island's own panel stays pinned *below* it, where it has always been — an island that could paint over a locked screen is a security hole, not a feature.
 
 ### Everywhere
 
