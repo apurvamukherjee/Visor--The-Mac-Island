@@ -177,6 +177,12 @@ struct NotchRootView: View {
     private var expandedContent: some View {
         if let step = store.onboardingStep {
             ExpandedOnboardingView(step: step, commands: store.onboardingCommands)
+        } else if store.isPaletteOpen {
+            ExpandedPaletteView(
+                query: store.paletteQuery,
+                results: store.paletteResults,
+                selection: store.paletteSelection
+            )
         } else {
             expandedActivityContent
         }

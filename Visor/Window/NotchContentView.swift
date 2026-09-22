@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 /// Fills the panel; bounds track the window's current (closed/expanded) size,
@@ -243,6 +244,46 @@ final class NotchContentView: NSView {
         let local = hostingView.convert(event.locationInWindow, from: nil)
         guard let hit = hostingView.hitTest(local) else { return false }
         return hit !== hostingView
+    }
+
+    /// Only while the palette is open. The island is not a text field the
+    /// rest of the time, and a view that always accepted first responder
+    /// would be one more thing competing for the keyboard.
+    override var acceptsFirstResponder: Bool {
+        store.isPaletteOpen
+    }
+
+    /// The palette's whole input path. Typing goes to the store rather than
+    /// a `TextField`, so there is no SwiftUI focus to manage inside a
+    /// non-activating panel.
+    override func keyDown(with event: NSEvent) {
+        guard store.isPaletteOpen else {
+            return super.keyDown(with: event)
+        }
+        switch Int(event.keyCode) {
+        case kVK_Escape:
+            store.closePalette()
+        case kVK_Return, kVK_ANSI_KeypadEnter:
+            store.runPaletteSelection()
+        case kVK_DownArrow:
+            store.movePaletteSelection(by: 1)
+        case kVK_UpArrow:
+            store.movePaletteSelection(by: -1)
+        case kVK_Delete:
+            store.updatePaletteQuery(String(store.paletteQuery.dropLast()))
+        default:
+            // ⌘-anything belongs to the system, and control characters are
+            // the arrow and function keys arriving as text.
+            guard
+                !event.modifierFlags.contains(.command),
+                let typed = event.charactersIgnoringModifiers,
+                !typed.isEmpty,
+                typed.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
+            else {
+                return
+            }
+            store.updatePaletteQuery(store.paletteQuery + typed)
+        }
     }
 
     override func mouseEntered(with _: NSEvent) {

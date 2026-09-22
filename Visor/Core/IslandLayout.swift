@@ -111,6 +111,10 @@ extension IslandLayout {
         static let airDrop: CGFloat = 62
         /// The recording indicator and its elapsed clock, side by side.
         static let recording: CGFloat = 34
+        /// The palette's query line: what has been typed, with a caret.
+        static let paletteQuery: CGFloat = 26
+        /// One command: glyph, title.
+        static let paletteRow: CGFloat = 30
     }
 
     /// Column widths, absolute because columns hold real text at real
@@ -134,8 +138,14 @@ extension IslandLayout {
         static let download: CGFloat = 260
         static let airDrop: CGFloat = 200
         static let recording: CGFloat = 170
+        /// Wide enough that a command title and its glyph never truncate,
+        /// which is the one thing a palette cannot do.
+        static let palette: CGFloat = 300
     }
 
+    /// Past this the list scrolls off the island rather than growing it —
+    /// an island tall enough for seven rows stops being an island.
+    static let maxPaletteRows = 4
     static let maxEventRows = 3
     /// Past this the rows stop fitting and the island shows a count instead.
     static let maxDownloadRows = 3
@@ -341,6 +351,20 @@ extension IslandLayout {
         )
     }
 
+    /// The palette, which is a *mode* rather than an activity — like
+    /// onboarding, and resolved before the ladder for the same reason. Its
+    /// height follows the number of matches, so typing narrows the island
+    /// as it narrows the list.
+    static func palette(rows: Int) -> IslandLayout {
+        let clamped = min(max(rows, 1), maxPaletteRows)
+        let list = CGFloat(clamped) * Block.paletteRow + CGFloat(clamped - 1) * IslandSpacing.row
+        return IslandLayout(
+            expandedExtraWidth: extraWidth(content: Column.palette),
+            expandedExtraHeight: extraHeight(Block.paletteQuery, list),
+            compactExtraWidth: 160
+        )
+    }
+
     /// The single resolution both the panel geometry and the view read, so
     /// the island can never be sized for one feature and filled with
     /// another.
@@ -381,7 +405,8 @@ extension IslandLayout {
         airDrop,
         bluetoothAlert,
         screenRecording,
-        lock
+        lock,
+        palette(rows: maxPaletteRows)
     ]
 
     static let maxExpandedExtraWidth = all.map(\.expandedExtraWidth).max() ?? 0

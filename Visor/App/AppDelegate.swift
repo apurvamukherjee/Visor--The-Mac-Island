@@ -49,6 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             BluetoothService(store: store),
             FocusService(store: store),
             LockScreenService(store: store),
+            PaletteService(store: store) { [weak self] in
+                guard let self else { return }
+                settingsWindow.show(store: store)
+            },
             GreetingService(store: store, name: "Apurva")
         ]
         services.forEach { $0.start() }

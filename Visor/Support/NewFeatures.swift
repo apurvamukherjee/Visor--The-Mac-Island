@@ -60,7 +60,25 @@ enum NewFeatures {
         isRecommended: true
     )
 
-    static let all: [NewFeature] = [closeIntentDelay, visibleDropZones, swipeDownOpens]
+    /// A new surface rather than a change to an existing one, so it ships
+    /// off for the reason §2.1 gives for all of them: an island that grows
+    /// a panel unasked is the same violation as one that changes its hover
+    /// behaviour. No recommendation badge — this one is a matter of taste,
+    /// not a fix.
+    static let commandPalette = NewFeature(
+        key: "newFeature.commandPalette",
+        title: "Command palette",
+        detail: "⌃⌥K opens a searchable list of commands in the island. "
+            + "Needs no permission — it uses a registered hotkey, not a keyboard monitor.",
+        isRecommended: false
+    )
+
+    static let all: [NewFeature] = [
+        closeIntentDelay,
+        visibleDropZones,
+        swipeDownOpens,
+        commandPalette
+    ]
 
     static var keys: [String] {
         all.map(\.key)

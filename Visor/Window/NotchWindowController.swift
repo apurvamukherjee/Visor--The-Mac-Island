@@ -65,6 +65,7 @@ final class NotchWindowController {
         registerActivityObservation()
         registerOnboardingObservation()
         registerNotchSizeObservation()
+        registerPaletteObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -282,6 +283,38 @@ final class NotchWindowController {
         }
     }
 
+    /// The palette is the only thing in Visor that wants the keyboard, so
+    /// the panel's `canBecomeKey` follows it exactly rather than being on
+    /// all the time.
+    private func registerPaletteObservation() {
+        withObservationTracking {
+            _ = store.isPaletteOpen
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handlePaletteChange() }
+        }
+    }
+
+    private func handlePaletteChange() {
+        registerPaletteObservation()
+        guard store.isPaletteOpen else {
+            panel.acceptsKeyboard = false
+            // Hands the keyboard back to whatever the user was typing in.
+            // The frontmost app never changed — measured on a probe — so
+            // this is giving up key status, not switching apps.
+            NSApp.deactivate()
+            if !isHovering {
+                collapseFromExpanded()
+            }
+            return
+        }
+        hoverIntentTask?.cancel()
+        hoverIntentTask = nil
+        panel.acceptsKeyboard = true
+        expand()
+        panel.makeKey()
+        panel.makeFirstResponder(contentView)
+    }
+
     /// Settings moving a size trim re-measures the island in place, so the
     /// sliders can be dialled in against the real notch.
     private func registerNotchSizeObservation() {
@@ -425,8 +458,10 @@ extension NotchWindowController {
     func collapseFromExpanded() {
         // The welcome flow holds the island open until the user finishes it
         // or replays it from Settings — a mouse-out mid-explanation should
-        // not yank the island shut under an unread sentence.
-        guard !store.isOnboardingActive else { return }
+        // not yank the island shut under an unread sentence. The palette
+        // holds it open for the same reason: it was opened by a keystroke,
+        // so the pointer's whereabouts are not what should close it.
+        guard !store.isOnboardingActive, !store.isPaletteOpen else { return }
         generation += 1
         let gen = generation
         let target: NotchState = store.currentActivity != nil ? .compact : .closed
