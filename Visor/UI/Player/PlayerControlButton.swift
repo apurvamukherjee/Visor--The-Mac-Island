@@ -61,8 +61,6 @@ struct PlayerControlButton: View {
         }
     }
 
-    @Environment(\.notchScale) var scale
-
     let systemImage: String
     let fontSize: CGFloat
     let width: CGFloat

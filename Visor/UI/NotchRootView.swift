@@ -236,7 +236,9 @@ struct NotchRootView: View {
                 commands: store.nowPlayingCommands,
                 progress: store.nowPlayingProgress,
                 hoverPoint: store.hoverPoint,
-                bleed: store.nowPlayingBleed
+                bleed: store.nowPlayingBleed,
+                volume: store.volume,
+                volumeCommands: store.volumeCommands
             )
         }
     }

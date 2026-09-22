@@ -30,13 +30,7 @@ struct IslandTimer: Equatable, Sendable {
     /// Rounded up, so a timer started at 5m reads "05:00" rather than
     /// "04:59" on its first frame.
     static func format(_ remaining: TimeInterval) -> String {
-        let total = Int(remaining.rounded(.up))
-        let hours = total / 3600
-        let minutes = (total % 3600) / 60
-        let seconds = total % 60
-        return hours > 0
-            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            : String(format: "%02d:%02d", minutes, seconds)
+        Duration.seconds(Int(remaining.rounded(.up))).clockText
     }
 
     /// What the idle island offers. Four is enough to cover the common

@@ -14,16 +14,13 @@ import SwiftUI
 /// it — not a separate floating panel, which is what a first pass at this
 /// built and why it sat in the wrong place.
 struct LockScreenNotchView: View {
-    @Environment(\.notchScale) private var scale
-    @Environment(\.isDynamicIsland) private var isDynamicIsland
-
     let isLocked: Bool
     let style: LockScreenStyle
 
     var body: some View {
         HStack {
             Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
-                .font(.system(size: isDynamicIsland ? 14 : 16, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
 
             Spacer()
@@ -34,7 +31,9 @@ struct LockScreenNotchView: View {
                     .foregroundColor(.white)
             }
         }
-        .padding(.leading, isDynamicIsland ? 6.scaled(by: scale) : 14.scaled(by: scale))
-        .padding(.trailing, isDynamicIsland ? 8.scaled(by: scale) : 14.scaled(by: scale))
+        // The reference varied these on a `notchScale` / `isDynamicIsland`
+        // environment pair that nothing ever wrote, so only this branch was
+        // ever taken. Folded to the values it actually drew.
+        .padding(.horizontal, 14)
     }
 }

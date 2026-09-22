@@ -8,6 +8,9 @@ struct ExpandedOnboardingView: View {
     let commands: NotchStore.OnboardingCommands?
 
     @State private var iconScale: CGFloat = 0.6
+    /// 0 → 1 as the wordmark wipes on. A transform on a mask, not a width:
+    /// a one-shot reveal still has no business re-running layout.
+    @State private var wordmarkReveal: CGFloat = 0
 
     var body: some View {
         VStack(spacing: IslandSpacing.block) {
@@ -22,13 +25,14 @@ struct ExpandedOnboardingView: View {
 
     private var copy: some View {
         VStack(spacing: 6) {
-            // The first step gets the reference's own animated wordmark —
-            // a cursive "Welcome" whose gradient stroke draws itself on and
-            // loops. The later steps keep their SF Symbol: the animation is
-            // the greeting, not a decoration to repeat three times.
+            // The first step gets a wordmark that writes itself on. The
+            // reference played a Lottie file here; the whole animation was a
+            // gradient-filled script face behind a trim path, which is a
+            // masked wipe over `Text` — so the dependency bought one view.
+            // The later steps keep their SF Symbol: the animation is the
+            // greeting, not a decoration to repeat three times.
             if step == .welcome {
-                AnimateImage(name: "welcome")
-                    .frame(width: 170, height: 44)
+                wordmark
             } else {
                 Image(systemName: step.glyph)
                     .font(.system(size: 26, weight: .semibold))
@@ -79,6 +83,33 @@ struct ExpandedOnboardingView: View {
         }
         .id(step)
         .transition(.island)
+    }
+
+    /// Snell Roundhand ships with macOS; `.custom` falls back to the system
+    /// face if that ever stops being true, which costs the flourish and
+    /// nothing else.
+    private var wordmark: some View {
+        Text(verbatim: "Welcome")
+            .font(.custom("Snell Roundhand", size: 34).weight(.bold))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [.white, .white.opacity(0.55)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(width: 170, height: 44)
+            .mask(alignment: .leading) {
+                Rectangle().scaleEffect(x: wordmarkReveal, anchor: .leading)
+            }
+            .onAppear {
+                guard !Motion.reduceMotion else {
+                    wordmarkReveal = 1
+                    return
+                }
+                wordmarkReveal = 0
+                withAnimation(.easeOut(duration: 0.9)) { wordmarkReveal = 1 }
+            }
     }
 
     private func animateIconIn() {

@@ -10,8 +10,10 @@ enum Preferences {
     static let vinylModeKey = "vinylMode"
     /// `MotionPreset.rawValue`. One knob drives every spring in `Motion`.
     static let motionPresetKey = "motionPreset"
-    /// `yyyy-MM-dd` of the last wake/login greeting shown, so it fires at
-    /// most once a day regardless of how many times the Mac wakes.
+    /// When the last wake/login greeting was shown, so it fires at most
+    /// once a day regardless of how many times the Mac wakes. Stored as a
+    /// `Date`; a build before 2026-09-22 wrote a `yyyy-MM-dd` string here,
+    /// which now reads as absent and costs one extra greeting on upgrade.
     static let lastGreetingDayKey = "lastGreetingDay"
     /// Set once the three-step welcome flow has been shown or dismissed.
     static let hasSeenWelcomeKey = "hasSeenWelcome"
@@ -68,10 +70,6 @@ enum Preferences {
         progressTintKey,
         equalizerKey,
         LockScreenSettings.liveActivityKey,
-        LockScreenSettings.soundKey,
-        LockScreenSettings.customSoundPathKey,
-        LockScreenSettings.customLockSoundPathKey,
-        LockScreenSettings.customUnlockSoundPathKey,
         LockScreenSettings.styleKey
     ]
 

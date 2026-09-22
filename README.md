@@ -141,7 +141,7 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 
 |  | |
 | --- | --- |
-| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport, scrub bar, shuffle, repeat, and a lyrics panel that only fetches while it's open. The cover flips like a card when the track changes. Pause it and the island collapses after five seconds; the track stays loaded, so opening it by hand still finds a play button. |
+| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport and scrub bar. The cover flips like a card when the track changes. Pause it and the island collapses after five seconds; the track stays loaded, so opening it by hand still finds a play button. |
 | **Your day** | With nothing loaded, the island is your agenda instead: the next events from your calendars, colour-matched to their source. The two never share the island. |
 | **Screenshot shelf** | Every screenshot lands in the notch — up to four at once, each draggable straight into another app. |
 | **Downloads** | Files arriving in `~/Downloads` show a row each with real progress, read from the same attribute Safari writes. No progress reported means an honest indeterminate bar, never a guessed number. |
@@ -302,7 +302,7 @@ Where a feature could not be built honestly without a permission it didn't deser
 | **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
 | **Tests** | Swift Testing — 177 across 35 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode and alert edge detection |
 | **Tooling** | SwiftFormat, SwiftLint |
-| **Dependencies** | Two: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter) for Now Playing metadata, and [`lottie-spm`](https://github.com/airbnb/lottie-spm) for the one animation on the first onboarding step. Nothing else in the app uses Lottie. |
+| **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter), for Now Playing metadata. |
 
 <br />
 

@@ -12,12 +12,6 @@ struct ScreenRecording: Equatable, Sendable {
 
     /// mm:ss, and hh:mm:ss once a recording passes the hour.
     static func formatted(_ elapsed: TimeInterval) -> String {
-        let total = Int(elapsed)
-        let hours = total / 3600
-        let minutes = (total % 3600) / 60
-        let seconds = total % 60
-        return hours > 0
-            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            : String(format: "%02d:%02d", minutes, seconds)
+        Duration.seconds(Int(elapsed)).clockText
     }
 }
