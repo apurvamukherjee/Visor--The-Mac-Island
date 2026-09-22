@@ -18,6 +18,167 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.6.0] — 2026-09-23 (build 25)
+
+Rebuilds Settings as a sidebar window, and adds two palette commands for
+when an app has stopped responding.
+
+### Added
+
+- **Force Quit Frontmost App**, in the palette. The row names the app, so
+  you read what you are about to kill before you press the key. Cost is a
+  synthesised keystroke, not ending a process — macOS has always let an app
+  terminate another the same user is running, so this needs no new
+  permission.
+
+  Gated out where there is nothing sensible to quit:
+
+  - **Visor itself.** The palette's panel is `.nonactivatingPanel`, so Visor
+    is never frontmost while it is open — which is exactly why the read
+    returns the right app. The guard is explicit rather than relying on it.
+  - **Finder.** Force-quitting it is what Apple's own window renames to
+    "Relaunch". It comes straight back, so the row would describe something
+    that doesn't happen.
+
+- **Open Activity Monitor**, via `NSWorkspace.openApplication` — the same
+  call `openScreenshotTool` and Launch Groups already make, so no probe was
+  needed. Never gated. Its keywords include "force quit", so it surfaces on
+  that search too.
+
+  Both are reachable by <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> then a letter
+  bound in *Settings → Shortcuts*, like any other command. No new hotkey
+  code.
+
+### Changed
+
+- **Settings is a sidebar window**, 760x500 and resizable, in place of one
+  340x560 scrolling column. Five panes:
+
+  | Pane | Holds |
+  | --- | --- |
+  | General | Name, animation speed, launch at login, replay tour, restore, quit, version |
+  | Appearance | Display, hide in full screen, outline + width/opacity, width/height trims |
+  | Now Playing | Vinyl, progress colour, equaliser, lock padlock + style |
+  | New Features | Unchanged |
+  | Shortcuts | Palette keys, launch groups, and the gesture sheet that used to sit mid-column |
+
+  `SettingsSection` and its hand-rolled `Divider` stack are gone: `Form` +
+  `Section` + `.formStyle(.grouped)` gives the right-aligned labels, grouped
+  boxes and section footers natively. Explanatory text that floated between
+  controls is now a proper section footer. The 361-line view became five
+  files, none over 110 lines.
+
+- **Restore defaults rebuilds the pane rather than reassigning each value.**
+  Each pane owns its own `@AppStorage` now, so the old "clear the keys, then
+  assign all fourteen values back by hand" trick cannot reach across four
+  views. Restore clears the keys and bumps a token applied as the detail
+  pane's `.id`; SwiftUI rebuilds the pane, `@AppStorage` re-reads, and an
+  absent key shows its default. `Motion.preset` and the store's trim are
+  still refreshed by hand, because they are caches of those keys rather than
+  readers of them.
+
+- **The gesture sheet's swipe line was wrong.** It read "Swipe up to
+  dismiss, down to bring it back", which stopped being true when paging
+  landed in 2.5.0. Now "Swipe up and down to turn between screens".
+
+- **Two files split at the 400-line lint ceiling**, following the precedent
+  `SystemCommands+Files.swift` set: `PaletteMatch` out of
+  `PaletteCommand.swift` (416 -> 346), and the island's derived geometry out
+  of `NotchStore.swift` into `NotchStore+Layout.swift` (464 -> 393). Every
+  member moved is computed, so nothing left `@Observable`'s reach.
+
+### Fixed
+
+- **`titles("quit").first` answered "Force Quit Frontmost App".** Scores tie
+  and the tiebreak is declaration order, and the new command had been
+  inserted ahead of Quit Visor. Both moved to the end of
+  `PaletteCommand.all`, so typing "quit" answers with the command whose
+  title is that word again. Now pinned by a test, since the ordering is
+  load-bearing and invisible.
+
+### Notes
+
+- The maximal-context availability test needed the new field, or
+  `everything.count` would have quietly stopped meaning "everything".
+- Settings was **not** seen on screen before release: launching a second
+  Debug instance would have fought the running copy for the notch and the
+  lock windows. Everything in *Changed* above is unverified by eye.
+
+## [2.5.0] — 2026-09-23 (build 24)
+
+Turns the usage screen into a pager, and fixes two bugs it exposed.
+
+### Added
+
+- **Swipe between screens.** The expanded island now turns between three
+  screens on the vertical axis, and the player sits in the **middle** —
+  it is the only one of the three with controls on it, so the thing you
+  operate is the resting position and the common case needs no swipe at all.
+
+  ```
+  agenda  ↑   the quick look up
+  player  ●   home — the only screen with controls
+  usage   ↓   the quick look down
+  ```
+
+  Opt-in: *Settings → New Features → Swipe between screens* (renamed from
+  "Swipe down for agent usage"; the stored key is unchanged, so an existing
+  toggle stays on). With it off, swipe-to-dismiss behaves exactly as it
+  always did.
+
+### Fixed
+
+- **Music vanished after a few swipes.** Swipe-up still called
+  `dismissCurrentActivity()` while the paging branch had taken swipe-down
+  outright — so `restoreDismissedActivity()`, the only route back, had
+  become unreachable. Two swipes up threw the player away permanently.
+  Paging now never deactivates anything; dismiss and restore survive only on
+  the toggle's off path. `pagingAwayAndBackAlwaysFindsThePlayerAgain` pins
+  it.
+
+- **The island grew before it closed.** `collapseFromExpanded` cleared the
+  page first, which re-resolved `store.layout` from the usage screen to the
+  player's larger card *while the island was still open* — so you watched it
+  expand, then shut. The reset moved into `expand()`, where the island is
+  still closed and there is nothing on screen to morph. That also buys
+  "opens on the player" for free, in one line rather than two.
+
+- **Collapsing from the usage screen settled at the wrong wing.** Paging
+  changes only the *expanded* island: `NotchStore.paged(_:wings:)` takes the
+  expanded size from the page and `compactExtraWidth` from the activity,
+  always. Without it a collapse from usage settled at its 160pt wing and
+  then jumped to the activity's — visible on `pausedTrack`, whose wing is 22.
+
+### Changed
+
+- **`isUsagePanelOpen: Bool` became `islandPage: IslandPage`.** Raw values
+  −1 / 0 / +1 are positions on the axis rather than labels, so stepping and
+  clamping fall out of the type instead of being rewritten at each call
+  site. `.above` and `.below` return `self` at the ends: no wraparound, so a
+  run of swipes settles rather than cycling.
+- Content cross-fades on `.id(store.islandPage)` with `Motion.contentIn`
+  while the shape morphs on `Motion.morph` — shape leads, content follows,
+  as the rule requires.
+- **2.4.0's §2.1 exception is withdrawn.** That release made swipe-up stop
+  closing the island for everyone; paging restores the old behaviour on the
+  toggle's off path, so the program is back to changing nothing by default.
+
+### Known
+
+With nothing playing, `.home` resolves to the idle agenda — so the top and
+middle screens are the same view, and swiping up fires haptics without
+visibly changing anything. Harmless, and it self-corrects the moment a track
+loads. A two-position pager for the empty-player case is the fix if it reads
+as broken.
+
+### Not verified on hardware
+
+The pager is unexercised on a real notch. By hand: swipe up and down
+repeatedly and confirm the player is still there at the end; hold at each
+end and confirm it stops rather than wrapping; collapse from the agent
+screen and watch for growth before the close; mouse out and hover back and
+confirm it returns on the player.
+
 ## [2.4.0] — 2026-09-23 (build 23)
 
 ### Added

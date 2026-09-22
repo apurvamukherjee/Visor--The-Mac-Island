@@ -11,10 +11,10 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?style=flat-square)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift%206-strict%20concurrency-orange?style=flat-square)](https://swift.org)
 [![CPU](https://img.shields.io/badge/idle%20CPU-0.0%25-brightgreen?style=flat-square)](#power)
-[![Commands](https://img.shields.io/badge/palette-34%20commands-black?style=flat-square)](#command-palette)
+[![Commands](https://img.shields.io/badge/palette-36%20commands-black?style=flat-square)](#command-palette)
 [![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#tech-stack)
-[![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen?style=flat-square)](#build)
-[![Release](https://img.shields.io/badge/release-2.4.0-blue?style=flat-square)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-259%20passing-brightgreen?style=flat-square)](#build)
+[![Release](https://img.shields.io/badge/release-2.6.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 <br />
@@ -74,7 +74,7 @@ An event stays listed until it has actually *ended* — something in progress ri
 <tr>
 <td width="50%" valign="top">
 
-<img src="docs/screenshots/vinyl.png" width="100%" alt="Visor in vinyl mode: a turning record with grooves, a centre label showing the album art, and an S-shaped tonearm lowered onto the lead-in groove" />
+<img src="docs/screenshots/vinyl.png" width="100%" alt="Visor in vinyl mode: a turning record with grooves and the album art as its centre label, a tonearm lowered onto it, beside the track title and artist, with a progress bar tinted to the album colour and transport controls below" />
 
 </td>
 <td width="50%" valign="top">
@@ -148,11 +148,13 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 
 </div>
 
-Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **34 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, lock, sleep, and your own launch groups.
+Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **36 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, force-quitting a frozen app, lock, sleep, and your own launch groups.
 
 Then press **one key**. Rows 1–4 are always numbered; letters are yours to bind in *Settings › Shortcuts*. The rule that lets a single key and a search box share one field: **keys fire only while the query is empty**, so `d` runs Dark Mode without costing you the ability to search for "downloads". A row never advertises a key that would not work — the badge reads the same flag the key handler does.
 
 Every command is **gated on context**, so none is offered when it cannot act: no transport row without a track, no Switch Audio Output with one output, no launch group you haven't configured.
+
+**Force Quit Frontmost App** names the app in the row, so you read what you are about to kill before you press the key. It is absent when there is nothing sensible to quit — Visor itself, or Finder, which macOS relaunches anyway, so the row would be describing something that doesn't happen.
 
 **It needs no Accessibility permission.** The shortcut is a Carbon `RegisterEventHotKey` registration — one combination, handed to Visor by the window server — not a `CGEventTap`, which would see every keystroke on the machine and demand the permission to match.
 
@@ -211,6 +213,32 @@ The two figures are deliberate mirrors of each other, and both are right because
 
 <br />
 
+<div align="center">
+
+## Three screens, one island
+
+</div>
+
+Turn the expanded island between three screens with a two-finger swipe:
+
+```
+agenda  ↑   the quick look up
+player  ●   home — the only screen with controls
+usage   ↓   the quick look down
+```
+
+**The player sits in the middle on purpose.** It is the only one of the three you actually operate — the two either side are quick looks — so the thing with buttons on it is the resting position, and the common case needs no swipe at all. The island always opens there.
+
+Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
+
+Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did.
+
+<br />
+
+---
+
+<br />
+
 ## What it does
 
 ### On the island
@@ -232,10 +260,10 @@ The two figures are deliberate mirrors of each other, and both are right because
 | **Focus** | A peek when Focus turns on or off. |
 | **Greeting** | One "Good morning" a day, on the first idle after you log in. |
 | **Onboarding** | A three-step welcome that lives *inside* the panel, so the first thing you ever see the island do is the island doing it. |
-| **Command palette** | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then one key. 34 commands, each gated on whether it can actually act. No Accessibility permission. |
+| **Command palette** | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then one key. 36 commands, each gated on whether it can actually act. No Accessibility permission. |
 | **Drop zones** | Drag a file over the island and it splits in two: stash it on the shelf, or AirDrop it. |
 | **AI usage badge** | Today's Claude Code and Codex tokens, read from your own local files, in a window beside the notch. |
-| **Usage screen** | Swipe down for the full picture: tool, model, today's tokens and a live context bar showing how full the window is. |
+| **Usage screen** | One screen down from the player: tool, model, today's tokens and a live context bar showing how full the window is. |
 
 ### On the lock screen
 
@@ -251,8 +279,8 @@ The panel runs in its own window above the lock shield. The island's own panel s
 | --- | --- |
 | **Capsule mode** | On a screen with no cutout, the same shape resolves symmetric corners and floats as a capsule. One shape morphing, never two cross-fading. |
 | **Customisation** | Optional outline, ±16pt width and ±4pt height trims with live feedback, hide-in-fullscreen, display selection, progress tint styles, an optional equaliser, and five animation speeds. |
-| **Swipe to page** | A two-finger swipe up steps back through what the island is showing; a swipe down opens the usage screen, or restores whatever you swiped away. Neither closes the island — the pointer leaving does that, and only that. |
-| **Restore defaults** | Settings › About clears every stored preference back to how it shipped. |
+| **Swipe between screens** | Turn between the agenda, the player and today's agent usage with a two-finger swipe. The player is the middle screen and the island always opens on it. Opt-in; with it off, swipe still dismisses and restores as it always did. |
+| **Restore defaults** | *Settings › General* clears every stored preference back to how it shipped. |
 | **New Features** | Every behavioural change ships **off**, listed in its own Settings tab with what it does and whether it's recommended. Updating Visor never changes how your island behaves until you ask it to. |
 
 <br />
@@ -272,6 +300,22 @@ The island is welded to the notch. Swipe between desktops and the desktops slide
 Every behavioural change Visor adds arrives **off**, in a *New Features* tab that says what it does and whether it's recommended. Install an update and your island behaves exactly as it did yesterday until you turn something on.
 
 That guarantee is structural rather than remembered: a feature flag has no `default` field and is read with `bool(forKey:)`, so an unwritten key *is* today's behaviour, and the list of resettable keys is built from the feature registry rather than typed out by hand. Tests pin each toggle's default, so one cannot drift silently in a later release.
+
+<br />
+
+### Settings, in five panes
+
+Right-click the island. Settings opens as a sidebar window rather than one long scrolling column, so a setting is one click away instead of four scroll-lengths.
+
+| Pane | Holds |
+| --- | --- |
+| **General** | Your name for the greeting, animation speed, launch at login, replay the tour, restore defaults |
+| **Appearance** | Display, hide in full screen, outline and its width and opacity, the width and height trims |
+| **Now Playing** | Vinyl mode, progress tint, the optional equaliser, the lock-screen padlock and its style |
+| **New Features** | Every opt-in behaviour, each with what it does and whether it's recommended |
+| **Shortcuts** | The gesture sheet, a key per palette command, and your launch groups |
+
+Each pane is a native grouped `Form`, so labels align and explanatory text sits in section footers where macOS puts it. **Restore defaults** clears the stored keys and rebuilds the pane, so the fields on screen show the shipped values rather than the ones you just cleared.
 
 <br />
 
@@ -307,8 +351,8 @@ The rules that get it there:
 | --- | --- |
 | Hover the notch | Expand |
 | Two-finger swipe sideways | Previous / next track |
-| Two-finger swipe up | Step back: dismiss what's showing, or leave the usage screen |
-| Two-finger swipe down | Open agent usage *(opt-in)*, or bring back what you dismissed |
+| Two-finger swipe up | Turn up a screen *(opt-in)*, or dismiss what's showing |
+| Two-finger swipe down | Turn down a screen *(opt-in)*, or bring back what you dismissed |
 | Double-click | Play / pause *(on the island's surface — buttons keep their own clicks)* |
 | Right-click | Settings |
 | Drag a file onto it | The notch opens and takes it |
@@ -393,7 +437,7 @@ Where a feature could not be built honestly without a permission it didn't deser
 | **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation, Carbon (one hotkey registration), SQLite3 |
 | **Private frameworks** | SkyLight, for pinning the island above the desktop and the lock overlay above the shield. Every symbol is resolved at runtime — a macOS that renames one degrades the feature instead of crashing the app. |
 | **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
-| **Tests** | Swift Testing — 252 across 55 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
+| **Tests** | Swift Testing — 255 across 55 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
 | **Tooling** | SwiftFormat, SwiftLint |
 | **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter), for Now Playing metadata. |
 

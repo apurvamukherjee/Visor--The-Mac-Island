@@ -100,12 +100,19 @@ extension NotchStore {
             hasShelfFile: shelfFile != nil,
             hasShelfArchive: shelfFile.map(SystemCommands.isArchive) ?? false,
             hasShelfImage: shelfFile.map(SystemCommands.isImage) ?? false,
+            forceQuitTargetName: SystemCommands.forceQuitTarget?.localizedName,
             configuredLaunchGroups: launchGroups.configuredIDs
         )
         // A configured slot is retitled with the user's own name and apps
         // here, and only here: `PaletteCommand.all` carries nothing but a
         // placeholder, so nobody's group name lives in a static list.
         return PaletteCommand.available(PaletteCommand.all, in: context).map { command in
+            // Naming the app is the whole point of the row: "Force Quit" with
+            // no object is a command you have to guess the target of, and the
+            // target is whatever you were looking at a moment ago.
+            if command.id == .forceQuitFrontmost, let app = context.forceQuitTargetName {
+                return command.retitled("Force Quit \(app)", keywords: command.keywords + [app])
+            }
             let group = launchGroups.group(for: command.id)
             guard group.isConfigured else { return command }
             return command.retitled(group.name, keywords: group.apps.map(\.displayName))

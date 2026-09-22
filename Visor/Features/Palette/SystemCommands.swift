@@ -163,6 +163,49 @@ final class SystemCommands {
         NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
     }
 
+    func openActivityMonitor() {
+        let url = URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// The app a force quit would actually end, or nil when there is nothing
+    /// sensible to end.
+    ///
+    /// **Visor is excluded** for the obvious reason, and it is not a
+    /// hypothetical: the palette's panel is `.nonactivatingPanel`, so Visor is
+    /// never frontmost while the palette is open — which is exactly why this
+    /// reads the right app, and exactly why the guard has to be explicit
+    /// rather than relying on that.
+    ///
+    /// **The Finder is excluded** because force-quitting it is what Apple's
+    /// own window renames to "Relaunch": it comes straight back, so a row
+    /// saying "Force Quit Finder" would be describing something that does not
+    /// happen.
+    static var forceQuitTarget: NSRunningApplication? {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        guard app.bundleIdentifier != Bundle.main.bundleIdentifier,
+              app.bundleIdentifier != "com.apple.finder"
+        else {
+            return nil
+        }
+        return app
+    }
+
+    /// `forceTerminate()` is public API and costs no permission at all.
+    ///
+    /// Worth stating plainly, because the obvious route does: the
+    /// Accessibility prompt ⌘⌥Esc would have needed is the price of
+    /// *synthesising a keystroke*, not of ending a process. macOS has always
+    /// let an app SIGKILL another app the same user is running.
+    func forceQuitFrontmostApp() {
+        guard let app = Self.forceQuitTarget else { return }
+        let name = app.localizedName ?? app.bundleIdentifier ?? "an application"
+        guard app.forceTerminate() else {
+            Log.app.error("Could not force quit \(name, privacy: .public)")
+            return
+        }
+    }
+
     func openDownloads() {
         guard let url = try? FileManager.default.url(
             for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false

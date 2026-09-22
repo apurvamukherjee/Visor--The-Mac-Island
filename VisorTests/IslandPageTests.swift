@@ -41,13 +41,39 @@ struct IslandPageTests {
     /// round, so a run of swipes in one direction settles instead of cycling.
     @Test
     func theStackClampsAtBothEnds() {
-        #expect(IslandPage.agenda.above == .agenda)
-        #expect(IslandPage.usage.below == .usage)
-        #expect(IslandPage.home.above == .agenda)
-        #expect(IslandPage.home.below == .usage)
+        let full = IslandPage.allCases
+        #expect(IslandPage.agenda.stepped(by: -1, in: full) == .agenda)
+        #expect(IslandPage.usage.stepped(by: 1, in: full) == .usage)
+        #expect(IslandPage.home.stepped(by: -1, in: full) == .agenda)
+        #expect(IslandPage.home.stepped(by: 1, in: full) == .usage)
         // And the player is reachable from either end in one step.
-        #expect(IslandPage.agenda.below == .home)
-        #expect(IslandPage.usage.above == .home)
+        #expect(IslandPage.agenda.stepped(by: 1, in: full) == .home)
+        #expect(IslandPage.usage.stepped(by: -1, in: full) == .home)
+    }
+
+    /// With nothing owning the expanded island, `.home` already draws the
+    /// agenda — so `.agenda` leaves the stack and a swipe up from the player
+    /// is a true no-op rather than a buzz that changes nothing visible.
+    @Test
+    func theAgendaLeavesTheStackWhenThePlayerScreenIsAlreadyTheAgenda() {
+        let store = NotchStore()
+        #expect(store.expandedKind == nil)
+        #expect(store.availablePages == [.home, .usage])
+        #expect(IslandPage.home.stepped(by: -1, in: store.availablePages) == .home)
+        // Down still works: the agent screen is genuinely different.
+        #expect(IslandPage.home.stepped(by: 1, in: store.availablePages) == .usage)
+
+        store.activate(.nowPlaying)
+        #expect(store.availablePages == IslandPage.allCases)
+        #expect(IslandPage.home.stepped(by: -1, in: store.availablePages) == .agenda)
+    }
+
+    /// A page that drops out from under you — the track ends while the agenda
+    /// is showing — steps home rather than getting stuck on itself.
+    @Test
+    func aPageThatLeavesTheStackStepsHome() {
+        #expect(IslandPage.agenda.stepped(by: 1, in: [.home, .usage]) == .home)
+        #expect(IslandPage.agenda.stepped(by: -1, in: [.home, .usage]) == .home)
     }
 
     /// Paging is an expanded-only idea. The wings are what the island looks

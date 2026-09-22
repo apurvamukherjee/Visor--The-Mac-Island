@@ -84,6 +84,7 @@ struct PaletteTests {
                 hasShelfFile: true,
                 hasShelfArchive: true,
                 hasShelfImage: true,
+                forceQuitTargetName: "Safari",
                 configuredLaunchGroups: Set(PaletteCommandID.allCases)
             )
         )
@@ -92,6 +93,39 @@ struct PaletteTests {
         // An unconfigured launch-group slot is not "empty content", it is an
         // absent command — the same rule as every other dead control.
         #expect(!quiet.contains { $0.id == .launchGroup1 })
+    }
+
+    /// Force quit is offered only when there is something to quit. Visor
+    /// itself and the Finder are both excluded upstream, and that exclusion
+    /// arrives here as a nil name — so a nil name must keep the row out
+    /// rather than offer a command with no object.
+    @Test("Force quit is absent when there is nothing to force quit")
+    func forceQuitNeedsATarget() {
+        let none = PaletteCommand.available(PaletteCommand.all, in: PaletteContext())
+        #expect(!none.contains { $0.id == .forceQuitFrontmost })
+
+        let some = PaletteCommand.available(
+            PaletteCommand.all,
+            in: PaletteContext(forceQuitTargetName: "Safari")
+        )
+        #expect(some.contains { $0.id == .forceQuitFrontmost })
+
+        // Activity Monitor is always there to open, so it never gates.
+        #expect(none.contains { $0.id == .openActivityMonitor })
+    }
+
+    /// "quit" must still answer with the command whose title is that word.
+    /// Both commands score the same, and the tiebreak is declaration order —
+    /// which is why the force-quit row is declared after Quit Visor and not
+    /// wherever it happened to read well in the source.
+    @Test("Force quit does not displace Quit Visor for the word quit")
+    func quitStillMeansQuitVisor() {
+        #expect(titles("quit").first == "Quit Visor")
+        #expect(titles("quit").contains("Force Quit Frontmost App"))
+        // And the things you would actually type to reach it do reach it.
+        #expect(titles("force").first == "Force Quit Frontmost App")
+        #expect(titles("frozen").first == "Force Quit Frontmost App")
+        #expect(titles("activity").first == "Open Activity Monitor")
     }
 
     /// A plain file can be compressed but not expanded or converted; only a
