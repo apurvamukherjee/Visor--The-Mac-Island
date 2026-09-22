@@ -69,6 +69,31 @@ enum Preferences {
     /// `PaletteCommandID.rawValue` -> a one-letter key, pressed on its own
     /// inside the palette while the query is still empty.
     static let paletteShortcutsKey = "paletteShortcuts"
+    /// `PaletteCommandID.rawValue` -> `LaunchGroup`, JSON-encoded. Entirely
+    /// user-authored — nothing is preloaded into this key.
+    static let launchGroupsKey = "launchGroups"
+
+    // MARK: - AI usage
+
+    /// A token target *you* set, per tool. There is no way to read the real
+    /// plan limit off this machine — Anthropic and OpenAI enforce those
+    /// server-side and cache nothing locally (checked) — so the badge's
+    /// percentage is progress toward your own number or it is nothing at all.
+    /// Unset (0) means no percentage is drawn, which is the default.
+    static let claudeDailyBudgetKey = "aiUsage.claudeDailyBudget"
+    static let codexDailyBudgetKey = "aiUsage.codexDailyBudget"
+
+    static func dailyTokenBudgetKey(for tool: AIUsageTool) -> String {
+        switch tool {
+        case .claude: claudeDailyBudgetKey
+        case .codex: codexDailyBudgetKey
+        }
+    }
+
+    static func dailyTokenBudget(for tool: AIUsageTool, in defaults: UserDefaults = .standard) -> Int {
+        max(defaults.integer(forKey: dailyTokenBudgetKey(for: tool)), 0)
+    }
+
     static let hoverIntentDelayDefault = 120.0
     /// 0 is a real choice — open the instant the pointer lands — not a
     /// missing value, which is why the read below distinguishes the two.
@@ -125,6 +150,8 @@ enum Preferences {
         hoverIntentDelayKey,
         userNameKey,
         paletteShortcutsKey,
+        claudeDailyBudgetKey,
+        codexDailyBudgetKey,
         LockScreenSettings.liveActivityKey,
         LockScreenSettings.styleKey
     ]

@@ -256,8 +256,15 @@ final class NotchStore {
     var paletteQuery = ""
     var paletteResults: [PaletteCommand] = []
     var paletteSelection = 0
+    /// Today's agent token counts. Written by `AIUsageService`, drawn by the
+    /// badge's own window — it is not an activity and never competes for the
+    /// island.
+    var aiUsage = AIUsageSnapshot.empty
+
     /// Read once when the palette opens rather than per keystroke.
     var paletteShortcuts = PaletteShortcuts.empty
+    /// Same reasoning: user-authored app groups, read once per open.
+    var launchGroups = LaunchGroups.empty
     var paletteCommands: PaletteCommands?
 
     /// The shape the island takes right now. Onboarding is checked first and

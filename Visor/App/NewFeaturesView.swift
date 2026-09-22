@@ -31,6 +31,10 @@ struct NewFeaturesView: View {
                     Divider()
 
                     HoverDelaySlider()
+
+                    Divider()
+
+                    AIUsageBudgetFields()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,6 +65,60 @@ private struct HoverDelaySlider: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// The daily token targets the usage badge measures against.
+///
+/// Empty is the shipped state and means no percentage is drawn at all. These
+/// are *your* numbers: neither Anthropic nor OpenAI publishes the real plan
+/// limit anywhere this machine can read, so a percentage against anything
+/// else would be a guess presented as a fact.
+private struct AIUsageBudgetFields: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Daily token budget")
+                .font(.callout)
+
+            ForEach(AIUsageTool.allCases, id: \.rawValue) { tool in
+                BudgetField(tool: tool)
+            }
+
+            Text("Optional. Set a target and the badge shows how far through it you are. "
+                + "Left empty it just shows the count — there is no way to read your real "
+                + "plan limit from this Mac, so the badge never pretends to.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct BudgetField: View {
+    let tool: AIUsageTool
+
+    @AppStorage private var budget: Int
+
+    init(tool: AIUsageTool) {
+        self.tool = tool
+        _budget = AppStorage(wrappedValue: 0, Preferences.dailyTokenBudgetKey(for: tool))
+    }
+
+    var body: some View {
+        HStack {
+            Text(tool.title)
+                .font(.callout)
+            Spacer(minLength: 8)
+            TextField(
+                "",
+                value: $budget,
+                format: .number.grouping(.automatic),
+                prompt: Text("None")
+            )
+            .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.trailing)
+            .frame(width: 110)
         }
     }
 }
