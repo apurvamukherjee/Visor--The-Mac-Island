@@ -18,6 +18,92 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.6.0] — 2026-09-23 (build 25)
+
+Rebuilds Settings as a sidebar window, and adds two palette commands for
+when an app has stopped responding.
+
+### Added
+
+- **Force Quit Frontmost App**, in the palette. The row names the app, so
+  you read what you are about to kill before you press the key. Cost is a
+  synthesised keystroke, not ending a process — macOS has always let an app
+  terminate another the same user is running, so this needs no new
+  permission.
+
+  Gated out where there is nothing sensible to quit:
+
+  - **Visor itself.** The palette's panel is `.nonactivatingPanel`, so Visor
+    is never frontmost while it is open — which is exactly why the read
+    returns the right app. The guard is explicit rather than relying on it.
+  - **Finder.** Force-quitting it is what Apple's own window renames to
+    "Relaunch". It comes straight back, so the row would describe something
+    that doesn't happen.
+
+- **Open Activity Monitor**, via `NSWorkspace.openApplication` — the same
+  call `openScreenshotTool` and Launch Groups already make, so no probe was
+  needed. Never gated. Its keywords include "force quit", so it surfaces on
+  that search too.
+
+  Both are reachable by <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> then a letter
+  bound in *Settings → Shortcuts*, like any other command. No new hotkey
+  code.
+
+### Changed
+
+- **Settings is a sidebar window**, 760x500 and resizable, in place of one
+  340x560 scrolling column. Five panes:
+
+  | Pane | Holds |
+  | --- | --- |
+  | General | Name, animation speed, launch at login, replay tour, restore, quit, version |
+  | Appearance | Display, hide in full screen, outline + width/opacity, width/height trims |
+  | Now Playing | Vinyl, progress colour, equaliser, lock padlock + style |
+  | New Features | Unchanged |
+  | Shortcuts | Palette keys, launch groups, and the gesture sheet that used to sit mid-column |
+
+  `SettingsSection` and its hand-rolled `Divider` stack are gone: `Form` +
+  `Section` + `.formStyle(.grouped)` gives the right-aligned labels, grouped
+  boxes and section footers natively. Explanatory text that floated between
+  controls is now a proper section footer. The 361-line view became five
+  files, none over 110 lines.
+
+- **Restore defaults rebuilds the pane rather than reassigning each value.**
+  Each pane owns its own `@AppStorage` now, so the old "clear the keys, then
+  assign all fourteen values back by hand" trick cannot reach across four
+  views. Restore clears the keys and bumps a token applied as the detail
+  pane's `.id`; SwiftUI rebuilds the pane, `@AppStorage` re-reads, and an
+  absent key shows its default. `Motion.preset` and the store's trim are
+  still refreshed by hand, because they are caches of those keys rather than
+  readers of them.
+
+- **The gesture sheet's swipe line was wrong.** It read "Swipe up to
+  dismiss, down to bring it back", which stopped being true when paging
+  landed in 2.5.0. Now "Swipe up and down to turn between screens".
+
+- **Two files split at the 400-line lint ceiling**, following the precedent
+  `SystemCommands+Files.swift` set: `PaletteMatch` out of
+  `PaletteCommand.swift` (416 -> 346), and the island's derived geometry out
+  of `NotchStore.swift` into `NotchStore+Layout.swift` (464 -> 393). Every
+  member moved is computed, so nothing left `@Observable`'s reach.
+
+### Fixed
+
+- **`titles("quit").first` answered "Force Quit Frontmost App".** Scores tie
+  and the tiebreak is declaration order, and the new command had been
+  inserted ahead of Quit Visor. Both moved to the end of
+  `PaletteCommand.all`, so typing "quit" answers with the command whose
+  title is that word again. Now pinned by a test, since the ordering is
+  load-bearing and invisible.
+
+### Notes
+
+- The maximal-context availability test needed the new field, or
+  `everything.count` would have quietly stopped meaning "everything".
+- Settings was **not** seen on screen before release: launching a second
+  Debug instance would have fought the running copy for the notch and the
+  lock windows. Everything in *Changed* above is unverified by eye.
+
 ## [2.5.0] — 2026-09-23 (build 24)
 
 Turns the usage screen into a pager, and fixes two bugs it exposed.

@@ -14,13 +14,17 @@ enum IslandPage: Int, CaseIterable, Sendable {
     case home = 0
     case usage = 1
 
-    /// Swipe down: towards the agent figures at the bottom.
-    var below: IslandPage {
-        IslandPage(rawValue: rawValue + 1) ?? self
-    }
-
-    /// Swipe up: towards the agenda at the top.
-    var above: IslandPage {
-        IslandPage(rawValue: rawValue - 1) ?? self
+    /// One step along the stack — negative towards the agenda, positive
+    /// towards the agent figures — clamped at whichever end it reaches.
+    ///
+    /// `available` is the stack *as it stands*, which is not always all three:
+    /// a screen that would draw exactly what its neighbour draws is left out
+    /// of it, and stepping then moves straight past the gap rather than
+    /// landing on a page that changes nothing. A page no longer in the stack
+    /// steps home rather than getting stuck on itself.
+    func stepped(by delta: Int, in available: [IslandPage]) -> IslandPage {
+        let stack = available.sorted { $0.rawValue < $1.rawValue }
+        guard let index = stack.firstIndex(of: self) else { return .home }
+        return stack[min(max(index + delta, 0), stack.count - 1)]
     }
 }

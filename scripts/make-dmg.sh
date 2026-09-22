@@ -145,6 +145,22 @@ MOUNTPT="/Volumes/$VOLNAME"
 # (Rectangle, IINA) ships without one.
 rm -rf "$MOUNTPT/.fseventsd" 2>/dev/null || true
 sync
+
+# The volume ships exactly Visor.app, the Applications alias and .DS_Store.
+# Asserted rather than trusted: every extra entry so far (.background.tiff,
+# .fseventsd, .Trashes) arrived silently and was only found by mounting a
+# shipped image by hand. Aborting here costs one build; shipping costs a
+# release nobody can delete.
+ACTUAL="$(ls -A "$MOUNTPT" | sort | tr '\n' ' ')"
+EXPECTED=".DS_Store Applications Visor.app "
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+    echo "DMG volume contents unexpected." >&2
+    echo "  expected: $EXPECTED" >&2
+    echo "  actual:   $ACTUAL" >&2
+    hdiutil detach "$DEV" >/dev/null 2>&1 || true
+    exit 1
+fi
+
 hdiutil detach "$DEV" >/dev/null
 trap - EXIT
 

@@ -16,12 +16,16 @@ final class SettingsWindowController {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 440),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
+            // Resizable now that there is a sidebar: a split view with a
+            // fixed frame cannot give the detail pane back the width the
+            // source list takes.
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Visor"
+        window.title = "Visor Settings"
+        window.toolbarStyle = .unified
         window.contentView = NSHostingView(rootView: SettingsView(store: store))
         window.isReleasedWhenClosed = false
         window.center()
