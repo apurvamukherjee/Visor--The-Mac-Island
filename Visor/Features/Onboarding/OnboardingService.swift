@@ -1,4 +1,4 @@
-import AppKit
+import Foundation
 
 /// Shows the three-step welcome flow once, the first time the island ever
 /// appears. Modelled on `GreetingService`: a settle delay, a UserDefaults

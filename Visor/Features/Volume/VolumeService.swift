@@ -51,8 +51,13 @@ final class VolumeService: NotchService {
             toggleMute: { [weak self] in self?.toggleMute() }
         )
         var address = Self.address(kAudioHardwarePropertyDefaultOutputDevice, scope: kAudioObjectPropertyScopeGlobal)
-        let block: AudioObjectPropertyListenerBlock = { _, _ in
-            Task { @MainActor [weak self] in self?.attachToDefaultDevice() }
+        // `[weak self]` belongs on the block, not on the `Task` inside it:
+        // CoreAudio retains the block, the block captured `self` strongly to
+        // reach the Task, and `deviceListeners` holds the block — so the
+        // service kept itself alive. The compiler said so; the inner weak
+        // capture was decorative.
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            Task { @MainActor in self?.attachToDefaultDevice() }
         }
         if AudioObjectAddPropertyListenerBlock(Self.system, &address, .main, block) == noErr {
             defaultDeviceListener = block
@@ -94,8 +99,8 @@ final class VolumeService: NotchService {
         for selector in [Self.virtualMainVolume, kAudioDevicePropertyMute] {
             var deviceAddress = Self.address(selector, scope: kAudioDevicePropertyScopeOutput)
             guard AudioObjectHasProperty(device, &deviceAddress) else { continue }
-            let block: AudioObjectPropertyListenerBlock = { _, _ in
-                Task { @MainActor [weak self] in self?.refresh() }
+            let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+                Task { @MainActor in self?.refresh() }
             }
             guard AudioObjectAddPropertyListenerBlock(device, &deviceAddress, .main, block) == noErr else {
                 Log.volume.error("Could not observe output volume.")
@@ -204,7 +209,11 @@ final class VolumeService: NotchService {
         AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
     }
 
-    private static func value<T: Numeric>(
+    /// `BitwiseCopyable` is the constraint this always needed. CoreAudio
+    /// writes raw bytes into the pointer, so a `T` that could hold an object
+    /// reference would be handed to C to overwrite — which is exactly what
+    /// the compiler warned about when the bound was only `Numeric`.
+    private static func value<T: Numeric & BitwiseCopyable>(
         _: T.Type,
         _ device: AudioObjectID,
         _ selector: AudioObjectPropertySelector

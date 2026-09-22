@@ -1,5 +1,4 @@
 import AppKit
-import os
 
 // Mirrors of the C declarations:
 //   int  SLSMainConnectionID(void);

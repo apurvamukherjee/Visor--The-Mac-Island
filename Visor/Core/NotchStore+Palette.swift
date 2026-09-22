@@ -1,5 +1,3 @@
-import Foundation
-
 /// The palette's behaviour, split off `NotchStore` to keep that file at a
 /// size somebody can still read in one go. The stored properties stay on
 /// the type — `@Observable` cannot see them from an extension — so this is

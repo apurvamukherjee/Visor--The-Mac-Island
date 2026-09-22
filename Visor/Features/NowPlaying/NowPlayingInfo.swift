@@ -1,4 +1,3 @@
-import Foundation
 import MediaRemoteAdapter
 
 /// Only what the island draws. Playback position used to live here too, and
