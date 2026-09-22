@@ -128,12 +128,12 @@ final class NotchWindowController {
     /// The pointer leaving is what closes the island, as it always was; this
     /// only ever changes what is being shown.
     private func handleSwipeDismiss() {
-        Haptics.shapeChange()
-        guard !store.isUsagePanelOpen else {
-            store.isUsagePanelOpen = false
+        guard NewFeatures.islandPaging.isEnabled() else {
+            Haptics.shapeChange()
+            store.dismissCurrentActivity()
             return
         }
-        store.dismissCurrentActivity()
+        turn(to: store.islandPage.above)
     }
 
     /// Swipe down: open the usage screen once it is asked for, otherwise
@@ -144,15 +144,36 @@ final class NotchWindowController {
     /// dismissed is a binding nobody can predict. With the switch off this is
     /// exactly what it was.
     private func handleSwipeRestore() {
-        if NewFeatures.usagePanel.isEnabled() {
-            Haptics.shapeChange()
-            store.isUsagePanelOpen = true
+        guard NewFeatures.islandPaging.isEnabled() else {
+            store.restoreDismissedActivity()
+            guard NewFeatures.swipeDownOpens.isEnabled() else { return }
             openIslandForSwipe()
             return
         }
-        store.restoreDismissedActivity()
-        guard NewFeatures.swipeDownOpens.isEnabled() else { return }
-        openIslandForSwipe()
+        turn(to: store.islandPage.below)
+    }
+
+    /// Turn to a screen, or open the island if it is not up yet.
+    ///
+    /// A swipe onto a closed island only ever opens it — onto the player,
+    /// like every other way of opening it. Landing straight on the screen the
+    /// gesture was reaching for would mean the island opened somewhere
+    /// different depending on which direction your fingers moved, and the
+    /// player being where you always find it is worth more than saving the
+    /// second swipe.
+    private func turn(to page: IslandPage) {
+        guard store.state == .expanded else {
+            openIslandForSwipe()
+            return
+        }
+        // Already at an end. No haptic either: a buzz with nothing moving
+        // reads as the gesture having failed rather than the stack having
+        // run out.
+        guard page != store.islandPage else { return }
+        Haptics.shapeChange()
+        withAnimation(Motion.resolved(Motion.morph)) {
+            store.islandPage = page
+        }
     }
 
     /// A swipe that lands on a closed island opens it; one that lands on an
@@ -218,6 +239,11 @@ final class NotchWindowController {
         // cursor, so this is reached routinely, not just on a fast re-hover.
         guard store.state != .expanded else { return }
         guard let screen = Self.targetScreen() else { return }
+        // Every open starts on the player. Set while the island is still
+        // closed, so there is nothing on screen to morph — the island simply
+        // grows into the right screen rather than arriving on the last one
+        // and correcting itself.
+        store.islandPage = .home
         generation += 1
         // Widened to expandedCanvasRect (not just expandedRect) so that
         // collapsing back out — which can grow wider before it gets
@@ -522,12 +548,11 @@ extension NotchWindowController {
         // holds it open for the same reason: it was opened by a keystroke,
         // so the pointer's whereabouts are not what should close it.
         guard !store.isOnboardingActive, !store.isPaletteOpen else { return }
-        // The usage screen does *not* hold the island open the way those two
-        // do: it was opened by a swipe, so the pointer's whereabouts are
-        // exactly what should close it. Cleared here rather than left set, or
-        // the next hover would reopen onto it instead of the island's own
-        // contents.
-        store.isUsagePanelOpen = false
+        // The page is deliberately *not* reset here. Clearing it first
+        // re-resolved the layout while the island was still open, so
+        // collapsing from the agent screen morphed out to the player's larger
+        // card and only then closed. It is reset on the way in instead — see
+        // `expand()` — which leaves every screen collapsing from its own size.
         generation += 1
         let gen = generation
         let target: NotchState = store.currentActivity != nil ? .compact : .closed

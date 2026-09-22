@@ -261,11 +261,15 @@ final class NotchStore {
     /// island.
     var aiUsage = AIUsageSnapshot.empty
 
-    /// The usage screen: a *mode* like onboarding and the palette, not an
-    /// activity. It is a place the island goes when asked rather than
-    /// something that happened, which is what separates the two — and it is
-    /// why nothing in the priority ladder can push it aside.
-    var isUsagePanelOpen = false
+    /// Which of the three expanded screens is showing.
+    ///
+    /// A *position*, not a mode. Onboarding and the palette take the island
+    /// over; these are three views of the same island you page between, and
+    /// the player is the middle one because it is the only one with controls
+    /// on it — the agenda above and the agent figures below are read, not
+    /// operated, so they sit either side of the thing you actually reach for.
+    /// Every open starts here, at `.home`.
+    var islandPage = IslandPage.home
 
     /// Read once when the palette opens rather than per keystroke.
     var paletteShortcuts = PaletteShortcuts.empty
@@ -284,10 +288,26 @@ final class NotchStore {
         if isPaletteOpen {
             return IslandLayout.palette(rows: paletteResults.count)
         }
-        if isUsagePanelOpen {
-            return IslandLayout.usage(rows: usageRows)
+        let activity = IslandLayout.resolved(for: expandedKind, content: islandContent)
+        switch islandPage {
+        case .home:
+            return activity
+        case .agenda:
+            return paged(IslandLayout.idle(islandContent), wings: activity)
+        case .usage:
+            return paged(IslandLayout.usage(rows: usageRows), wings: activity)
         }
-        return IslandLayout.resolved(for: expandedKind, content: islandContent)
+    }
+
+    /// Paging changes the **expanded** island and nothing else. The compact
+    /// wings belong to whatever activity is running, always — they are what
+    /// the island looks like at rest, so a screen you swiped to must not
+    /// still be deciding their width once it has closed. Getting this wrong
+    /// made the island collapse to one wing and then jump to another.
+    private func paged(_ page: IslandLayout, wings: IslandLayout) -> IslandLayout {
+        var resolved = page
+        resolved.compactExtraWidth = wings.compactExtraWidth
+        return resolved
     }
 
     /// Filtered exactly the way the agenda view filters, so the island can

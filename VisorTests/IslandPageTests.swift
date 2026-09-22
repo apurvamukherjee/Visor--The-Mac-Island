@@ -1,46 +1,92 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import Visor
 
-/// The usage screen is a *mode*, like onboarding and the palette — not one
-/// more activity in the priority ladder. These pin that seam: what is playing
-/// must not decide whether the screen is up, and the screen must not decide
-/// what is playing.
+/// The three screens are a *position*, not a mode: paging must not disturb
+/// the activity ladder, the compact wings, or each other. These pin that.
 @MainActor
-struct UsagePanelModeTests {
+struct IslandPageTests {
     @Test
-    func openingTheScreenDoesNotChangeWhichActivityOwnsTheIsland() {
+    func turningPagesDoesNotChangeWhichActivityOwnsTheIsland() {
         let store = NotchStore()
         store.activate(.nowPlaying)
         let before = store.expandedKind
 
-        store.isUsagePanelOpen = true
+        store.islandPage = .usage
 
         #expect(store.expandedKind == before)
         #expect(store.currentActivity?.kind == .nowPlaying)
     }
 
-    /// The point of the whole feature: the music card keeps the size it was
-    /// tuned to, and the usage screen is a different island rather than a
-    /// column bolted onto it.
+    /// The bug this guards: swipe up used to dismiss the current activity, so
+    /// two swipes up threw the player away with no gesture left to bring it
+    /// back — the island reached the agenda and the music was simply gone.
+    /// Paging must never deactivate anything.
     @Test
-    func theScreenTakesTheIslandFromMusicRatherThanWideningIt() {
+    func pagingAwayAndBackAlwaysFindsThePlayerAgain() {
         let store = NotchStore()
         store.activate(.nowPlaying)
-        let music = store.layout
 
-        store.isUsagePanelOpen = true
+        for page in [IslandPage.agenda, .home, .usage, .home] {
+            store.islandPage = page
+        }
 
-        #expect(store.layout != music)
-        #expect(store.layout == IslandLayout.usage(rows: store.usageRows))
+        #expect(store.islandPage == .home)
+        #expect(store.currentActivity?.kind == .nowPlaying)
+        #expect(store.layout == IslandLayout.resolved(for: .nowPlaying, content: store.islandContent))
     }
 
-    /// Onboarding and the palette are resolved before it, so neither can be
-    /// displaced by a swipe landing during them.
+    /// The ends hold. Stepping past either one stays put rather than wrapping
+    /// round, so a run of swipes in one direction settles instead of cycling.
     @Test
-    func onboardingAndThePaletteBothOutrankIt() {
+    func theStackClampsAtBothEnds() {
+        #expect(IslandPage.agenda.above == .agenda)
+        #expect(IslandPage.usage.below == .usage)
+        #expect(IslandPage.home.above == .agenda)
+        #expect(IslandPage.home.below == .usage)
+        // And the player is reachable from either end in one step.
+        #expect(IslandPage.agenda.below == .home)
+        #expect(IslandPage.usage.above == .home)
+    }
+
+    /// Paging is an expanded-only idea. The wings are what the island looks
+    /// like at rest and belong to the activity — a screen you swiped to must
+    /// not still be sizing them once it has closed, which is what made the
+    /// island collapse to one width and then jump to another.
+    @Test
+    func theCompactWingsAlwaysBelongToTheActivityNotThePage() {
         let store = NotchStore()
-        store.isUsagePanelOpen = true
+        store.activate(.pausedTrack)
+        let wing = store.layout.compactExtraWidth
+
+        for page in IslandPage.allCases {
+            store.islandPage = page
+            #expect(store.layout.compactExtraWidth == wing)
+        }
+    }
+
+    /// Each screen is sized for itself, so each collapses from its own
+    /// footprint rather than morphing to a neighbour's first.
+    @Test
+    func everyScreenResolvesToItsOwnExpandedSize() {
+        let store = NotchStore()
+        store.activate(.nowPlaying)
+
+        var sizes: [CGSize] = []
+        for page in IslandPage.allCases {
+            store.islandPage = page
+            sizes.append(store.layout.expandedSize(closed: CGSize(width: 185, height: 33)))
+        }
+        #expect(Set(sizes.map(\.height)).count == sizes.count)
+    }
+
+    /// Onboarding and the palette are resolved before the pages, so a swipe
+    /// landing during either cannot displace them.
+    @Test
+    func onboardingAndThePaletteBothOutrankEveryPage() {
+        let store = NotchStore()
+        store.islandPage = .usage
         store.isPaletteOpen = true
         #expect(store.layout == IslandLayout.palette(rows: 0))
 

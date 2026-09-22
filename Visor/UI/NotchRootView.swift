@@ -187,14 +187,34 @@ struct NotchRootView: View {
                 shortcuts: store.paletteShortcuts,
                 showsShortcuts: store.isPaletteShortcutModeActive
             )
-        } else if store.isUsagePanelOpen {
+        } else {
+            // Keyed on the page so a swipe cross-fades one screen for the
+            // next. Without the identity SwiftUI treats them as one view
+            // whose contents changed, and the agenda's rows visibly become
+            // the player's controls in place.
+            pagedContent
+                .id(store.islandPage)
+                .transition(.opacity.animation(Motion.resolved(Motion.contentIn)))
+        }
+    }
+
+    /// The three screens, in the order they sit on the swipe axis.
+    @ViewBuilder
+    private var pagedContent: some View {
+        switch store.islandPage {
+        case .agenda:
+            ExpandedIdleView(
+                events: store.calendarEvents,
+                onStartTimer: store.timerCommands.map { commands in { commands.start($0) } }
+            )
+        case .home:
+            expandedActivityContent
+        case .usage:
             ExpandedUsageView(
                 usage: store.aiUsage,
                 claudeBudget: Preferences.dailyTokenBudget(for: .claude),
                 codexBudget: Preferences.dailyTokenBudget(for: .codex)
             )
-        } else {
-            expandedActivityContent
         }
     }
 

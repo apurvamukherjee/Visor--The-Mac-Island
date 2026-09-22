@@ -120,6 +120,18 @@ sync
 # listed here: it lives inside Visor.app, so it is never a window entry.
 chflags hidden "$MOUNTPT/.DS_Store" 2>/dev/null || true
 
+# osascript returning 0 does NOT mean Finder wrote the layout: build 23 shipped
+# a plain grey window from a successful-looking run. The evidence is the size —
+# a .DS_Store carrying the icvp background alias and both icon positions runs
+# ~10KB, while the bare record Finder writes for any folder it merely opened is
+# 6148 bytes. Measured across builds 16-23. Fail here rather than ship unstyled.
+DS_BYTES=$(stat -f %z "$MOUNTPT/.DS_Store" 2>/dev/null || echo 0)
+if [ "$DS_BYTES" -lt 8192 ]; then
+    echo "Finder layout not recorded: .DS_Store is ${DS_BYTES}B, expected >8192B." >&2
+    echo "The window would open unstyled. Re-run; this step races Finder." >&2
+    exit 1
+fi
+
 # Finder writes .DS_Store lazily; sync so the record is on the image before the
 # volume is renamed and detached, otherwise the layout is silently lost.
 sync
