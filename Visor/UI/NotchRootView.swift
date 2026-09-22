@@ -77,6 +77,7 @@ struct NotchRootView: View {
     }
 
     @AppStorage(NewFeatures.visibleDropZones.key) private var showsDropZones = false
+    @AppStorage(NewFeatures.lyrics.key) private var lyricsEnabled = false
     @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
     @AppStorage(Preferences.strokeWidthKey) private var storedStrokeWidth = 1.0
     @AppStorage(Preferences.strokeOpacityKey) private var storedStrokeOpacity = 0.25
@@ -263,7 +264,10 @@ struct NotchRootView: View {
                 hoverPoint: store.hoverPoint,
                 bleed: store.nowPlayingBleed,
                 volume: store.volume,
-                volumeCommands: store.volumeCommands
+                volumeCommands: store.volumeCommands,
+                lyrics: store.lyrics,
+                isLyricsOpen: store.isLyricsOpen,
+                onToggleLyrics: lyricsEnabled ? { store.isLyricsOpen.toggle() } : nil
             )
         }
     }

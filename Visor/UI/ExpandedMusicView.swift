@@ -22,6 +22,12 @@ struct ExpandedMusicView: View {
     /// volume of its own, which is also when there is nothing to mute.
     let volume: VolumeInfo?
     let volumeCommands: NotchStore.VolumeCommands?
+    /// Nil while the fetch is in flight; the panel shows a spinner for it.
+    let lyrics: LyricsResult?
+    let isLyricsOpen: Bool
+    /// Nil when the opt-in is off, which is what hides the toggle entirely
+    /// rather than showing a button that refuses to do anything.
+    let onToggleLyrics: (() -> Void)?
 
     private static let artworkSide: CGFloat = 56
     /// Fixed, so a long title can never reflow the rows beneath it. The
@@ -50,8 +56,16 @@ struct ExpandedMusicView: View {
     @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
 
     var body: some View {
-        musicColumn
-            .foregroundStyle(.white)
+        HStack(alignment: .top, spacing: IslandSpacing.column) {
+            musicColumn
+            if isLyricsOpen {
+                LyricsPanelView(result: lyrics, progress: progress)
+                    .frame(width: IslandLayout.Column.lyrics)
+                    .transition(.opacity)
+            }
+        }
+        .foregroundStyle(.white)
+        .animation(Motion.resolved(Motion.layout), value: isLyricsOpen)
     }
 
     /// Art beside the title, scrub row and transport underneath.
@@ -110,7 +124,13 @@ struct ExpandedMusicView: View {
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
             if let progress {
-                MusicSeekRow(progress: progress, tint: tint, commands: commands)
+                MusicSeekRow(
+                    progress: progress,
+                    tint: tint,
+                    commands: commands,
+                    isLyricsOpen: isLyricsOpen,
+                    onToggleLyrics: onToggleLyrics
+                )
             }
             controls
             Spacer(minLength: 0)

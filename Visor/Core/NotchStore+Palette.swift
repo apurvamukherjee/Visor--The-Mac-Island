@@ -47,14 +47,19 @@ extension NotchStore {
     }
 
     private var availablePaletteCommands: [PaletteCommand] {
-        PaletteCommand.available(
-            PaletteCommand.all,
+        // Gathered once per open rather than per keystroke: the CoreAudio
+        // reads are round trips, and none of this can change while a palette
+        // is on screen without something else firing first.
+        let shelfFile = shelf.first?.url
+        let context = PaletteContext(
             hasTrack: nowPlaying != nil,
             hasVolume: volume != nil,
-            // Asked once per open rather than per keystroke: it is a
-            // CoreAudio round trip, and the input device cannot change while
-            // a palette is on screen without something else firing first.
-            hasMicrophone: SystemCommands.hasMutableMicrophone
+            hasMicrophone: SystemCommands.hasMutableMicrophone,
+            hasMultipleOutputs: SystemCommands.hasMultipleOutputs,
+            hasShelfFile: shelfFile != nil,
+            hasShelfArchive: shelfFile.map(SystemCommands.isArchive) ?? false,
+            hasShelfImage: shelfFile.map(SystemCommands.isImage) ?? false
         )
+        return PaletteCommand.available(PaletteCommand.all, in: context)
     }
 }

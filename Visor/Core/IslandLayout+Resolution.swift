@@ -55,12 +55,14 @@ extension IslandLayout {
     /// the island sideways, which read as cramped and wrong. The card is now
     /// at least as wide as the wing plus a margin, so opening it always
     /// feels like it is opening.
-    static func nowPlaying(_: IslandContent) -> IslandLayout {
+    static func nowPlaying(_ content: IslandContent) -> IslandLayout {
         let compactExtra: CGFloat = 160
-        // One column now: the player. The corner date box and the lyrics
-        // panel are both gone, so nothing else claims width here — the
-        // floor below is what actually sizes the card.
-        let columns = Column.music
+        // The player owns the island. The corner date box is gone for good;
+        // the lyrics panel is the one thing that still claims a second
+        // column, and only while it is open.
+        let columns = content.hasLyrics
+            ? Column.music + IslandSpacing.column + Column.lyrics
+            : Column.music
         return IslandLayout(
             expandedExtraWidth: max(extraWidth(content: columns), compactExtra + musicExpandMargin),
             expandedExtraHeight: extraHeight(Block.musicColumn),
@@ -231,6 +233,7 @@ extension IslandLayout {
         // window rather than drawn.
         idle(IslandContent(compactLeadingWidth: CompactLabel.maxWidth)),
         nowPlaying(IslandContent()),
+        nowPlaying(IslandContent(hasLyrics: true)),
         pausedTrack(IslandContent()),
         shelf,
         networkAlert,

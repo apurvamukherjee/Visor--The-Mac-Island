@@ -73,11 +73,24 @@ enum NewFeatures {
         isRecommended: false
     )
 
+    /// The code for this shipped months ago and was wired to nothing — the
+    /// audit found `LyricsFetcher` with exactly one reference, its own
+    /// declaration. Turning it on adds a button to the player, which is a
+    /// change to a working card, so it is opt-in like everything else.
+    static let lyrics = NewFeature(
+        key: "newFeature.lyrics",
+        title: "Lyrics panel",
+        detail: "Adds a lyrics button to the player. Words are fetched from LRCLIB only while "
+            + "the panel is open, so music playing with it shut never reaches the network.",
+        isRecommended: false
+    )
+
     static let all: [NewFeature] = [
         closeIntentDelay,
         visibleDropZones,
         swipeDownOpens,
-        commandPalette
+        commandPalette,
+        lyrics
     ]
 
     static var keys: [String] {

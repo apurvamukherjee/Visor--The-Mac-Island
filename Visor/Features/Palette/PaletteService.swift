@@ -137,26 +137,49 @@ final class PaletteService: NotchService {
     }
 
     private func run(_ id: PaletteCommandID) {
-        switch id {
-        case .playPause: store.nowPlayingCommands?.togglePlayPause()
-        case .nextTrack: store.nowPlayingCommands?.next()
-        case .previousTrack: store.nowPlayingCommands?.previous()
-        case .toggleMute: store.volumeCommands?.toggleMute()
-        case .openSettings: showSettings()
-        case .replayWelcome: store.onboardingCommands?.replay()
-        case .quit: NSApplication.shared.terminate(nil)
-        case .keepAwake: system.toggleKeepAwake()
-        case .lockScreen: system.lockScreen()
-        case .sleepDisplay: system.sleepDisplay()
-        case .toggleDarkMode: system.toggleDarkMode()
-        case .toggleMicrophone: system.toggleMicrophoneMute()
-        case .takeScreenshot: system.openScreenshotTool()
-        case .openDownloads: system.openDownloads()
-        case .copyTrack: copyCurrentTrack()
-        case .searchTrack: searchCurrentTrack()
-        case .timerFive: store.timerCommands?.start(5 * 60)
-        case .timerTwentyFive: store.timerCommands?.start(25 * 60)
-        }
+        actions()[id]?()
+    }
+
+    /// A dispatch table rather than a 24-case `switch`, which is the same
+    /// thing written the long way and scores 24 on cyclomatic complexity for
+    /// it. The exhaustiveness a `switch` would give is pinned instead by
+    /// `PaletteTests.everyCommandHasAnAction`, which fails the moment a
+    /// command is added to the list and not to this map.
+    func actions() -> [PaletteCommandID: () -> Void] {
+        [
+            .playPause: { [self] in store.nowPlayingCommands?.togglePlayPause() },
+            .nextTrack: { [self] in store.nowPlayingCommands?.next() },
+            .previousTrack: { [self] in store.nowPlayingCommands?.previous() },
+            .toggleMute: { [self] in store.volumeCommands?.toggleMute() },
+            .openSettings: { [self] in showSettings() },
+            .replayWelcome: { [self] in store.onboardingCommands?.replay() },
+            .quit: { NSApplication.shared.terminate(nil) },
+            .keepAwake: { [self] in system.toggleKeepAwake() },
+            .lockScreen: { [self] in system.lockScreen() },
+            .sleepDisplay: { [self] in system.sleepDisplay() },
+            .toggleDarkMode: { [self] in system.toggleDarkMode() },
+            .toggleMicrophone: { [self] in system.toggleMicrophoneMute() },
+            .takeScreenshot: { [self] in system.openScreenshotTool() },
+            .openDownloads: { [self] in system.openDownloads() },
+            .copyTrack: { [self] in copyCurrentTrack() },
+            .searchTrack: { [self] in searchCurrentTrack() },
+            .timerFive: { [self] in store.timerCommands?.start(5 * 60) },
+            .timerTwentyFive: { [self] in store.timerCommands?.start(25 * 60) },
+            .switchAudioOutput: { [self] in system.cycleAudioOutput() },
+            .toggleIslandHidden: { [self] in store.isIslandHidden.toggle() },
+            .quickNote: { [self] in system.makeQuickNote() },
+            .compressShelfFile: { [self] in withShelfFile(system.compress) },
+            .expandShelfFile: { [self] in withShelfFile(system.expand) },
+            .convertShelfImage: { [self] in withShelfFile(system.convertToJPEG) }
+        ]
+    }
+
+    /// The newest thing on the shelf. Every file command works on what the
+    /// island is already holding, which is what makes them make sense from a
+    /// palette that has no file picker.
+    private func withShelfFile(_ action: (URL) -> Void) {
+        guard let url = store.shelf.first?.url else { return }
+        action(url)
     }
 
     /// "Artist — Title", or just the title when the source app reports no

@@ -49,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             BluetoothService(store: store),
             FocusService(store: store),
             LockScreenService(store: store),
+            LyricsService(store: store),
             PaletteService(store: store) { [weak self] in
                 guard let self else { return }
                 settingsWindow.show(store: store)

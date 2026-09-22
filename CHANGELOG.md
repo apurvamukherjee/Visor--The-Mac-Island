@@ -18,6 +18,76 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.2.0] — 2026-09-23 (build 21)
+
+Closes the rest of Phase 6: the commands the palette was built to run, the
+lyrics panel that had been written and wired to nothing since September, and
+the documentation the phase owed.
+
+### Added
+
+- **Lyrics panel, revived.** `LyricsFetcher`, `TrackLyrics`, `LyricLine` and
+  `LyricsPanelView` had been complete and unreachable — the audit found
+  `LyricsFetcher` with exactly one reference, its own declaration. A button
+  on the scrub row opens a column beside the player. New `LyricsService`
+  fetches from LRCLIB **only while the panel is open**, so a track playing
+  with it shut never makes a request. Opt-in: *New Features → Lyrics panel*.
+- **Six more palette commands**, taking it to 24: Switch Audio Output
+  (cycles; offered only with more than one output device), New Quick Note,
+  Compress Shelf File, Expand Shelf File, Convert Shelf Image to JPEG, and
+  Hide or Show the Island. The file commands act on whatever the island is
+  already holding, which is what makes them mean anything from a palette
+  with no file picker.
+- **Your name is a setting.** *Settings → General → Your name*. The daily
+  greeting was hardcoded to one person; it now defaults to the first word of
+  the account's full name and can be anything.
+
+### Fixed
+
+- **The greeting was half-hidden behind the camera housing.** The compact
+  wing was a flat 160pt — 64 of it usable — while "Good afternoon, Apurva"
+  measures 130.2pt, so a third of the sentence was drawn where there is no
+  screen. Two fixes: every compact text label is now clamped to the wing, so
+  nothing can cross the cutout again, and the wing is sized from its own
+  label. "No Internet" was clipping by 5pt for the same reason.
+- **`VolumeService` retained itself.** Both CoreAudio listener blocks put
+  `[weak self]` on the inner `Task` rather than on the block CoreAudio holds,
+  so the weak capture was decorative and the service kept itself alive.
+- **`MarqueeText` polled at 20Hz, unbounded**, waiting for a `PreferenceKey`
+  that may never arrive, and scrolled with `.repeatForever` regardless of
+  Reduce Motion. Bounded to 2s, and it now honours the setting.
+- A generic CoreAudio read handed a raw pointer to an unconstrained `T`.
+  Constrained to `BitwiseCopyable`, which is what it always required.
+
+### Changed
+
+- `IslandLayout` split: the token vocabulary stays, the layouts move to
+  `IslandLayout+Resolution.swift`.
+- **The build is warning-free.** It was not before: four compiler warnings,
+  three of which were the bugs above.
+
+### Deliberately left out, each with a measured reason
+
+- **Empty Trash.** `~/.Trash` is not listable without Full Disk Access —
+  measured, nil contents. Same wall as the notification mirroring cut in
+  September.
+- **Night Shift.** `CBBlueLightClient` loads, but driving it needs a
+  hand-declared ObjC interface for a headerless class to pass a `BOOL` — the
+  brittle binding style this project already replaced once.
+- **`screencapture -i`.** Works, but the Screen Recording prompt could land
+  on Visor's name. Take Screenshot opens Apple's Screenshot.app instead,
+  which owns its own permission; the shelf catches the result either way.
+- **A palette row per audio device.** The command list is a static value;
+  dynamic rows mean string identifiers and the end of the exhaustive switch
+  that makes adding a command safe. Cycling covers the real case.
+
+### Not verified on hardware
+
+Everything in 2.1.0 and 2.2.0 is unexercised on a real notch. The probes are
+recorded in `docs/RESEARCH.md` §6.4, including the one that matters most: a
+probe launched from a shell inherits the terminal's TCC grant and will
+falsely report `AXIsProcessTrusted == true`. Launch it with `open`.
+
 ## [2.1.0] — 2026-09-23 (build 20)
 
 ### Added

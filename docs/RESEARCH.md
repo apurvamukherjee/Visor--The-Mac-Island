@@ -476,7 +476,43 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 | File shelf | SwiftUI `.onDrop` / `.draggable` | none |
 | Timer | pure Swift | none |
 | Launch at login | `SMAppService.mainApp` | user toggle |
-| Global shortcut | sindresorhus/KeyboardShortcuts (MIT) | none |
+| Global shortcut | **`RegisterEventHotKey` (Carbon)** — no package needed, and no permission. See §6.4 | none |
+
+### 6.4 Measured for the command palette, 2026-09-23
+
+Every row below was probed before any app code, from an **ad-hoc-signed
+`LSUIElement` bundle launched through LaunchServices** so it carried its own
+TCC identity. That last detail is the finding that matters most: the first
+run of the same probe reported `AXIsProcessTrusted() == true` and was a false
+pass, because a binary started from a shell inherits the *terminal's* TCC
+responsibility. Launch probes with `open`, or they lie.
+
+All of these read `AXIsProcessTrusted() == false`:
+
+| Mechanism | Result | Used for |
+|---|---|---|
+| `RegisterEventHotKey` + `InstallEventHandler` | `noErr`, no prompt | ⌃⌥K. This is why the palette is cheap and a `CGEventTap` is not — the tap sees every keystroke on the machine and needs Accessibility, which is the permission the media-key HUD was cut to avoid |
+| `.nonactivatingPanel` overriding `canBecomeKey` | becomes key, takes first responder, **frontmost app unchanged** | The palette types into `NotchPanel` rather than a window of its own. `canBecomeKey` is gated on the palette being open — a panel that could always take the keyboard would steal it on every brush past the notch |
+| `SLSSetAppearanceThemeLegacy` / `SLSGetAppearanceThemeLegacy` (SkyLight) | resolvable; **write round-tripped** — read dark, wrote light, read back light, restored | Toggle Dark Mode. The restore ran in a `defer`, so a crash mid-probe would still have left the Mac as found |
+| `SACLockScreenImmediate` (login.framework) | resolvable | Lock Screen. `dlsym`, not `@_silgen_name`: a missing symbol degrades to doing nothing instead of failing to launch |
+| `kAudioHardwarePropertyDefaultOutputDevice` | settable | Switch Audio Output |
+| `kAudioDevicePropertyMute`, input scope | settable on the built-in mic; **absent entirely on a Continuity iPhone microphone** | Mute Microphone, gated on the current input actually having one |
+
+Ruled out by the same probe, each with a reason rather than a guess:
+
+- **Empty Trash.** `~/.Trash` is not even *listable* without Full Disk
+  Access — the probe got nil back for its contents. Same wall as the
+  notification mirroring cut on 2026-09-16.
+- **Night Shift.** `CBBlueLightClient` loads, but driving it means
+  hand-declaring an ObjC interface for a headerless class to pass a
+  primitive `BOOL` — the brittle binding style this codebase already
+  replaced once.
+- **`screencapture -i`.** Works, but a capture Visor spawns could attribute
+  the Screen Recording prompt to *Visor*. Apple's Screenshot.app owns its
+  own permission, and `ScreenshotService` catches whatever it writes anyway.
+
+**Not yet taken:** the Accessibility prompt of §2 in the feature-program
+spec. Nothing in Phase 6 needed it.
 
 ---
 

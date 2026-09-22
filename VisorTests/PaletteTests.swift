@@ -55,9 +55,7 @@ struct PaletteTests {
     /// absent one.
     @Test("Commands that cannot act are not offered")
     func availabilityGates() {
-        let quiet = PaletteCommand.available(
-            PaletteCommand.all, hasTrack: false, hasVolume: false, hasMicrophone: false
-        )
+        let quiet = PaletteCommand.available(PaletteCommand.all, in: PaletteContext())
         #expect(!quiet.contains { $0.id == .playPause })
         #expect(!quiet.contains { $0.id == .nextTrack })
         #expect(!quiet.contains { $0.id == .toggleMute })
@@ -72,10 +70,46 @@ struct PaletteTests {
         #expect(quiet.contains { $0.id == .toggleDarkMode })
         #expect(quiet.contains { $0.id == .timerTwentyFive })
 
+        // A bare machine must not be offered a file command either.
+        #expect(!quiet.contains { $0.id == .compressShelfFile })
+        #expect(!quiet.contains { $0.id == .switchAudioOutput })
+
         let everything = PaletteCommand.available(
-            PaletteCommand.all, hasTrack: true, hasVolume: true, hasMicrophone: true
+            PaletteCommand.all,
+            in: PaletteContext(
+                hasTrack: true,
+                hasVolume: true,
+                hasMicrophone: true,
+                hasMultipleOutputs: true,
+                hasShelfFile: true,
+                hasShelfArchive: true,
+                hasShelfImage: true
+            )
         )
         #expect(everything.count == PaletteCommand.all.count)
+    }
+
+    /// A plain file can be compressed but not expanded or converted; only a
+    /// zip can be expanded. Getting this backwards offers "Expand" on a PNG.
+    @Test("Shelf commands follow what is actually on the shelf")
+    func shelfGates() {
+        let plain = PaletteCommand.available(
+            PaletteCommand.all, in: PaletteContext(hasShelfFile: true)
+        )
+        #expect(plain.contains { $0.id == .compressShelfFile })
+        #expect(!plain.contains { $0.id == .expandShelfFile })
+        #expect(!plain.contains { $0.id == .convertShelfImage })
+
+        let archive = PaletteCommand.available(
+            PaletteCommand.all, in: PaletteContext(hasShelfFile: true, hasShelfArchive: true)
+        )
+        #expect(archive.contains { $0.id == .expandShelfFile })
+
+        let image = PaletteCommand.available(
+            PaletteCommand.all, in: PaletteContext(hasShelfFile: true, hasShelfImage: true)
+        )
+        #expect(image.contains { $0.id == .convertShelfImage })
+        #expect(!image.contains { $0.id == .expandShelfFile })
     }
 
     /// Enough commands that the four-row island has to window the list, which
@@ -103,6 +137,9 @@ struct PaletteTests {
         #expect(titles("mic").first == "Mute or Unmute Microphone")
         #expect(titles("downloads").first == "Open Downloads")
         #expect(titles("screenshot").first == "Take Screenshot")
+        #expect(titles("zip").first == "Compress Shelf File")
+        #expect(titles("unzip").first == "Expand Shelf File")
+        #expect(titles("note").first == "New Quick Note")
     }
 
     @Test("Every command has a distinct identifier")
@@ -141,5 +178,64 @@ struct PaletteLayoutTests {
         let palette = IslandLayout.palette(rows: IslandLayout.maxPaletteRows)
         #expect(palette.expandedExtraWidth <= IslandLayout.maxExpandedExtraWidth)
         #expect(palette.expandedExtraHeight <= IslandLayout.maxExpandedExtraHeight)
+    }
+}
+
+/// The lyrics panel was written months ago and wired to nothing. These pin
+/// the seam it was reconnected through, so it cannot fall off again quietly.
+@Suite("Lyrics")
+struct LyricsLayoutTests {
+    @Test("Opening the panel widens the island")
+    func openingWidensTheIsland() {
+        let shut = IslandLayout.nowPlaying(IslandContent())
+        let open = IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
+
+        #expect(open.expandedExtraWidth > shut.expandedExtraWidth)
+        #expect(open.expandedExtraHeight == shut.expandedExtraHeight)
+        #expect(open.compactExtraWidth == shut.compactExtraWidth)
+    }
+
+    /// The canvas is sized from `all`; a layout missing from it is a layout
+    /// the window clips instead of drawing.
+    @Test("The open panel fits the canvas")
+    func openPanelFitsTheCanvas() {
+        let open = IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
+        #expect(open.expandedExtraWidth <= IslandLayout.maxExpandedExtraWidth)
+        #expect(open.expandedExtraHeight <= IslandLayout.maxExpandedExtraHeight)
+    }
+
+    @Test("LRC parsing survives the metadata tags real files carry")
+    func lrcParsingSkipsTags() {
+        let raw = """
+        [ar:Someone]
+        [ti:A Song]
+
+        [00:12.50]First line
+        [01:05.00]Second line
+        """
+        let lyrics = TrackLyrics.parseLRC(raw)
+
+        #expect(lyrics.lines.count == 2)
+        #expect(lyrics.lines.first?.text == "First line")
+        #expect(lyrics.activeLineIndex(at: 0) == nil)
+        #expect(lyrics.activeLineIndex(at: 13) == 0)
+        #expect(lyrics.activeLineIndex(at: 70) == 1)
+    }
+}
+
+/// The dispatch table replaced a 24-case `switch`, and with it the
+/// compiler's exhaustiveness check. This is what took over that job: add a
+/// command to the list and forget to wire it, and this fails rather than the
+/// row silently doing nothing when someone presses return on it.
+@MainActor
+@Suite("Palette dispatch")
+struct PaletteDispatchTests {
+    @Test("Every command has an action")
+    func everyCommandHasAnAction() {
+        let service = PaletteService(store: NotchStore(), showSettings: {})
+        let wired = Set(service.actions().keys)
+
+        #expect(wired == Set(PaletteCommandID.allCases))
+        #expect(wired.count == PaletteCommand.all.count)
     }
 }

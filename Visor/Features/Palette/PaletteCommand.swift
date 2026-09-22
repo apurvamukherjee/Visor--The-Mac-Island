@@ -22,6 +22,26 @@ enum PaletteCommandID: String, CaseIterable, Sendable {
     case openDownloads
     case timerFive
     case timerTwentyFive
+    case switchAudioOutput
+    case toggleIslandHidden
+    case quickNote
+    case compressShelfFile
+    case expandShelfFile
+    case convertShelfImage
+}
+
+/// What the machine can do right now. Gathered once when the palette opens,
+/// so a row is never offered for something that would quietly fail — the
+/// rule `MusicSeekRow` states: a dead control is worse than an absent one.
+struct PaletteContext: Equatable, Sendable {
+    var hasTrack = false
+    var hasVolume = false
+    var hasMicrophone = false
+    /// One output device is not a choice, so there is nothing to switch to.
+    var hasMultipleOutputs = false
+    var hasShelfFile = false
+    var hasShelfArchive = false
+    var hasShelfImage = false
 }
 
 struct PaletteCommand: Identifiable, Equatable, Sendable {
@@ -43,6 +63,23 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
         /// Not every input device has a mute — the probe found a Continuity
         /// iPhone microphone with none at all.
         case whileMicrophoneExists
+        case whileMultipleOutputs
+        case whileShelfHasFile
+        case whileShelfHasArchive
+        case whileShelfHasImage
+
+        func isSatisfied(by context: PaletteContext) -> Bool {
+            switch self {
+            case .always: true
+            case .whilePlaying: context.hasTrack
+            case .whileVolumeExists: context.hasVolume
+            case .whileMicrophoneExists: context.hasMicrophone
+            case .whileMultipleOutputs: context.hasMultipleOutputs
+            case .whileShelfHasFile: context.hasShelfFile
+            case .whileShelfHasArchive: context.hasShelfArchive
+            case .whileShelfHasImage: context.hasShelfImage
+            }
+        }
     }
 
     let availability: Availability
@@ -169,6 +206,46 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             keywords: ["pomodoro", "focus", "countdown", "work"]
         ),
         PaletteCommand(
+            id: .switchAudioOutput,
+            title: "Switch Audio Output",
+            symbol: "hifispeaker.fill",
+            keywords: ["speaker", "headphones", "airpods", "sound", "device"],
+            availability: .whileMultipleOutputs
+        ),
+        PaletteCommand(
+            id: .quickNote,
+            title: "New Quick Note",
+            symbol: "square.and.pencil",
+            keywords: ["write", "jot", "scratch", "memo"]
+        ),
+        PaletteCommand(
+            id: .compressShelfFile,
+            title: "Compress Shelf File",
+            symbol: "archivebox.fill",
+            keywords: ["zip", "archive", "shrink"],
+            availability: .whileShelfHasFile
+        ),
+        PaletteCommand(
+            id: .expandShelfFile,
+            title: "Expand Shelf File",
+            symbol: "arrow.up.bin.fill",
+            keywords: ["unzip", "extract", "open archive"],
+            availability: .whileShelfHasArchive
+        ),
+        PaletteCommand(
+            id: .convertShelfImage,
+            title: "Convert Shelf Image to JPEG",
+            symbol: "photo.fill",
+            keywords: ["jpg", "compress", "convert", "image"],
+            availability: .whileShelfHasImage
+        ),
+        PaletteCommand(
+            id: .toggleIslandHidden,
+            title: "Hide or Show the Island",
+            symbol: "eye.slash.fill",
+            keywords: ["hide", "show", "away", "disappear"]
+        ),
+        PaletteCommand(
             id: .openDownloads,
             title: "Open Downloads",
             symbol: "folder.fill",
@@ -186,20 +263,8 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
 extension PaletteCommand {
     /// Only what can actually do something right now. Pure so the gating is
     /// pinned by a test rather than discovered by finding a dead row.
-    static func available(
-        _ commands: [PaletteCommand],
-        hasTrack: Bool,
-        hasVolume: Bool,
-        hasMicrophone: Bool
-    ) -> [PaletteCommand] {
-        commands.filter { command in
-            switch command.availability {
-            case .always: true
-            case .whilePlaying: hasTrack
-            case .whileVolumeExists: hasVolume
-            case .whileMicrophoneExists: hasMicrophone
-            }
-        }
+    static func available(_ commands: [PaletteCommand], in context: PaletteContext) -> [PaletteCommand] {
+        commands.filter { $0.availability.isSatisfied(by: context) }
     }
 }
 

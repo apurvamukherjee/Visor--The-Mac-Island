@@ -2,7 +2,7 @@
 
 # Visor
 
-#### by Apurva
+<h3><strong>by <span style="color:#e11d48">Apurva</span></strong></h3>
 
 ### The MacBook notch, turned into a Dynamic Island.
 
@@ -141,7 +141,7 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 
 |  | |
 | --- | --- |
-| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport and scrub bar. The cover flips like a card when the track changes. Pause it and the island collapses after five seconds; the track stays loaded, so opening it by hand still finds a play button. |
+| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport and scrub bar — plus an opt-in lyrics panel that fetches only while it is open, so music playing with it shut never reaches the network. The cover flips like a card when the track changes. Pause it and the island collapses after five seconds; the track stays loaded, so opening it by hand still finds a play button. |
 | **Your day** | With nothing loaded, the island is your agenda instead: the next events from your calendars, colour-matched to their source. The two never share the island. |
 | **Screenshot shelf** | Every screenshot lands in the notch — up to four at once, each draggable straight into another app. |
 | **Downloads** | Files arriving in `~/Downloads` show a row each with real progress, read from the same attribute Safari writes. No progress reported means an honest indeterminate bar, never a guessed number. |
@@ -337,6 +337,6 @@ Visor is GPL-3.0 specifically so code from GPL-3.0 reference projects can be por
 
 <div align="center">
 
-**by Apurva**
+<h3><strong>by <span style="color:#e11d48">Apurva</span></strong></h3>
 
 </div>
