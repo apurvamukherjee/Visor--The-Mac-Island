@@ -18,6 +18,58 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.4.0] — 2026-09-23 (build 23)
+
+### Added
+
+- **The usage screen.** A two-finger swipe down on the island opens today's
+  Claude Code and Codex figures in full: the vendor mark, tool name, model,
+  a live context bar and the day's tokens. Swipe up to step back out.
+  Opt-in: *New Features → Swipe down for agent usage*.
+
+  It is a **mode**, resolved after onboarding and the palette and never in
+  the activity ladder — the same shape onboarding and the lock screen
+  already use. `NotchStore.isUsagePanelOpen` and `usageRows` drive it,
+  `IslandLayout.usage(rows:)` sizes it (`Block.usageRow` 60, `Column.usage`
+  280, at most 2 rows).
+
+- **The live context window, newly read.** `AIUsageContext` pairs the last
+  turn's token count with its model and resolves the window that model
+  actually has — 200K, or 1M for a `[1m]` model. Anything unrecognised
+  returns nil and **draws no bar rather than a bar against a guess**.
+
+  `contextTokens` is the deliberate mirror of the daily total, and both are
+  right because they answer different questions: cache reads are **in** the
+  context figure (the window holds them) and **out** of the day's total
+  (they measure context length, not work done); output tokens are the
+  reverse — produced, but never seen by the model. `ClaudeUsageReader.parse`
+  now returns the context alongside the total from the same pass, so the
+  second figure costs no second read.
+
+### Changed
+
+- **A swipe up no longer closes the island** — it only changes what is
+  shown. The pointer leaving is once again the sole thing that collapses it,
+  as it was before the gesture existed.
+
+  **This is a deliberate exception to §2.1's "nothing changes by default",
+  and the only one in the program so far.** It is not gated behind a toggle
+  because the old behaviour was not a preference but a conflict: the
+  vertical axis meant two things at once, so one swipe both changed what was
+  on screen *and* shut the screen it had just changed to. Paging between
+  states was impossible and every gesture ended in the notch. A toggle would
+  have preserved the ability to opt into a gesture that fights itself.
+
+  Swipe down opens the usage screen once asked for, and otherwise restores a
+  dismissed activity exactly as it did. The usage screen takes the gesture
+  outright rather than sharing it — a binding that depends on whether
+  something happens to be dismissed is one nobody can predict.
+
+### Not verified on hardware
+
+The usage screen and the context bar are unexercised on a real notch. The
+AI badge itself was confirmed on hardware in 2.3.0.
+
 ## [2.3.0] — 2026-09-23 (build 22)
 
 ### Added
