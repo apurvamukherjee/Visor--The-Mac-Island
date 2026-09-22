@@ -45,6 +45,10 @@ final class NotchStore {
         let dismiss: () -> Void
     }
 
+    struct PaletteCommands {
+        let run: (PaletteCommandID) -> Void
+    }
+
     struct OnboardingCommands {
         let advance: () -> Void
         let finish: () -> Void
@@ -227,13 +231,31 @@ final class NotchStore {
         notchSizeTick += 1
     }
 
+    // MARK: - Command palette
+
+    /// A *mode*, like onboarding and the lock screen — not an activity. While
+    /// it is open the island is the palette and nothing else, so it is
+    /// resolved before the priority ladder rather than inside it.
+    /// Plain `var`s, like the rest of the store's state: `private(set)`
+    /// would scope the setter to this file, and the palette's behaviour
+    /// lives next door in `NotchStore+Palette`. The "views read, services
+    /// write" rule is the architecture's, not the access modifier's.
+    var isPaletteOpen = false
+    var paletteQuery = ""
+    var paletteResults: [PaletteCommand] = []
+    var paletteSelection = 0
+    var paletteCommands: PaletteCommands?
+
     /// The shape the island takes right now. Onboarding is checked first and
     /// unconditionally: it is not one more activity competing in the
     /// priority ladder, it is a different mode the island is in, the same
-    /// way `state` is.
+    /// way `state` is. The palette is the second such mode.
     var layout: IslandLayout {
         if let onboardingStep {
             return IslandLayout.onboarding(onboardingStep)
+        }
+        if isPaletteOpen {
+            return IslandLayout.palette(rows: paletteResults.count)
         }
         return IslandLayout.resolved(for: expandedKind, content: islandContent)
     }

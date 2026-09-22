@@ -39,8 +39,17 @@ final class NotchPanel: NSPanel {
         super.sendEvent(event)
     }
 
+    /// Off except while the command palette is open. A panel that could
+    /// always become key would take the keyboard away from whatever the user
+    /// was typing in every time they brushed the notch — measured on a
+    /// throwaway probe: a `.nonactivatingPanel` that overrides this *does*
+    /// take first responder, and does it without changing the frontmost
+    /// app, which is exactly what the palette needs and exactly what the
+    /// rest of the island must not do.
+    var acceptsKeyboard = false
+
     override var canBecomeKey: Bool {
-        false
+        acceptsKeyboard
     }
 
     override var canBecomeMain: Bool {
