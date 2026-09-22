@@ -50,7 +50,11 @@ extension NotchStore {
         PaletteCommand.available(
             PaletteCommand.all,
             hasTrack: nowPlaying != nil,
-            hasVolume: volume != nil
+            hasVolume: volume != nil,
+            // Asked once per open rather than per keystroke: it is a
+            // CoreAudio round trip, and the input device cannot change while
+            // a palette is on screen without something else firing first.
+            hasMicrophone: SystemCommands.hasMutableMicrophone
         )
     }
 }

@@ -11,6 +11,17 @@ enum PaletteCommandID: String, CaseIterable, Sendable {
     case openSettings
     case replayWelcome
     case quit
+    case keepAwake
+    case lockScreen
+    case sleepDisplay
+    case toggleDarkMode
+    case toggleMicrophone
+    case takeScreenshot
+    case copyTrack
+    case searchTrack
+    case openDownloads
+    case timerFive
+    case timerTwentyFive
 }
 
 struct PaletteCommand: Identifiable, Equatable, Sendable {
@@ -29,6 +40,9 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
         case always
         case whilePlaying
         case whileVolumeExists
+        /// Not every input device has a mute — the probe found a Continuity
+        /// iPhone microphone with none at all.
+        case whileMicrophoneExists
     }
 
     let availability: Availability
@@ -89,6 +103,78 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             keywords: ["onboarding", "intro"]
         ),
         PaletteCommand(
+            id: .copyTrack,
+            title: "Copy Track Name",
+            symbol: "doc.on.clipboard",
+            keywords: ["clipboard", "share", "title"],
+            availability: .whilePlaying
+        ),
+        PaletteCommand(
+            id: .searchTrack,
+            title: "Find Track on YouTube",
+            symbol: "magnifyingglass",
+            keywords: ["search", "video", "web"],
+            availability: .whilePlaying
+        ),
+        PaletteCommand(
+            id: .keepAwake,
+            title: "Keep Awake",
+            symbol: "cup.and.saucer.fill",
+            keywords: ["caffeine", "sleep", "insomnia", "stay"]
+        ),
+        PaletteCommand(
+            id: .toggleMicrophone,
+            title: "Mute or Unmute Microphone",
+            symbol: "mic.slash.fill",
+            keywords: ["mic", "silence", "meeting", "call"],
+            availability: .whileMicrophoneExists
+        ),
+        PaletteCommand(
+            id: .lockScreen,
+            title: "Lock Screen",
+            symbol: "lock.fill",
+            keywords: ["away", "secure"]
+        ),
+        PaletteCommand(
+            id: .sleepDisplay,
+            title: "Sleep Display",
+            symbol: "moon.zzz.fill",
+            // Not "dark": that word belongs to Toggle Dark Mode, and the two
+            // tied on score so the list order decided — which is exactly the
+            // kind of coin-toss a palette must not make.
+            keywords: ["screen", "off", "blank"]
+        ),
+        PaletteCommand(
+            id: .toggleDarkMode,
+            title: "Toggle Dark Mode",
+            symbol: "circle.lefthalf.filled",
+            keywords: ["appearance", "light", "theme"]
+        ),
+        PaletteCommand(
+            id: .takeScreenshot,
+            title: "Take Screenshot",
+            symbol: "camera.viewfinder",
+            keywords: ["capture", "grab", "shot"]
+        ),
+        PaletteCommand(
+            id: .timerFive,
+            title: "Start 5-Minute Timer",
+            symbol: "timer",
+            keywords: ["countdown", "break", "tea"]
+        ),
+        PaletteCommand(
+            id: .timerTwentyFive,
+            title: "Start 25-Minute Timer",
+            symbol: "timer",
+            keywords: ["pomodoro", "focus", "countdown", "work"]
+        ),
+        PaletteCommand(
+            id: .openDownloads,
+            title: "Open Downloads",
+            symbol: "folder.fill",
+            keywords: ["finder", "files"]
+        ),
+        PaletteCommand(
             id: .quit,
             title: "Quit Visor",
             symbol: "power",
@@ -100,12 +186,18 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
 extension PaletteCommand {
     /// Only what can actually do something right now. Pure so the gating is
     /// pinned by a test rather than discovered by finding a dead row.
-    static func available(_ commands: [PaletteCommand], hasTrack: Bool, hasVolume: Bool) -> [PaletteCommand] {
+    static func available(
+        _ commands: [PaletteCommand],
+        hasTrack: Bool,
+        hasVolume: Bool,
+        hasMicrophone: Bool
+    ) -> [PaletteCommand] {
         commands.filter { command in
             switch command.availability {
             case .always: true
             case .whilePlaying: hasTrack
             case .whileVolumeExists: hasVolume
+            case .whileMicrophoneExists: hasMicrophone
             }
         }
     }

@@ -55,15 +55,54 @@ struct PaletteTests {
     /// absent one.
     @Test("Commands that cannot act are not offered")
     func availabilityGates() {
-        let quiet = PaletteCommand.available(PaletteCommand.all, hasTrack: false, hasVolume: false)
+        let quiet = PaletteCommand.available(
+            PaletteCommand.all, hasTrack: false, hasVolume: false, hasMicrophone: false
+        )
         #expect(!quiet.contains { $0.id == .playPause })
         #expect(!quiet.contains { $0.id == .nextTrack })
         #expect(!quiet.contains { $0.id == .toggleMute })
+        #expect(!quiet.contains { $0.id == .copyTrack })
+        #expect(!quiet.contains { $0.id == .toggleMicrophone })
+        // The ones that work on a machine playing nothing, with no mutable
+        // input device, still have to be there — that is the common case.
         #expect(quiet.contains { $0.id == .openSettings })
         #expect(quiet.contains { $0.id == .quit })
+        #expect(quiet.contains { $0.id == .keepAwake })
+        #expect(quiet.contains { $0.id == .lockScreen })
+        #expect(quiet.contains { $0.id == .toggleDarkMode })
+        #expect(quiet.contains { $0.id == .timerTwentyFive })
 
-        let playing = PaletteCommand.available(PaletteCommand.all, hasTrack: true, hasVolume: true)
-        #expect(playing.count == PaletteCommand.all.count)
+        let everything = PaletteCommand.available(
+            PaletteCommand.all, hasTrack: true, hasVolume: true, hasMicrophone: true
+        )
+        #expect(everything.count == PaletteCommand.all.count)
+    }
+
+    /// Enough commands that the four-row island has to window the list, which
+    /// is the case `ExpandedPaletteView.windowStart` exists for.
+    @Test("The list outgrows the island's rows")
+    func listOutgrowsTheIsland() {
+        #expect(PaletteCommand.all.count > IslandLayout.maxPaletteRows)
+    }
+
+    @Test("Every command carries a glyph and searchable words")
+    func commandsAreComplete() {
+        for command in PaletteCommand.all {
+            #expect(!command.title.isEmpty)
+            #expect(!command.symbol.isEmpty)
+        }
+    }
+
+    /// Typing the obvious word for each new command has to find it.
+    @Test("The new commands are reachable by their obvious word")
+    func newCommandsAreFindable() {
+        #expect(titles("caffeine").first == "Keep Awake")
+        #expect(titles("pomodoro").first == "Start 25-Minute Timer")
+        #expect(titles("dark").first == "Toggle Dark Mode")
+        #expect(titles("lock").first == "Lock Screen")
+        #expect(titles("mic").first == "Mute or Unmute Microphone")
+        #expect(titles("downloads").first == "Open Downloads")
+        #expect(titles("screenshot").first == "Take Screenshot")
     }
 
     @Test("Every command has a distinct identifier")

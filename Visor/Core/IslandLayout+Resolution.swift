@@ -11,7 +11,11 @@ extension IslandLayout {
     /// underneath. Both axes follow the agenda — an empty one takes the
     /// island down to a pill rather than leaving a screen of black.
     static func idle(_ content: IslandContent) -> IslandLayout {
-        let compactExtra: CGFloat = 160
+        // The wing grows to fit its label. It used to be a flat 160 — 80pt a
+        // side, 64 of it usable — while the greeting it had to carry wanted
+        // 130, so the rest of the sentence was drawn underneath the camera
+        // housing where nothing can be seen. Measured, not guessed.
+        let compactExtra = max(160, 2 * (content.compactLeadingWidth + CompactLabel.margin))
         let rows = min(max(content.agendaRows, 0), maxEventRows)
         let body = max(Block.date, agendaHeight(rows: rows, overflow: content.hasAgendaOverflow))
         let agendaWidth = rows > 0 ? Column.agenda : Column.emptyAgenda
@@ -222,6 +226,10 @@ extension IslandLayout {
     /// Every layout at its largest, which is what the canvas is sized from.
     static let all: [IslandLayout] = [
         idle(IslandContent(agendaRows: maxEventRows, hasAgendaOverflow: true, hasTimerPresets: true)),
+        // The widest the greeting wing can get. Without this the canvas is
+        // sized for a 160pt wing and a long greeting is clipped by the
+        // window rather than drawn.
+        idle(IslandContent(compactLeadingWidth: CompactLabel.maxWidth)),
         nowPlaying(IslandContent()),
         pausedTrack(IslandContent()),
         shelf,

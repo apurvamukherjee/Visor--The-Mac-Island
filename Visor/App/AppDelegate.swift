@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 settingsWindow.show(store: store)
             },
-            GreetingService(store: store, name: "Apurva")
+            GreetingService(store: store)
         ]
         services.forEach { $0.start() }
     }
