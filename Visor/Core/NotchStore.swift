@@ -256,8 +256,21 @@ final class NotchStore {
     var paletteQuery = ""
     var paletteResults: [PaletteCommand] = []
     var paletteSelection = 0
+    /// Today's agent token counts. Written by `AIUsageService`, drawn by the
+    /// badge's own window — it is not an activity and never competes for the
+    /// island.
+    var aiUsage = AIUsageSnapshot.empty
+
+    /// The usage screen: a *mode* like onboarding and the palette, not an
+    /// activity. It is a place the island goes when asked rather than
+    /// something that happened, which is what separates the two — and it is
+    /// why nothing in the priority ladder can push it aside.
+    var isUsagePanelOpen = false
+
     /// Read once when the palette opens rather than per keystroke.
     var paletteShortcuts = PaletteShortcuts.empty
+    /// Same reasoning: user-authored app groups, read once per open.
+    var launchGroups = LaunchGroups.empty
     var paletteCommands: PaletteCommands?
 
     /// The shape the island takes right now. Onboarding is checked first and
@@ -270,6 +283,9 @@ final class NotchStore {
         }
         if isPaletteOpen {
             return IslandLayout.palette(rows: paletteResults.count)
+        }
+        if isUsagePanelOpen {
+            return IslandLayout.usage(rows: usageRows)
         }
         return IslandLayout.resolved(for: expandedKind, content: islandContent)
     }
@@ -289,6 +305,17 @@ final class NotchStore {
             compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0,
             hasLyrics: isLyricsOpen
         )
+    }
+
+    /// How many tool rows the usage screen will really draw.
+    ///
+    /// Codex is left out entirely until it has actually run: its `threads`
+    /// table is empty on a machine that has never used it, and a row reading
+    /// "0" next to a live Claude figure claims the tool is idle when it was
+    /// never installed. The island shrinks to fit rather than holding a slot
+    /// open for it.
+    var usageRows: Int {
+        aiUsage.codexTokens > 0 ? 2 : 1
     }
 
     /// Whether anything should be drawn on the lock screen right now.

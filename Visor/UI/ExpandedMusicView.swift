@@ -118,6 +118,11 @@ struct ExpandedMusicView: View {
                     // `TimelineView(.animation)` every frame on the main
                     // thread to do what these hand to the render server once.
                     PlaybackBars(isPlaying: info.isPlaying, height: 16, tint: tint)
+                        // Tucked back towards the title by 8pt. The row's own
+                        // 14pt spacing left the bars sitting out on their own
+                        // against the card's right side, reading as a third
+                        // element rather than as part of the title block.
+                        .padding(.leading, -8)
                 }
                 Spacer(minLength: 0)
             }

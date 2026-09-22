@@ -200,6 +200,23 @@ extension IslandLayout {
         )
     }
 
+    /// The usage screen, the third mode after onboarding and the palette and
+    /// resolved for the same reason: it is somewhere the island goes, not
+    /// something that happened to the machine, so no activity may outrank it.
+    ///
+    /// Sized from the rows it will really draw, the way the palette is — a
+    /// machine that has never run Codex gets the shorter island rather than
+    /// one holding a slot open for a tool that is not installed.
+    static func usage(rows: Int) -> IslandLayout {
+        let clamped = min(max(rows, 1), maxUsageRows)
+        let list = CGFloat(clamped) * Block.usageRow + CGFloat(clamped - 1) * IslandSpacing.row
+        return IslandLayout(
+            expandedExtraWidth: extraWidth(content: Column.usage),
+            expandedExtraHeight: extraHeight(list),
+            compactExtraWidth: 160
+        )
+    }
+
     /// The single resolution both the panel geometry and the view read, so
     /// the island can never be sized for one feature and filled with
     /// another.
@@ -246,7 +263,8 @@ extension IslandLayout {
         bluetoothAlert,
         screenRecording,
         lock,
-        palette(rows: maxPaletteRows)
+        palette(rows: maxPaletteRows),
+        usage(rows: maxUsageRows)
     ]
 
     static let maxExpandedExtraWidth = all.map(\.expandedExtraWidth).max() ?? 0

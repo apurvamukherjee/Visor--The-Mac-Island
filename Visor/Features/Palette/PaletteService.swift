@@ -171,7 +171,20 @@ final class PaletteService: NotchService {
             .compressShelfFile: { [self] in withShelfFile(system.compress) },
             .expandShelfFile: { [self] in withShelfFile(system.expand) },
             .convertShelfImage: { [self] in withShelfFile(system.convertToJPEG) }
+        ].merging(launchGroupActions()) { _, new in new }
+    }
+
+    /// One entry per slot, built rather than hand-written 10 times, but still
+    /// exhaustive: every `PaletteCommandID.launchGroupN` case is covered, so
+    /// `everyCommandHasAnAction` still catches a slot left off this list.
+    private func launchGroupActions() -> [PaletteCommandID: () -> Void] {
+        let ids: [PaletteCommandID] = [
+            .launchGroup1, .launchGroup2, .launchGroup3, .launchGroup4, .launchGroup5,
+            .launchGroup6, .launchGroup7, .launchGroup8, .launchGroup9, .launchGroup10
         ]
+        return ids.reduce(into: [:]) { result, id in
+            result[id] = { [self] in system.launch(store.launchGroups.group(for: id)) }
+        }
     }
 
     /// The newest thing on the shelf. Every file command works on what the

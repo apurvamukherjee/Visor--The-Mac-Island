@@ -85,12 +85,37 @@ enum NewFeatures {
         isRecommended: false
     )
 
+    /// A new surface again, so it ships off like the rest. Reads only files
+    /// the agents already write on this machine — no network, no permission,
+    /// and nothing at all is opened while the switch is off.
+    static let aiUsageTracker = NewFeature(
+        key: "newFeature.aiUsageTracker",
+        title: "AI usage badge",
+        detail: "Shows today's Claude Code and Codex token use beside the notch. "
+            + "It steps aside while music is playing and comes back when the island opens.",
+        isRecommended: false
+    )
+
+    /// Rebinds a gesture that already does something, so it is off by default
+    /// for the plainest reading of §2.1 there is: with the switch off, a
+    /// swipe down still restores a dismissed activity and nothing new exists.
+    static let usagePanel = NewFeature(
+        key: "newFeature.usagePanel",
+        title: "Swipe down for agent usage",
+        detail: "A two-finger swipe down on the island opens today's Claude Code and Codex "
+            + "figures with the live context window; swipe up to go back. "
+            + "Reads the same files as the badge — no network, no permission.",
+        isRecommended: false
+    )
+
     static let all: [NewFeature] = [
         closeIntentDelay,
         visibleDropZones,
         swipeDownOpens,
         commandPalette,
-        lyrics
+        lyrics,
+        aiUsageTracker,
+        usagePanel
     ]
 
     static var keys: [String] {

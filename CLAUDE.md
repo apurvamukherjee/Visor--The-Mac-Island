@@ -409,6 +409,76 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   Launch it with `open` or the measurement is worthless.
   — Build 0 warnings, 223 tests in 45 suites, swiftformat, swiftlint (6, 0
   serious). ⌃⌥K confirmed firing on hardware; the rest unverified.
+- **Launch Groups (2026-09-23):** user-named sets of apps opened together
+  (e.g. "Office" -> OpenVPN, a Windows-app client, Chrome) — nothing
+  preloaded, entirely user-authored in Settings -> Shortcuts. Ten fixed
+  `PaletteCommandID` slots (`.launchGroup1…10`) rather than an open-ended
+  list: the codebase already rejected fully dynamic palette rows once (see
+  `cycleAudioOutput`'s comment), and a fixed slot stays inside
+  `CaseIterable`, the `everyCommandHasAnAction` exhaustiveness test, and —
+  the actual win — the existing ⌃⌥K single-key-shortcut mechanism with zero
+  new hotkey code. An unconfigured slot never reaches the palette (same rule
+  as `switchAudioOutput` with one output), so no new `NewFeature` toggle was
+  needed — §2.1 already holds structurally. `LaunchGroup`/`LaunchGroups`
+  (`Features/Palette/LaunchGroup.swift`) store bundle identifiers, not
+  paths, so a moved app still resolves; `SystemCommands.launch` opens each
+  via `NSWorkspace.openApplication` (already used by `openScreenshotTool`,
+  no probe needed — it activates rather than relaunches a running app) and
+  skips, rather than aborts on, an app that no longer resolves.
+  `NotchStore.availablePaletteCommands` is the one place a configured slot's
+  placeholder title is swapped for the user's own name and app list.
+  `SystemCommands.swift` crossed 400 lines the moment `launch` was added;
+  its file-commands extension (already commented "split from the class for
+  length") moved to `SystemCommands+Files.swift` rather than let a new
+  violation stand. Build 0 warnings, 228 tests in 48 suites, swiftformat,
+  swiftlint (6, 0 serious — unchanged). Not yet verified on hardware.
+- **AI usage badge (2026-09-23):** today's Claude Code and Codex token use,
+  beside the notch. Off by default (`NewFeatures.aiUsageTracker`).
+  — **Probed before any code was written**, per §7. Claude Code keeps one
+  append-only JSONL per session at `~/.claude/projects/<cwd>/<id>.jsonl`;
+  every `assistant` line carries `message.usage`. The CLI and the VS Code
+  extension are the same engine writing the same files, so the planned
+  "CLI first, else the extension" fallback was **dropped — there is only one
+  source**. Codex is different: `codex-cli 0.154.0` keeps SQLite at
+  `~/.codex/state_5.sqlite` (WAL) with a `threads.tokens_used` column. Read
+  **read-only** through the system SQLite3 C library — no new package. That
+  table was empty on this machine, so the Codex path is schema-verified but
+  **not verified against real rows**; run a Codex session to close that.
+  — **FSEvents, not a `DispatchSource`.** The existing watchers
+  (`DownloadService`, `ScreenshotService`) watch one folder's direct
+  entries, which would have sat silent here: Claude's transcripts are a
+  level deeper, and appending to one does not touch the folder above it. One
+  `FSEventStream` covers both roots; its own 0.5s latency does the
+  coalescing. `ClaudeUsageReader` keeps a byte offset per file and parses
+  only what was appended, so a 2MB transcript is never re-read.
+  — **Cache reads are excluded, and that was measured, not assumed.** A real
+  day's gross total was 98.6M tokens of which **95.2M (96.5%) were
+  `cache_read_input_tokens`** — a function of context length and turn count,
+  not of work done. Counting them made the badge read ~99M by mid-afternoon
+  whatever the day held. The headline is now input + output + cache
+  creation; that day's figure is 3.4M, which moves with the work.
+  — **No real plan-limit percentage exists locally.** `policy-limits.json`
+  is org compliance settings, not quota; both vendors enforce limits
+  server-side and cache nothing. The percentage is therefore progress toward
+  a **daily budget the user sets** (Settings → New Features), and no budget
+  means no percentage rather than a fabricated denominator.
+  — **Its own window, not a slot in the island.** `IslandLayout`'s sizes are
+  tight deltas from the measured cutout — the greeting drew half-behind the
+  camera housing for exactly that reason — so a permanent element in the
+  wings would have moved numbers already tuned. `AIUsageWindowManager` is a
+  separate `NSPanel` pinned at the island's own `.aboveDesktop` level (so it
+  is *not* on the lock screen), positioned clear of the widest compact wing
+  and clamped inside the screen. Nothing in `NotchShape` or `IslandLayout`
+  changed. It hides while music owns the island and returns when the island
+  is expanded.
+  — Marks are the vendors' own, bundled: Claude's 338px app icon and
+  OpenAI's SVG, both in `Assets.xcassets`. There is no SF Symbol for either.
+  — **Verified on hardware:** the badge renders in the menu bar beside the
+  notch showing 3.4M / 68% against a 5M test budget — matching an
+  independent count of the same transcripts exactly. Build 0 warnings, 240
+  tests in 52 suites, swiftformat, swiftlint (6, 0 serious — unchanged).
+  **Not yet seen:** the music hide/return rule, and the Codex figure with
+  real data.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

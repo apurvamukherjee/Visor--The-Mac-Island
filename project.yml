@@ -18,6 +18,9 @@ targets:
     dependencies:
       - package: MediaRemoteAdapter
         embed: true
+      # Codex keeps its usage in SQLite; this is the system library, not a
+      # third-party package.
+      - sdk: libsqlite3.tbd
     sources:
       - path: Visor
     settings:
@@ -25,8 +28,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.visor
         CODE_SIGN_ENTITLEMENTS: Visor.entitlements
         GENERATE_INFOPLIST_FILE: YES
-        MARKETING_VERSION: "2.2.0"
-        CURRENT_PROJECT_VERSION: "21"
+        MARKETING_VERSION: "2.3.0"
+        CURRENT_PROJECT_VERSION: "22"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # Ad-hoc signing gives the app a new identity on every build, so TCC
         # re-asks for calendar access each time. A stable identity fixes it.

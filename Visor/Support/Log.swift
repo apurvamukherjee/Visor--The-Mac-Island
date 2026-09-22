@@ -18,4 +18,5 @@ enum Log {
     static let bluetooth = Logger(subsystem: subsystem, category: "bluetooth")
     static let focus = Logger(subsystem: subsystem, category: "focus")
     static let screenRecording = Logger(subsystem: subsystem, category: "screenRecording")
+    static let aiUsage = Logger(subsystem: subsystem, category: "aiUsage")
 }

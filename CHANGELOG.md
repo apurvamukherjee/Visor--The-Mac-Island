@@ -18,6 +18,66 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.3.0] — 2026-09-23 (build 22)
+
+### Added
+
+- **AI usage tracker.** Today's token count for Claude Code and Codex CLI,
+  in a badge beside the notch. Opt-in: *New Features → AI usage tracker*.
+
+  Claude Code is read from its own session transcripts —
+  `~/.claude/projects/<escaped-cwd>/<session>.jsonl`, one append-only file
+  per session — summing `message.usage` on every `assistant` line. The CLI
+  and the VS Code extension are the same engine writing the same files, so
+  one tree covers both and there is no extension fallback path. Append-only
+  is what makes it cheap: each file's parsed byte offset is remembered, so a
+  folder event re-reads only what was appended rather than re-parsing a 2MB
+  session. Verified against a real 2,660-line transcript.
+
+  Codex keeps no transcripts — it keeps SQLite at `~/.codex/state_5.sqlite`
+  in WAL mode, with `tokens_used` on a `threads` table. Schema read off the
+  real file (`codex-cli 0.154.0`), opened **read-only** and never written to.
+  One honest imprecision is recorded in the source: `tokens_used` is a
+  running per-thread total.
+
+  **It gets its own window, not a slot in the island.** `IslandLayout`'s
+  sizes are tight deltas from the measured cutout, so a permanent extra
+  element in the wings would mean moving numbers that are already tuned.
+  Nothing in it touches `NotchShape`, `IslandLayout` or the island's panel.
+  Pinned at the island's own SkyLight level (100) — above ordinary windows,
+  below the lock shield, so a token count never sits on a locked screen.
+  With nothing playing the badge is up; while music owns the island it
+  hides, and returns when the island is expanded, where there is room for
+  both.
+
+- **Global hotkeys that fire a command directly**, without opening the
+  palette first. Bound in *Settings → Shortcuts*, alongside the single-key
+  shortcuts 2.2.0 added.
+
+- **Launch groups.** A user-named set of apps opened together from one
+  palette command. Bundle identifiers are stored and resolved at launch
+  time, so an app moving inside `/Applications` does not break the group;
+  the display name is cached only so the Shortcuts tab can list a group
+  without resolving anything. Entirely user-authored — no preloaded presets.
+  A named group with no apps, or apps with no name, is not offered
+  (`whileGroupConfigured`).
+
+- **File commands on the shelf**: compress, expand, and convert an image to
+  JPEG, acting on whatever the island is already holding.
+
+### Changed
+
+- `SystemCommands` split, with the file operations moving to
+  `SystemCommands+Files.swift`.
+
+### Not verified on hardware
+
+Unexercised on a real notch, as with 2.1.0 and 2.2.0. The probes behind
+these mechanisms are in `docs/RESEARCH.md` §6.4 — including the one that
+matters most: a probe launched from a shell inherits the terminal's TCC
+grant and will falsely report `AXIsProcessTrusted == true`. Launch it with
+`open`.
+
 ## [2.2.0] — 2026-09-23 (build 21)
 
 Closes the rest of Phase 6: the commands the palette was built to run, the
