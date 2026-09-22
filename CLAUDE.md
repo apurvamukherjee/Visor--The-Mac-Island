@@ -385,6 +385,12 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   `NotchContentView.keyDown` into the store — no `TextField`, so there is no
   SwiftUI focus to win inside a non-activating panel. 24 commands, each
   gated on a `PaletteContext` so none is offered when it cannot act.
+  — **Palette shortcuts:** ⌃⌥K then one key. Rows 1-4 are always numbered;
+  letters are bound per command in a Shortcuts settings tab. The rule that
+  makes a single key and a search box share one field: **keys fire only
+  while the query is empty**. `PaletteShortcutResolutionTests` pins it, and
+  the row badges read the same flag so the island cannot advertise a key
+  that would not work.
   — **Bugs found by their own compiler warnings:** `VolumeService` retained
   itself (both CoreAudio listener blocks put `[weak self]` on the inner
   `Task`, not on the block CoreAudio holds); its generic read handed a raw
@@ -401,8 +407,8 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   §6.4. The one worth repeating: a probe run from a shell inherits the
   terminal's TCC grant and will tell you `AXIsProcessTrusted == true`.
   Launch it with `open` or the measurement is worthless.
-  — Build 0 warnings, 212 tests in 42 suites, swiftformat, swiftlint (5, 0
-  serious). **None of it verified on hardware.**
+  — Build 0 warnings, 223 tests in 45 suites, swiftformat, swiftlint (6, 0
+  serious). ⌃⌥K confirmed firing on hardware; the rest unverified.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

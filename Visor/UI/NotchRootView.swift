@@ -182,7 +182,10 @@ struct NotchRootView: View {
             ExpandedPaletteView(
                 query: store.paletteQuery,
                 results: store.paletteResults,
-                selection: store.paletteSelection
+                selection: store.paletteSelection,
+                windowStart: store.paletteWindowStart,
+                shortcuts: store.paletteShortcuts,
+                showsShortcuts: store.isPaletteShortcutModeActive
             )
         } else {
             expandedActivityContent

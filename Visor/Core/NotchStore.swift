@@ -256,6 +256,8 @@ final class NotchStore {
     var paletteQuery = ""
     var paletteResults: [PaletteCommand] = []
     var paletteSelection = 0
+    /// Read once when the palette opens rather than per keystroke.
+    var paletteShortcuts = PaletteShortcuts.empty
     var paletteCommands: PaletteCommands?
 
     /// The shape the island takes right now. Onboarding is checked first and

@@ -58,6 +58,9 @@ struct SettingsView: View {
 
             NewFeaturesView()
                 .tabItem { Label("New Features", systemImage: "sparkles") }
+
+            ShortcutsView()
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
         .frame(width: 340, height: 560)
     }

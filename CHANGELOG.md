@@ -38,6 +38,16 @@ the documentation the phase owed.
   Hide or Show the Island. The file commands act on whatever the island is
   already holding, which is what makes them mean anything from a palette
   with no file picker.
+- **Single-key shortcuts in the palette, and a Shortcuts tab to set them.**
+  ⌃⌥K, then one key. Rows 1–4 are always numbered and need no setting up;
+  *Settings → Shortcuts* binds a letter to any of the 24 commands.
+  **Keys fire only while the query is empty** — after the first letter every
+  key types, which is what lets `d` run Dark Mode without costing you the
+  ability to search for "downloads". The row badges are drawn from the same
+  flag the key handler reads, so the island can never show a key that would
+  not work. Assigning a taken letter steals it, a key bound to a command the
+  palette has decided cannot act is unreachable, and junk in the stored
+  dictionary is dropped rather than fatal.
 - **Your name is a setting.** *Settings → General → Your name*. The daily
   greeting was hardcoded to one person; it now defaults to the first word of
   the account's full name and can be anything.

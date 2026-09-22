@@ -12,6 +12,7 @@ extension NotchStore {
         paletteQuery = ""
         paletteResults = availablePaletteCommands
         paletteSelection = 0
+        paletteShortcuts = PaletteShortcuts.load()
         isPaletteOpen = true
     }
 
@@ -21,6 +22,45 @@ extension NotchStore {
         paletteQuery = ""
         paletteResults = []
         paletteSelection = 0
+    }
+
+    /// Which slice of the results the island is showing. Owned here rather
+    /// than by the view because the key handler needs the same answer: "run
+    /// row 2" has to mean the second row the user can *see*.
+    var paletteWindowStart: Int {
+        guard paletteResults.count > IslandLayout.maxPaletteRows else { return 0 }
+        let last = IslandLayout.maxPaletteRows - 1
+        return min(max(paletteSelection - last, 0), paletteResults.count - IslandLayout.maxPaletteRows)
+    }
+
+    var visiblePaletteResults: [PaletteCommand] {
+        Array(paletteResults.dropFirst(paletteWindowStart).prefix(IslandLayout.maxPaletteRows))
+    }
+
+    /// True exactly when the single-key shortcuts are live. The row badges
+    /// follow this, so what the keys do is always what the island shows.
+    var isPaletteShortcutModeActive: Bool {
+        paletteQuery.isEmpty
+    }
+
+    /// A digit runs the nth visible row; a bound letter runs its command.
+    /// Nil means "this keystroke is not a shortcut", and the caller types it.
+    func paletteCommand(forShortcut character: Character) -> PaletteCommandID? {
+        guard isPaletteShortcutModeActive else { return nil }
+        if let digit = character.wholeNumberValue, digit >= 1, digit <= IslandLayout.maxPaletteRows {
+            let visible = visiblePaletteResults
+            guard digit <= visible.count else { return nil }
+            return visible[digit - 1].id
+        }
+        guard let id = paletteShortcuts.command(for: character) else { return nil }
+        // Bound, but not offered right now — a shortcut must not reach a
+        // command the palette has decided cannot act.
+        return paletteResults.contains { $0.id == id } ? id : nil
+    }
+
+    func runPaletteCommand(_ id: PaletteCommandID) {
+        closePalette()
+        paletteCommands?.run(id)
     }
 
     func updatePaletteQuery(_ query: String) {
