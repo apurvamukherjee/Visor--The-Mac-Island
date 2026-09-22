@@ -18,6 +18,35 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [Unreleased]
+
+### Fixed
+- **The volume island never appeared on anything but the built-in speakers.**
+  `VolumeService` read `kAudioDevicePropertyVolumeScalar` on the device's
+  *main element*, which only exists where the hardware has a master volume
+  control. A Bluetooth soundbar, most USB DACs and HDMI have none, so the
+  read returned nil, `store.volume` went nil and the feature deactivated
+  itself — silently, because that path was written for devices with genuinely
+  no volume. It now reads, writes and observes
+  `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` (`'vmvc'`), the
+  volume macOS itself moves.
+
+  Measured on a JBL CINEMA SB510 before any app code changed, with four
+  throwaway CoreAudio probes: main-element scalar **absent**; per-channel
+  scalar present but unbalanced (0.38 / 0.37, so averaging the two channels
+  would have drifted); `'vmvc'` present, settable, and firing on every system
+  volume change including mute. On the built-in speakers `'vmvc'` returns
+  exactly what the master scalar returned (0.70 both), so this is a
+  replacement rather than a fallback — no branch, no device sniffing.
+
+  Two things the probes corrected along the way: `SystemMute` was **not**
+  affected (mute lives on the main element of both devices and always
+  worked), and the documented "CoreAudio fires twice per change" is
+  device-specific — the soundbar re-notifies per channel and fires 8–16
+  times. The existing dedupe in `refresh()` already absorbed it.
+
+  No UI, layout, motion or geometry changed.
+
 ## [2.0.1] — 2026-09-20 (build 19)
 
 ### Fixed
