@@ -470,7 +470,7 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 
 | Feature | API | Permission |
 |---|---|---|
-| Volume changes | CoreAudio property listeners | none |
+| Volume changes | CoreAudio property listeners on `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` (`'vmvc'`), **not** `kAudioDevicePropertyVolumeScalar` — the main-element scalar exists only where the hardware owns a master control, so reading it disabled the feature outright on Bluetooth, most USB DACs and HDMI. `'vmvc'` is the volume macOS moves and is present on every output measured; on the built-in speakers it returns the identical value the scalar did. Mute stays on `kAudioDevicePropertyMute`, which is on the main element everywhere | none |
 | Brightness changes | DisplayServices (private) / observed key events | varies |
 | Replace system HUD | `CGEventTap` for media keys | Accessibility |
 | File shelf | SwiftUI `.onDrop` / `.draggable` | none |

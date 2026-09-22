@@ -346,6 +346,21 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   that Finder drops a bundle-internal assignment. That note was really an
   AppleScript bug: `folder "Visor.app" of vol` fails -1728 on an application
   bundle, while a POSIX path is accepted. Verified end to end on build16.
+- **Volume on external outputs (2026-09-22):** the volume island only ever
+  appeared on the built-in speakers. `VolumeService` read
+  `kAudioDevicePropertyVolumeScalar` on the **main element**, which exists
+  only where the hardware owns a master control — absent on Bluetooth, most
+  USB DACs and HDMI, so `read()` returned nil and the feature deactivated
+  itself. Now reads/writes/observes
+  `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` (`'vmvc'`), which
+  every measured output has and which returns the identical value on the
+  built-in. Four throwaway CoreAudio probes measured it before any app code
+  changed (the same probe-first approach the original Volume HUD used):
+  per-channel scalar is present but **unbalanced** (0.38/0.37), so averaging
+  channels would have drifted. Two corrections fell out: `SystemMute` was
+  never broken (mute is main-element everywhere), and "fires twice" is
+  device-specific — the soundbar fires 8-16 times, already deduped.
+  **Confirmed working on hardware.** No UI change.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
