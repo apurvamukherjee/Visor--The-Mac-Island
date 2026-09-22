@@ -10,6 +10,11 @@ struct ExpandedPaletteView: View {
     let query: String
     let results: [PaletteCommand]
     let selection: Int
+    let windowStart: Int
+    let shortcuts: PaletteShortcuts
+    /// Whether a bare keypress runs a row right now. The badges are drawn
+    /// exactly when this is true, so what the keys do is never a guess.
+    let showsShortcuts: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandSpacing.block) {
@@ -22,7 +27,7 @@ struct ExpandedPaletteView: View {
             } else {
                 VStack(spacing: IslandSpacing.row) {
                     ForEach(Array(visibleResults.enumerated()), id: \.element.id) { index, command in
-                        row(command, isSelected: index + windowStart == selection)
+                        row(command, isSelected: index + windowStart == selection, row: index + 1)
                     }
                 }
             }
@@ -30,17 +35,16 @@ struct ExpandedPaletteView: View {
         }
     }
 
-    /// The list is capped at the island's four rows, so the window slides to
-    /// keep the selection on screen rather than letting it scroll off the
-    /// bottom into a shape that cannot grow.
-    private var windowStart: Int {
-        guard results.count > IslandLayout.maxPaletteRows else { return 0 }
-        let last = IslandLayout.maxPaletteRows - 1
-        return min(max(selection - last, 0), results.count - IslandLayout.maxPaletteRows)
-    }
-
     private var visibleResults: [PaletteCommand] {
         Array(results.dropFirst(windowStart).prefix(IslandLayout.maxPaletteRows))
+    }
+
+    private func keyBadge(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.75))
+            .frame(minWidth: 16, minHeight: 15)
+            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 4))
     }
 
     private var queryLine: some View {
@@ -57,7 +61,7 @@ struct ExpandedPaletteView: View {
         .frame(height: IslandLayout.Block.paletteQuery)
     }
 
-    private func row(_ command: PaletteCommand, isSelected: Bool) -> some View {
+    private func row(_ command: PaletteCommand, isSelected: Bool, row: Int) -> some View {
         HStack(spacing: 8) {
             Image(systemName: command.symbol)
                 .font(.system(size: 11))
@@ -66,6 +70,11 @@ struct ExpandedPaletteView: View {
                 .font(.system(size: 12, design: .rounded))
                 .lineLimit(1)
             Spacer(minLength: 0)
+            if showsShortcuts {
+                // The command's own letter if it has one, else the row
+                // number, which always works and needs no setting up.
+                keyBadge(shortcuts.key(for: command.id).map(String.init) ?? "\(row)")
+            }
         }
         .foregroundStyle(.white.opacity(isSelected ? 1 : 0.6))
         .padding(.horizontal, 8)

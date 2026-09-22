@@ -282,6 +282,16 @@ final class NotchContentView: NSView {
             else {
                 return
             }
+            // A single key runs its command, but only while the query is
+            // empty — after the first letter every key types, which is what
+            // lets `d` mean Dark Mode and still let you search "downloads".
+            let shortcut = typed.count == 1
+                ? typed.first.flatMap(store.paletteCommand(forShortcut:))
+                : nil
+            if let shortcut {
+                store.runPaletteCommand(shortcut)
+                return
+            }
             store.updatePaletteQuery(store.paletteQuery + typed)
         }
     }

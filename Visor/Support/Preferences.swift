@@ -66,6 +66,9 @@ enum Preferences {
     /// so unlike the switches in `NewFeatures`, this one has a value rather
     /// than an off position, and cannot ride `bool(forKey:)`'s false.
     static let hoverIntentDelayKey = "hoverIntentDelayMilliseconds"
+    /// `PaletteCommandID.rawValue` -> a one-letter key, pressed on its own
+    /// inside the palette while the query is still empty.
+    static let paletteShortcutsKey = "paletteShortcuts"
     static let hoverIntentDelayDefault = 120.0
     /// 0 is a real choice — open the instant the pointer lands — not a
     /// missing value, which is why the read below distinguishes the two.
@@ -121,6 +124,7 @@ enum Preferences {
         equalizerKey,
         hoverIntentDelayKey,
         userNameKey,
+        paletteShortcutsKey,
         LockScreenSettings.liveActivityKey,
         LockScreenSettings.styleKey
     ]
