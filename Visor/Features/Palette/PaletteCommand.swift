@@ -1,3 +1,5 @@
+import Foundation
+
 /// What the palette can run.
 ///
 /// The identifier is an enum rather than a closure on the struct, so the
@@ -28,6 +30,22 @@ enum PaletteCommandID: String, CaseIterable, Sendable {
     case compressShelfFile
     case expandShelfFile
     case convertShelfImage
+    /// Ten fixed slots rather than an open-ended list: each is a user-named,
+    /// user-populated set of apps (`LaunchGroup`), but the *slot* is a plain
+    /// `PaletteCommandID` case like every other command, so it needs no new
+    /// dispatch mechanism, no new shortcut-binding code, and stays covered
+    /// by `PaletteDispatchTests.everyCommandHasAnAction`. An empty slot is
+    /// simply not offered — see `Availability.whileGroupConfigured`.
+    case launchGroup1
+    case launchGroup2
+    case launchGroup3
+    case launchGroup4
+    case launchGroup5
+    case launchGroup6
+    case launchGroup7
+    case launchGroup8
+    case launchGroup9
+    case launchGroup10
 }
 
 /// What the machine can do right now. Gathered once when the palette opens,
@@ -42,6 +60,9 @@ struct PaletteContext: Equatable, Sendable {
     var hasShelfFile = false
     var hasShelfArchive = false
     var hasShelfImage = false
+    /// Which launch-group slots have a name and at least one app. A slot
+    /// with neither is not "empty content", it is an absent command.
+    var configuredLaunchGroups: Set<PaletteCommandID> = []
 }
 
 struct PaletteCommand: Identifiable, Equatable, Sendable {
@@ -56,7 +77,7 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
     /// "Next track" with nothing playing is offering a button that does
     /// nothing, which this codebase already decided is worse than an absent
     /// one (see `MusicSeekRow`).
-    enum Availability: Sendable {
+    enum Availability: Sendable, Equatable {
         case always
         case whilePlaying
         case whileVolumeExists
@@ -67,6 +88,9 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
         case whileShelfHasFile
         case whileShelfHasArchive
         case whileShelfHasImage
+        /// The associated id is the slot's own — each launch-group command
+        /// checks only its own membership in `configuredLaunchGroups`.
+        case whileGroupConfigured(PaletteCommandID)
 
         func isSatisfied(by context: PaletteContext) -> Bool {
             switch self {
@@ -78,6 +102,7 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             case .whileShelfHasFile: context.hasShelfFile
             case .whileShelfHasArchive: context.hasShelfArchive
             case .whileShelfHasImage: context.hasShelfImage
+            case let .whileGroupConfigured(id): context.configuredLaunchGroups.contains(id)
             }
         }
     }
@@ -257,7 +282,32 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             symbol: "power",
             keywords: ["exit", "close"]
         )
-    ]
+    ] + launchGroupSlots
+
+    /// Placeholder title and no keywords: an unconfigured slot never reaches
+    /// the palette (see `Availability.whileGroupConfigured`), and a
+    /// configured one is retitled with the user's own name and app list by
+    /// `NotchStore.availablePaletteCommands` before it is ever shown.
+    private static let launchGroupSlots: [PaletteCommand] = [
+        PaletteCommandID.launchGroup1, .launchGroup2, .launchGroup3, .launchGroup4, .launchGroup5,
+        .launchGroup6, .launchGroup7, .launchGroup8, .launchGroup9, .launchGroup10
+    ].enumerated().map { index, id in
+        PaletteCommand(
+            id: id,
+            title: "Launch Group \(index + 1)",
+            symbol: "bolt.fill",
+            availability: .whileGroupConfigured(id)
+        )
+    }
+}
+
+extension PaletteCommand {
+    /// A copy with the display swapped for a launch group's own name and
+    /// apps. The identifier and availability stay put — only what the row
+    /// says about itself changes.
+    func retitled(_ title: String, keywords: [String]) -> PaletteCommand {
+        PaletteCommand(id: id, title: title, symbol: symbol, keywords: keywords, availability: availability)
+    }
 }
 
 extension PaletteCommand {

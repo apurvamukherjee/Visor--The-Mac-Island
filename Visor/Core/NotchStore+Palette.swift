@@ -13,6 +13,7 @@ extension NotchStore {
         paletteResults = availablePaletteCommands
         paletteSelection = 0
         paletteShortcuts = PaletteShortcuts.load()
+        launchGroups = LaunchGroups.load()
         isPaletteOpen = true
     }
 
@@ -98,8 +99,16 @@ extension NotchStore {
             hasMultipleOutputs: SystemCommands.hasMultipleOutputs,
             hasShelfFile: shelfFile != nil,
             hasShelfArchive: shelfFile.map(SystemCommands.isArchive) ?? false,
-            hasShelfImage: shelfFile.map(SystemCommands.isImage) ?? false
+            hasShelfImage: shelfFile.map(SystemCommands.isImage) ?? false,
+            configuredLaunchGroups: launchGroups.configuredIDs
         )
-        return PaletteCommand.available(PaletteCommand.all, in: context)
+        // A configured slot is retitled with the user's own name and apps
+        // here, and only here: `PaletteCommand.all` carries nothing but a
+        // placeholder, so nobody's group name lives in a static list.
+        return PaletteCommand.available(PaletteCommand.all, in: context).map { command in
+            let group = launchGroups.group(for: command.id)
+            guard group.isConfigured else { return command }
+            return command.retitled(group.name, keywords: group.apps.map(\.displayName))
+        }
     }
 }

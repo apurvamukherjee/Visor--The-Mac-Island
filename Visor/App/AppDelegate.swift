@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = NotchStore()
     private var windowController: NotchWindowController?
     private var lockNotchController: LockScreenNotchWindowManager?
+    private var usageBadgeController: AIUsageWindowManager?
     private let settingsWindow = SettingsWindowController()
     private var services: [any NotchService] = []
 
@@ -33,6 +34,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lockNotchController = lockNotch
         lockNotch.start()
 
+        // Its own window too, for the opposite reason to the padlock's: not
+        // to clear the shield, but to stay out of `IslandLayout`'s tightly
+        // budgeted wings entirely.
+        let usageBadge = AIUsageWindowManager(store: store)
+        usageBadgeController = usageBadge
+        usageBadge.start()
+
         services = [
             OnboardingService(store: store),
             BatteryService(store: store),
@@ -50,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FocusService(store: store),
             LockScreenService(store: store),
             LyricsService(store: store),
+            AIUsageService(store: store),
             PaletteService(store: store) { [weak self] in
                 guard let self else { return }
                 settingsWindow.show(store: store)
@@ -62,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_: Notification) {
         windowController?.stop()
         lockNotchController?.stop()
+        usageBadgeController?.stop()
         services.forEach { $0.stop() }
     }
 }

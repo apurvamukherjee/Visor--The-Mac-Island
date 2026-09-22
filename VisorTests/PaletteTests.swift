@@ -83,10 +83,15 @@ struct PaletteTests {
                 hasMultipleOutputs: true,
                 hasShelfFile: true,
                 hasShelfArchive: true,
-                hasShelfImage: true
+                hasShelfImage: true,
+                configuredLaunchGroups: Set(PaletteCommandID.allCases)
             )
         )
         #expect(everything.count == PaletteCommand.all.count)
+
+        // An unconfigured launch-group slot is not "empty content", it is an
+        // absent command — the same rule as every other dead control.
+        #expect(!quiet.contains { $0.id == .launchGroup1 })
     }
 
     /// A plain file can be compressed but not expanded or converted; only a

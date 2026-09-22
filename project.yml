@@ -18,6 +18,9 @@ targets:
     dependencies:
       - package: MediaRemoteAdapter
         embed: true
+      # Codex keeps its usage in SQLite; this is the system library, not a
+      # third-party package.
+      - sdk: libsqlite3.tbd
     sources:
       - path: Visor
     settings:

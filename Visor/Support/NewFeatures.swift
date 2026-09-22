@@ -85,12 +85,24 @@ enum NewFeatures {
         isRecommended: false
     )
 
+    /// A new surface again, so it ships off like the rest. Reads only files
+    /// the agents already write on this machine — no network, no permission,
+    /// and nothing at all is opened while the switch is off.
+    static let aiUsageTracker = NewFeature(
+        key: "newFeature.aiUsageTracker",
+        title: "AI usage badge",
+        detail: "Shows today's Claude Code and Codex token use beside the notch. "
+            + "It steps aside while music is playing and comes back when the island opens.",
+        isRecommended: false
+    )
+
     static let all: [NewFeature] = [
         closeIntentDelay,
         visibleDropZones,
         swipeDownOpens,
         commandPalette,
-        lyrics
+        lyrics,
+        aiUsageTracker
     ]
 
     static var keys: [String] {

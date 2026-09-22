@@ -1,6 +1,8 @@
+import AppKit
 import SwiftUI
 
-/// The third settings tab: one key per palette command.
+/// The third settings tab: one key per palette command, plus the ten launch
+/// groups' own name and app list.
 ///
 /// Nothing is bound out of the box, and it does not need to be — the rows
 /// are numbered 1-4 in the palette whether or not anything is configured
@@ -8,7 +10,17 @@ import SwiftUI
 /// enough to want a letter.
 struct ShortcutsView: View {
     @State private var shortcuts = PaletteShortcuts.load()
+    @State private var launchGroups = LaunchGroups.load()
     @AppStorage(NewFeatures.commandPalette.key) private var paletteEnabled = false
+
+    private static let ordinaryCommands = PaletteCommand.all.filter {
+        !Self.launchGroupIDs.contains($0.id)
+    }
+
+    private static let launchGroupIDs: [PaletteCommandID] = [
+        .launchGroup1, .launchGroup2, .launchGroup3, .launchGroup4, .launchGroup5,
+        .launchGroup6, .launchGroup7, .launchGroup8, .launchGroup9, .launchGroup10
+    ]
 
     var body: some View {
         ScrollView {
@@ -34,11 +46,30 @@ struct ShortcutsView: View {
 
                 Divider()
 
-                ForEach(PaletteCommand.all) { command in
+                ForEach(Self.ordinaryCommands) { command in
                     ShortcutRow(
                         command: command,
                         key: shortcuts.key(for: command.id),
                         onChange: { assign($0, to: command.id) }
+                    )
+                }
+
+                Divider()
+
+                Text("Launch Groups")
+                    .font(.headline)
+                Text("Name a group and add the apps it should open together — nothing is "
+                    + "preloaded. An empty group never appears in the palette.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(Self.launchGroupIDs, id: \.self) { id in
+                    LaunchGroupRow(
+                        group: launchGroups.group(for: id),
+                        key: shortcuts.key(for: id),
+                        onGroupChange: { updateGroup($0, for: id) },
+                        onKeyChange: { assign($0, to: id) }
                     )
                 }
 
@@ -60,6 +91,11 @@ struct ShortcutsView: View {
     private func assign(_ raw: String, to id: PaletteCommandID) {
         shortcuts = shortcuts.assigning(PaletteShortcuts.normalise(raw), to: id)
         shortcuts.save()
+    }
+
+    private func updateGroup(_ group: LaunchGroup, for id: PaletteCommandID) {
+        launchGroups = launchGroups.updating(group, for: id)
+        launchGroups.save()
     }
 }
 
@@ -102,5 +138,116 @@ private struct ShortcutRow: View {
                 text = resolved
             }
         }
+    }
+}
+
+/// One launch-group slot: a disclosure so ten mostly-empty groups do not
+/// turn the tab into a wall of controls before anyone has named one.
+private struct LaunchGroupRow: View {
+    let group: LaunchGroup
+    let key: Character?
+    let onGroupChange: (LaunchGroup) -> Void
+    let onKeyChange: (String) -> Void
+
+    @State private var isExpanded = false
+    @State private var name: String = ""
+    @State private var keyText: String = ""
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("Name, e.g. Office", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: name) { _, new in
+                        var updated = group
+                        updated.name = new
+                        onGroupChange(updated)
+                    }
+
+                ForEach(group.apps, id: \.bundleIdentifier) { app in
+                    HStack(spacing: 8) {
+                        Text(app.displayName)
+                            .font(.callout)
+                        Spacer()
+                        Button {
+                            removeApp(app)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                HStack {
+                    Button("Add App…", action: addApp)
+                    Spacer()
+                    Text("Key")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    TextField("", text: $keyText)
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 44)
+                        .onChange(of: keyText) { _, new in
+                            let trimmed = new.isEmpty ? "" : String(new.suffix(1))
+                            if trimmed != new {
+                                keyText = trimmed
+                            }
+                            onKeyChange(trimmed)
+                        }
+                }
+            }
+            .padding(.top, 6)
+            .padding(.leading, 26)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16)
+                Text(group.name.isEmpty ? "Unconfigured" : group.name)
+                    .font(.callout)
+                    .lineLimit(1)
+            }
+        }
+        .onAppear {
+            name = group.name
+            keyText = key.map(String.init) ?? ""
+        }
+        .onChange(of: key) { _, new in
+            let resolved = new.map(String.init) ?? ""
+            if resolved != keyText {
+                keyText = resolved
+            }
+        }
+    }
+
+    private func removeApp(_ app: LaunchGroupApp) {
+        var updated = group
+        updated.apps.removeAll { $0.bundleIdentifier == app.bundleIdentifier }
+        onGroupChange(updated)
+    }
+
+    /// Bundle identifier, not path: an app that moves inside `/Applications`
+    /// still resolves at launch time. `displayName` is cached here so the
+    /// list above never has to re-resolve anything just to draw itself.
+    private func addApp() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK else { return }
+
+        var updated = group
+        for url in panel.urls {
+            guard let identifier = Bundle(url: url)?.bundleIdentifier else { continue }
+            guard !updated.apps.contains(where: { $0.bundleIdentifier == identifier }) else { continue }
+            let displayName = FileManager.default.displayName(atPath: url.path)
+                .replacingOccurrences(of: ".app", with: "")
+            updated.apps.append(LaunchGroupApp(bundleIdentifier: identifier, displayName: displayName))
+        }
+        onGroupChange(updated)
     }
 }
