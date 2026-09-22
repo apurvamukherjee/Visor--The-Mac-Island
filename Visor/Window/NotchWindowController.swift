@@ -118,27 +118,47 @@ final class NotchWindowController {
         panel.orderOut(nil)
     }
 
-    /// Swipe up on the island: put the current activity away and collapse
-    /// out of whatever it was showing, so the gesture reads as pushing the
-    /// island back into the notch rather than merely changing its contents.
+    /// Swipe up: step back out of whatever the swipe down opened, or put the
+    /// current activity away.
+    ///
+    /// It deliberately does **not** close the island. It used to, and that
+    /// made the vertical axis mean two things at once — one swipe both
+    /// changed what was on screen and shut the screen it was on, so paging
+    /// between states was impossible and every gesture ended in the notch.
+    /// The pointer leaving is what closes the island, as it always was; this
+    /// only ever changes what is being shown.
     private func handleSwipeDismiss() {
-        store.dismissCurrentActivity()
         Haptics.shapeChange()
-        if store.state == .expanded {
-            isHovering = false
-            collapseFromExpanded()
+        guard !store.isUsagePanelOpen else {
+            store.isUsagePanelOpen = false
+            return
         }
+        store.dismissCurrentActivity()
     }
 
-    /// Swipe down: bring back whatever was swiped away, and — once asked
-    /// for — open the island with it. Without the opt-in this does nothing
-    /// on an island with nothing dismissed, which is most of them. It
-    /// matters after a swipe-up in particular: that collapses the island
-    /// while the pointer is still on it, so no `mouseEntered` follows and
-    /// hovering cannot reopen it.
+    /// Swipe down: open the usage screen once it is asked for, otherwise
+    /// bring back whatever was swiped away.
+    ///
+    /// The usage screen takes the gesture outright rather than sharing it,
+    /// because a binding that depends on whether something happens to be
+    /// dismissed is a binding nobody can predict. With the switch off this is
+    /// exactly what it was.
     private func handleSwipeRestore() {
+        if NewFeatures.usagePanel.isEnabled() {
+            Haptics.shapeChange()
+            store.isUsagePanelOpen = true
+            openIslandForSwipe()
+            return
+        }
         store.restoreDismissedActivity()
-        guard NewFeatures.swipeDownOpens.isEnabled(), store.state != .expanded else { return }
+        guard NewFeatures.swipeDownOpens.isEnabled() else { return }
+        openIslandForSwipe()
+    }
+
+    /// A swipe that lands on a closed island opens it; one that lands on an
+    /// open island leaves it alone rather than restarting the spring.
+    private func openIslandForSwipe() {
+        guard store.state != .expanded else { return }
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         expand()
@@ -502,6 +522,12 @@ extension NotchWindowController {
         // holds it open for the same reason: it was opened by a keystroke,
         // so the pointer's whereabouts are not what should close it.
         guard !store.isOnboardingActive, !store.isPaletteOpen else { return }
+        // The usage screen does *not* hold the island open the way those two
+        // do: it was opened by a swipe, so the pointer's whereabouts are
+        // exactly what should close it. Cleared here rather than left set, or
+        // the next hover would reopen onto it instead of the island's own
+        // contents.
+        store.isUsagePanelOpen = false
         generation += 1
         let gen = generation
         let target: NotchState = store.currentActivity != nil ? .compact : .closed

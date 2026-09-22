@@ -25,12 +25,43 @@ enum AIUsageTool: String, CaseIterable, Sendable {
     }
 }
 
+/// How full the newest session's context window is, and which model is in it.
+///
+/// Claude only, and deliberately so: Codex's `threads` table carries a
+/// cumulative `tokens_used` per thread and no context figure anywhere, so
+/// there is nothing to read. A Codex context bar would be the same fabricated
+/// denominator `AIUsageFormat.percentage` already refuses for plan limits.
+struct AIUsageContext: Equatable, Sendable {
+    /// Everything the model saw on its last turn: fresh input, cache writes
+    /// and cache reads together. Cache reads are *included* here and excluded
+    /// from the daily total, and both are right — the window holds them,
+    /// which is the question this figure answers, while the day's work is
+    /// what the other one asks.
+    var tokens: Int
+    var model: String
+
+    /// The window `model` actually has. Nil for anything unrecognised, which
+    /// draws no bar rather than a bar against a guess.
+    var window: Int? {
+        guard model.hasPrefix("claude") else { return nil }
+        return model.contains("[1m]") ? 1_000_000 : 200_000
+    }
+
+    var percentage: Int? {
+        guard let window else { return nil }
+        return AIUsageFormat.percentage(tokens: tokens, budget: window)
+    }
+}
+
 /// Tokens used today, per tool. Whole-day totals in the local calendar, not a
 /// rolling window: "today" is the only boundary anyone reasons about, and a
 /// rolling 24h figure that silently drops this morning's work reads as a bug.
 struct AIUsageSnapshot: Equatable, Sendable {
     var claudeTokens = 0
     var codexTokens = 0
+    /// Nil until a transcript has been read, and on any model without a
+    /// window this recognises.
+    var claudeContext: AIUsageContext?
 
     static let empty = AIUsageSnapshot()
 

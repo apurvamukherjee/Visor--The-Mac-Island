@@ -2,7 +2,7 @@
 
 # Visor
 
-<h3><strong>by <span style="color:#e11d48">Apurva</span></strong></h3>
+[![by Apurva](https://img.shields.io/badge/by-APURVA-e11d48?style=for-the-badge&labelColor=1a1a1a)](https://github.com/apurvamukherjee)
 
 ### The MacBook notch, turned into a Dynamic Island.
 
@@ -11,9 +11,10 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?style=flat-square)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift%206-strict%20concurrency-orange?style=flat-square)](https://swift.org)
 [![CPU](https://img.shields.io/badge/idle%20CPU-0.0%25-brightgreen?style=flat-square)](#power)
-[![Dependencies](https://img.shields.io/badge/dependencies-2-blue?style=flat-square)](#tech-stack)
-[![Tests](https://img.shields.io/badge/tests-177%20passing-brightgreen?style=flat-square)](#build)
-[![Release](https://img.shields.io/badge/release-2.0.1-blue?style=flat-square)](CHANGELOG.md)
+[![Commands](https://img.shields.io/badge/palette-34%20commands-black?style=flat-square)](#command-palette)
+[![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#tech-stack)
+[![Tests](https://img.shields.io/badge/tests-240%20passing-brightgreen?style=flat-square)](#build)
+[![Release](https://img.shields.io/badge/release-2.3.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 <br />
@@ -24,7 +25,7 @@ Hover it and it grows into your music and your day. Move away and it disappears 
 
 <br />
 
-<img src="docs/screenshots/notch/player.png" width="88%" alt="Visor expanded into a music player: album art with a colour halo, track title, artist, a scrubbable progress bar with elapsed and total time, and transport controls" />
+<img src="docs/screenshots/notch/player-live.png" width="88%" alt="Visor expanded into a music player: album art with a colour halo, track title, artist, a scrubbable progress bar with elapsed and total time, and transport controls" />
 
 </div>
 
@@ -135,6 +136,71 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 
 <br />
 
+<div align="center">
+
+## Command palette
+
+</div>
+
+<div align="center">
+
+<img src="docs/screenshots/notch/palette-live.png" width="72%" alt="The command palette open in the notch: a Run a command field above Play or Pause, Next Track, Previous Track and Mute or Unmute, each with a single-key badge" />
+
+</div>
+
+Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **34 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, lock, sleep, and your own launch groups.
+
+Then press **one key**. Rows 1–4 are always numbered; letters are yours to bind in *Settings › Shortcuts*. The rule that lets a single key and a search box share one field: **keys fire only while the query is empty**, so `d` runs Dark Mode without costing you the ability to search for "downloads". A row never advertises a key that would not work — the badge reads the same flag the key handler does.
+
+Every command is **gated on context**, so none is offered when it cannot act: no transport row without a track, no Switch Audio Output with one output, no launch group you haven't configured.
+
+**It needs no Accessibility permission.** The shortcut is a Carbon `RegisterEventHotKey` registration — one combination, handed to Visor by the window server — not a `CGEventTap`, which would see every keystroke on the machine and demand the permission to match.
+
+<table>
+<tr>
+<td width="50%">
+
+**Launch groups**
+
+Name a set of apps and open them together — "Office" might be your VPN, a remote client and a browser. Entirely yours; nothing ships preloaded. Bundle identifiers are stored rather than paths, so moving an app inside `/Applications` doesn't break the group, and an app that no longer resolves is skipped rather than aborting the rest.
+
+</td>
+<td width="50%">
+
+**Shelf file commands**
+
+Compress, expand, or convert an image to JPEG — acting on whatever the island is already holding. That's what makes them mean something from a palette with no file picker.
+
+</td>
+</tr>
+</table>
+
+<br />
+
+---
+
+<br />
+
+<div align="center">
+
+## AI usage, beside the notch
+
+</div>
+
+Today's Claude Code and Codex token use, in its own badge. Off until you ask for it, in *Settings › New Features*.
+
+It reads **your own local files** — Claude Code's session transcripts and Codex's SQLite state, the latter opened strictly read-only. Nothing leaves the machine; there is no account to connect.
+
+- **Cache reads are excluded, and that was measured.** A real day's gross total was 98.6M tokens, of which 95.2M — **96.5%** — were cache reads, a function of context length and turn count rather than work done. Counting them made the badge read ~99M by mid-afternoon whatever the day held. The headline is input + output + cache creation; that same day reads 3.4M, which moves with the work.
+- **The percentage is against a budget you set**, because no real plan-limit figure exists locally — both vendors enforce limits server-side. No budget means no percentage rather than a fabricated denominator.
+- **It gets its own window, not a slot in the island.** The island's sizes are tight deltas from the measured cutout, so a permanent extra element in the wings would mean moving numbers that are already tuned. It hides while music owns the island, and returns when the island is expanded.
+
+<br />
+
+---
+
+<br />
+
 ## What it does
 
 ### On the island
@@ -156,6 +222,9 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 | **Focus** | A peek when Focus turns on or off. |
 | **Greeting** | One "Good morning" a day, on the first idle after you log in. |
 | **Onboarding** | A three-step welcome that lives *inside* the panel, so the first thing you ever see the island do is the island doing it. |
+| **Command palette** | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then one key. 34 commands, each gated on whether it can actually act. No Accessibility permission. |
+| **Drop zones** | Drag a file over the island and it splits in two: stash it on the shelf, or AirDrop it. |
+| **AI usage badge** | Today's Claude Code and Codex tokens, read from your own local files, in a window beside the notch. |
 
 ### On the lock screen
 
@@ -173,6 +242,7 @@ The panel runs in its own window above the lock shield. The island's own panel s
 | **Customisation** | Optional outline, ±16pt width and ±4pt height trims with live feedback, hide-in-fullscreen, display selection, progress tint styles, an optional equaliser, and five animation speeds. |
 | **Swipe to dismiss** | Push the island away with a two-finger swipe up; pull it back with a swipe down. |
 | **Restore defaults** | Settings › About clears every stored preference back to how it shipped. |
+| **New Features** | Every behavioural change ships **off**, listed in its own Settings tab with what it does and whether it's recommended. Updating Visor never changes how your island behaves until you ask it to. |
 
 <br />
 
@@ -183,6 +253,14 @@ One black shape morphs between closed, compact and expanded. Never a cross-fade 
 Every animation comes from one small set of motion tokens, so nothing in the app can invent its own timing. Reduce Motion is honoured everywhere, including mid-track: the card flip becomes a crossfade, the record stops turning, the bars go still.
 
 The island is welded to the notch. Swipe between desktops and the desktops slide *underneath* it, the way the menu bar does — it doesn't ride along with the wallpaper.
+
+<br />
+
+### Nothing changes by default
+
+Every behavioural change Visor adds arrives **off**, in a *New Features* tab that says what it does and whether it's recommended. Install an update and your island behaves exactly as it did yesterday until you turn something on.
+
+That guarantee is structural rather than remembered: a feature flag has no `default` field and is read with `bool(forKey:)`, so an unwritten key *is* today's behaviour, and the list of resettable keys is built from the feature registry rather than typed out by hand. Tests pin each toggle's default, so one cannot drift silently in a later release.
 
 <br />
 
@@ -225,6 +303,8 @@ The rules that get it there:
 | Drag a file onto it | The notch opens and takes it |
 | <kbd>⌥</kbd> + drag a file onto it | Send it via AirDrop |
 | Drag the thumbnail out | Drops the screenshot into any app |
+| <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> | Open the command palette |
+| <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then a key | Run that command directly |
 
 Swipes lock to whichever axis you commit to first, so a diagonal flick can change the track *or* dismiss the island — never both.
 
@@ -284,6 +364,8 @@ Nothing else here needs a prompt, and that is a design constraint rather than a 
 - **Focus** reports on and off only. Naming the active mode means Full Disk Access and parsing an undocumented database.
 - **Downloads** reads a public extended attribute. It does not open your browser's history.
 - **Notifications are not mirrored** at all, for the same reason.
+- **The command palette's hotkey** is a Carbon registration for one combination, not a global event tap. Measured before it was built: no prompt, and `AXIsProcessTrusted` still false.
+- **The AI usage badge** reads files already on your disk. No account, no network, and Codex's database is opened read-only.
 
 Where a feature could not be built honestly without a permission it didn't deserve, it was left out rather than shipped as something that guesses. The full reasoning is in [`docs/RESEARCH.md`](docs/RESEARCH.md).
 
@@ -297,10 +379,10 @@ Where a feature could not be built honestly without a permission it didn't deser
 | **UI** | SwiftUI for every view; AppKit confined to `Window/` and `App/` |
 | **State** | One `@Observable @MainActor` store. Views read, services write. Combine appears only *inside* services that merge several system signals, never in the view layer. |
 | **Platform** | macOS 14+, Apple silicon. App Sandbox off (it spawns the media adapter), `LSUIElement` |
-| **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation |
+| **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation, Carbon (one hotkey registration), SQLite3 |
 | **Private frameworks** | SkyLight, for pinning the island above the desktop and the lock overlay above the shield. Every symbol is resolved at runtime — a macOS that renames one degrades the feature instead of crashing the app. |
 | **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
-| **Tests** | Swift Testing — 177 across 35 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode and alert edge detection |
+| **Tests** | Swift Testing — 240 across 52 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
 | **Tooling** | SwiftFormat, SwiftLint |
 | **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter), for Now Playing metadata. |
 
@@ -337,6 +419,6 @@ Visor is GPL-3.0 specifically so code from GPL-3.0 reference projects can be por
 
 <div align="center">
 
-<h3><strong>by <span style="color:#e11d48">Apurva</span></strong></h3>
+[![by Apurva](https://img.shields.io/badge/by-APURVA-e11d48?style=for-the-badge&labelColor=1a1a1a)](https://github.com/apurvamukherjee)
 
 </div>
