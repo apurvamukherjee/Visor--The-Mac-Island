@@ -27,6 +27,23 @@ final class VolumeService: NotchService {
     private static let peekDuration: TimeInterval = 1.6
     private static let system = AudioObjectID(kAudioObjectSystemObject)
 
+    /// `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` — the volume
+    /// macOS itself moves, rather than the one the hardware happens to own.
+    ///
+    /// The obvious property, `kAudioDevicePropertyVolumeScalar` on the main
+    /// element, exists only on devices with a hardware master control. A
+    /// Bluetooth soundbar, most USB DACs and HDMI do not have one, so the
+    /// read returned nil and the feature switched itself off — the island
+    /// simply never appeared on anything but the built-in speakers.
+    ///
+    /// Measured on a JBL CINEMA SB510 before this was written: main-element
+    /// scalar **absent**, per-channel scalar present but unbalanced (0.38 /
+    /// 0.37, so averaging them would drift), and this property present,
+    /// settable, and notifying on every system volume change including mute.
+    /// On the built-in speakers it returns exactly what the master scalar
+    /// returns (0.70 both), so this is a replacement, not a fallback.
+    private static let virtualMainVolume = AudioObjectPropertySelector(0x766D_7663)
+
     init(store: NotchStore) {
         self.store = store
     }
@@ -77,7 +94,7 @@ final class VolumeService: NotchService {
             return
         }
         device = id
-        for selector in [kAudioDevicePropertyVolumeScalar, kAudioDevicePropertyMute] {
+        for selector in [Self.virtualMainVolume, kAudioDevicePropertyMute] {
             var deviceAddress = Self.address(selector, scope: kAudioDevicePropertyScopeOutput)
             guard AudioObjectHasProperty(device, &deviceAddress) else { continue }
             let block: AudioObjectPropertyListenerBlock = { _, _ in
@@ -104,14 +121,18 @@ final class VolumeService: NotchService {
 
     private func refresh(peek: Bool = true) {
         guard let info = read() else {
-            // An output with no volume control of its own (some USB DACs).
-            // The feature simply isn't there rather than showing a dead bar.
+            // An output with no volume of its own at all — rare now that the
+            // read goes through the virtual main volume, which macOS provides
+            // in software for anything lacking a hardware control. The feature
+            // simply isn't there rather than showing a dead bar.
             store.volume = nil
             store.deactivate(.volume)
             return
         }
-        // CoreAudio fires twice for every change — measured — and once more
-        // for the write the slider itself just made. Only a real move peeks.
+        // CoreAudio fires repeatedly for every change — measured at twice on
+        // the built-in speakers and 8-16 times on a Bluetooth soundbar, which
+        // re-notifies per channel — and once more for the write the slider
+        // itself just made. Only a real move peeks.
         guard info != store.volume else { return }
         store.volume = info
         if peek {
@@ -120,14 +141,14 @@ final class VolumeService: NotchService {
     }
 
     private func read() -> VolumeInfo? {
-        guard let level = Self.value(Float32.self, device, kAudioDevicePropertyVolumeScalar) else { return nil }
+        guard let level = Self.value(Float32.self, device, Self.virtualMainVolume) else { return nil }
         let muted = Self.value(UInt32.self, device, kAudioDevicePropertyMute) == 1
         return VolumeInfo(level: VolumeInfo.clamped(level), isMuted: muted)
     }
 
     private func setLevel(_ level: Float) {
         var value = VolumeInfo.clamped(level)
-        guard write(kAudioDevicePropertyVolumeScalar, &value, MemoryLayout<Float32>.size) else { return }
+        guard write(Self.virtualMainVolume, &value, MemoryLayout<Float32>.size) else { return }
         // Written straight to the store rather than waiting for the
         // notification, so the bar tracks the pointer instead of the
         // round-trip. The listener that follows agrees and dedupes.
