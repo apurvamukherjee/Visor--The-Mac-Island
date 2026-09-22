@@ -42,11 +42,21 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        // Scrollable since the notch and lock-screen sections landed: the
-        // window is fixed-width by design, and a taller one would run off a
-        // 13" screen.
-        ScrollView {
-            content
+        // Two tabs since the feature program started adding opt-in changes.
+        // They stay out of the column below: that one is settings between
+        // shipped options, this is a list of things that change how the app
+        // already works, and the two read differently.
+        TabView {
+            // Scrollable since the notch and lock-screen sections landed: the
+            // window is fixed-width by design, and a taller one would run off
+            // a 13" screen.
+            ScrollView {
+                content
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
+
+            NewFeaturesView()
+                .tabItem { Label("New Features", systemImage: "sparkles") }
         }
         .frame(width: 340, height: 560)
     }

@@ -57,7 +57,13 @@ enum Preferences {
     /// Neither is a setting — clearing them would replay the onboarding flow
     /// and re-fire today's greeting, which is not what "restore defaults"
     /// means to anyone pressing it.
-    static let resettableKeys: [String] = [
+    ///
+    /// Every opt-in change is appended from `NewFeatures.all` rather than
+    /// listed by hand, so a new one cannot ship and then quietly survive a
+    /// restore because somebody forgot this list existed.
+    static let resettableKeys: [String] = ownKeys + NewFeatures.keys
+
+    private static let ownKeys: [String] = [
         vinylModeKey,
         motionPresetKey,
         strokeEnabledKey,
