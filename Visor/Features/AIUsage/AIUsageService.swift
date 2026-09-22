@@ -67,7 +67,7 @@ final class AIUsageService: NotchService {
     /// and the swipe-down panel inside it draw the same snapshot, and each
     /// one alone is reason enough to watch the folders.
     private func syncEnabled() {
-        let wanted = NewFeatures.aiUsageTracker.isEnabled() || NewFeatures.usagePanel.isEnabled()
+        let wanted = NewFeatures.aiUsageTracker.isEnabled() || NewFeatures.islandPaging.isEnabled()
         guard wanted != (stream != nil) else { return }
         if wanted {
             startWatching()

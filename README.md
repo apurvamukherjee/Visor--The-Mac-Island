@@ -197,6 +197,12 @@ It reads **your own local files** — Claude Code's session transcripts and Code
 
 **Swipe down for the whole picture.** The usage screen opens inside the island: the vendor mark, tool, model, today's tokens, and a bar showing how full the context window actually is — 200K, or 1M where the model has it. A model it doesn't recognise draws **no bar at all** rather than a bar against a guess.
 
+<div align="center">
+
+<img src="docs/screenshots/notch/usage-live.png" width="66%" alt="The usage screen in the island: the Claude Code mark and name, the model opus-5 on the right, a full-width orange context bar, then context 214k of 200k at 107 percent, and today 4.7M tokens" />
+
+</div>
+
 The two figures are deliberate mirrors of each other, and both are right because they answer different questions. Cache reads count *toward the context window* — it holds them — and *not toward the day's work*. Output tokens are the reverse: produced, but never seen by the model.
 
 <br />

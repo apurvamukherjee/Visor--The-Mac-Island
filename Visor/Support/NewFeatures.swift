@@ -96,15 +96,16 @@ enum NewFeatures {
         isRecommended: false
     )
 
-    /// Rebinds a gesture that already does something, so it is off by default
-    /// for the plainest reading of §2.1 there is: with the switch off, a
-    /// swipe down still restores a dismissed activity and nothing new exists.
-    static let usagePanel = NewFeature(
+    /// Takes the vertical axis over outright: with it on, a swipe turns to
+    /// another screen instead of dismissing an activity. Off by default for
+    /// the plainest reading of §2.1 there is — with the switch off, swiping
+    /// does exactly what it always did and neither new screen exists.
+    static let islandPaging = NewFeature(
         key: "newFeature.usagePanel",
-        title: "Swipe down for agent usage",
-        detail: "A two-finger swipe down on the island opens today's Claude Code and Codex "
-            + "figures with the live context window; swipe up to go back. "
-            + "Reads the same files as the badge — no network, no permission.",
+        title: "Swipe between screens",
+        detail: "Two-finger swipe up and down to turn between the agenda, the player and "
+            + "today's Claude Code and Codex usage. The player is the middle screen and "
+            + "the island always opens on it. Replaces swipe-to-dismiss while it is on.",
         isRecommended: false
     )
 
@@ -115,7 +116,7 @@ enum NewFeatures {
         commandPalette,
         lyrics,
         aiUsageTracker,
-        usagePanel
+        islandPaging
     ]
 
     static var keys: [String] {
