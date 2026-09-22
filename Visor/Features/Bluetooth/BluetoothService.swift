@@ -19,8 +19,6 @@ final class BluetoothService: NotchService {
     private var observers: [NSObjectProtocol] = []
     private var peekTask: Task<Void, Never>?
 
-    private static let peekDuration: Duration = .seconds(3)
-
     init(store: NotchStore) {
         self.store = store
     }
@@ -79,7 +77,7 @@ final class BluetoothService: NotchService {
         store.activate(.bluetooth)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.peekDuration, tolerance: .milliseconds(300))
+            try? await Task.sleep(for: Dwell.bluetooth, tolerance: .milliseconds(300))
             guard !Task.isCancelled else { return }
             self?.store.bluetoothAlert = nil
             self?.store.deactivate(.bluetooth)

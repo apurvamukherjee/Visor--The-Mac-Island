@@ -19,9 +19,6 @@ final class DeviceBatteryService: NotchService {
     private var iterator: io_iterator_t = 0
     private var peekTask: Task<Void, Never>?
 
-    /// Long enough to read a glyph and a figure and look away. 2.5s was the
-    /// original and reads as a flash once the wing carries a device name.
-    private static let peekDuration: TimeInterval = 4
     private static let serviceClass = "AppleDeviceManagementHIDEventService"
 
     init(store: NotchStore) {
@@ -94,7 +91,7 @@ final class DeviceBatteryService: NotchService {
         store.activate(.deviceBattery)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(250))
+            try? await Task.sleep(for: Dwell.deviceBattery, tolerance: .milliseconds(250))
             guard !Task.isCancelled, let self else { return }
             peekTask = nil
             store.deactivate(.deviceBattery)

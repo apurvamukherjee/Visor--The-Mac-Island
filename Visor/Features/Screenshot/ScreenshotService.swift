@@ -20,9 +20,6 @@ final class ScreenshotService: NotchService {
     /// burst of directory events. Coalesce them.
     private static let debounce: Duration = .milliseconds(150)
     private static let visibleSeconds: TimeInterval = 60
-    /// While the island is open the user is looking at the catch, so the
-    /// countdown restarts instead of pulling it out from under them.
-    private static let hoverGrace: Duration = .seconds(2)
     private nonisolated static let thumbnailPixels = 256
 
     init(store: NotchStore) {
@@ -149,7 +146,7 @@ final class ScreenshotService: NotchService {
                     return
                 }
                 self.dismissTask = Task { [weak self] in
-                    try? await Task.sleep(for: Self.hoverGrace, tolerance: .milliseconds(250))
+                    try? await Task.sleep(for: Dwell.screenshotHoverGrace, tolerance: .milliseconds(250))
                     guard !Task.isCancelled else { return }
                     self?.sweep()
                 }

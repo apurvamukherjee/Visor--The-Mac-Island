@@ -22,9 +22,6 @@ final class VolumeService: NotchService {
     private var defaultDeviceListener: AudioObjectPropertyListenerBlock?
     private var peekTask: Task<Void, Never>?
 
-    /// Shorter than the charging peek: a volume nudge is acknowledged, not
-    /// read.
-    private static let peekDuration: TimeInterval = 1.6
     private static let system = AudioObjectID(kAudioObjectSystemObject)
 
     /// `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` — the volume
@@ -178,7 +175,7 @@ final class VolumeService: NotchService {
         store.activate(.volume)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(150))
+            try? await Task.sleep(for: Dwell.volume, tolerance: .milliseconds(150))
             guard !Task.isCancelled, let self else { return }
             peekTask = nil
             dismiss()

@@ -15,8 +15,6 @@ final class FocusService: NotchService {
     private var observers: [NSObjectProtocol] = []
     private var peekTask: Task<Void, Never>?
 
-    private static let peekDuration: Duration = .seconds(2)
-
     init(store: NotchStore) {
         self.store = store
     }
@@ -60,7 +58,7 @@ final class FocusService: NotchService {
         store.activate(.focus)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.peekDuration, tolerance: .milliseconds(200))
+            try? await Task.sleep(for: Dwell.focus, tolerance: .milliseconds(200))
             guard !Task.isCancelled else { return }
             self?.store.focusPeek = nil
             self?.store.deactivate(.focus)
