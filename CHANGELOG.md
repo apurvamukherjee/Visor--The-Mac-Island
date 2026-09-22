@@ -18,6 +18,81 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.5.0] — 2026-09-23 (build 24)
+
+Turns the usage screen into a pager, and fixes two bugs it exposed.
+
+### Added
+
+- **Swipe between screens.** The expanded island now turns between three
+  screens on the vertical axis, and the player sits in the **middle** —
+  it is the only one of the three with controls on it, so the thing you
+  operate is the resting position and the common case needs no swipe at all.
+
+  ```
+  agenda  ↑   the quick look up
+  player  ●   home — the only screen with controls
+  usage   ↓   the quick look down
+  ```
+
+  Opt-in: *Settings → New Features → Swipe between screens* (renamed from
+  "Swipe down for agent usage"; the stored key is unchanged, so an existing
+  toggle stays on). With it off, swipe-to-dismiss behaves exactly as it
+  always did.
+
+### Fixed
+
+- **Music vanished after a few swipes.** Swipe-up still called
+  `dismissCurrentActivity()` while the paging branch had taken swipe-down
+  outright — so `restoreDismissedActivity()`, the only route back, had
+  become unreachable. Two swipes up threw the player away permanently.
+  Paging now never deactivates anything; dismiss and restore survive only on
+  the toggle's off path. `pagingAwayAndBackAlwaysFindsThePlayerAgain` pins
+  it.
+
+- **The island grew before it closed.** `collapseFromExpanded` cleared the
+  page first, which re-resolved `store.layout` from the usage screen to the
+  player's larger card *while the island was still open* — so you watched it
+  expand, then shut. The reset moved into `expand()`, where the island is
+  still closed and there is nothing on screen to morph. That also buys
+  "opens on the player" for free, in one line rather than two.
+
+- **Collapsing from the usage screen settled at the wrong wing.** Paging
+  changes only the *expanded* island: `NotchStore.paged(_:wings:)` takes the
+  expanded size from the page and `compactExtraWidth` from the activity,
+  always. Without it a collapse from usage settled at its 160pt wing and
+  then jumped to the activity's — visible on `pausedTrack`, whose wing is 22.
+
+### Changed
+
+- **`isUsagePanelOpen: Bool` became `islandPage: IslandPage`.** Raw values
+  −1 / 0 / +1 are positions on the axis rather than labels, so stepping and
+  clamping fall out of the type instead of being rewritten at each call
+  site. `.above` and `.below` return `self` at the ends: no wraparound, so a
+  run of swipes settles rather than cycling.
+- Content cross-fades on `.id(store.islandPage)` with `Motion.contentIn`
+  while the shape morphs on `Motion.morph` — shape leads, content follows,
+  as the rule requires.
+- **2.4.0's §2.1 exception is withdrawn.** That release made swipe-up stop
+  closing the island for everyone; paging restores the old behaviour on the
+  toggle's off path, so the program is back to changing nothing by default.
+
+### Known
+
+With nothing playing, `.home` resolves to the idle agenda — so the top and
+middle screens are the same view, and swiping up fires haptics without
+visibly changing anything. Harmless, and it self-corrects the moment a track
+loads. A two-position pager for the empty-player case is the fix if it reads
+as broken.
+
+### Not verified on hardware
+
+The pager is unexercised on a real notch. By hand: swipe up and down
+repeatedly and confirm the player is still there at the end; hold at each
+end and confirm it stops rather than wrapping; collapse from the agent
+screen and watch for growth before the close; mouse out and hover back and
+confirm it returns on the player.
+
 ## [2.4.0] — 2026-09-23 (build 23)
 
 ### Added
