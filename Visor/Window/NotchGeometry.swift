@@ -42,12 +42,6 @@ enum NotchGeometry {
         IslandLayout.maxExpandedSize(closed: closed)
     }
 
-    /// What the SwiftUI canvas is sized to vertically: every resting layout
-    /// plus squash headroom.
-    static func canvasHeight(closed: CGSize) -> CGFloat {
-        expandedSize(closed: closed).height + squashAllowance
-    }
-
     /// Headroom below the tallest layout for the collapse squash, which
     /// briefly stretches the island past every resting size. The panel is
     /// click-through outside the silhouette so unused canvas costs nothing —

@@ -56,7 +56,7 @@ struct NotchShape: Shape {
         let body = rect.insetBy(dx: top, dy: 0)
         let bottom = max(0, min(bottomRadius, body.width / 2, body.height))
 
-        var path = UnevenRoundedRectangle(
+        let path = UnevenRoundedRectangle(
             bottomLeadingRadius: bottom,
             bottomTrailingRadius: bottom,
             style: .continuous

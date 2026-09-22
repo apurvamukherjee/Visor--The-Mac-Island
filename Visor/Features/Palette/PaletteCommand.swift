@@ -1,5 +1,3 @@
-import Foundation
-
 /// What the palette can run.
 ///
 /// The identifier is an enum rather than a closure on the struct, so the

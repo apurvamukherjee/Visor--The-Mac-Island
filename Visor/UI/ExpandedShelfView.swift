@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Expanded, one or more catches waiting: a row of thumbnails, each

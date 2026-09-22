@@ -1,5 +1,3 @@
-import Foundation
-
 /// The system output volume as the island shows it.
 struct VolumeInfo: Equatable, Sendable {
     /// 0...1 on the default output device's main channel.

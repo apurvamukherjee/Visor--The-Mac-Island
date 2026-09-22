@@ -1,4 +1,3 @@
-import Foundation
 import SystemConfiguration
 
 /// Whether a VPN is actually up, and what it is called.

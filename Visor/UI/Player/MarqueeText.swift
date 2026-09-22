@@ -103,14 +103,30 @@ struct MarqueeText: View {
 
             guard !text.isEmpty else { return }
 
-            while textSize.width == 0 {
-                try? await Task.sleep(for: .milliseconds(50))
+            // Bounded. The reference spun here until a `PreferenceKey`
+            // delivered a width, which is a 20Hz poll for as long as the view
+            // exists if that never happens — a view that is never laid out,
+            // or a frame of zero. Power rule 1 forbids a loop that sleeps to
+            // ask whether something changed; two seconds is long enough for a
+            // layout pass and short enough that a miss costs 40 wakes rather
+            // than every one until the track changes.
+            var waited = 0
+            while textSize.width == 0, waited < 40 {
+                try? await Task.sleep(for: .milliseconds(50), tolerance: .milliseconds(10))
                 if Task.isCancelled {
                     return
                 }
+                waited += 1
             }
 
-            guard needsScrolling else { return }
+            guard needsScrolling, textSize.width > 0 else { return }
+
+            // The reference scrolls regardless. `.repeatForever` keeps the
+            // view graph running for as long as a long title is on screen,
+            // which is the one animation in Visor that never ends — so it is
+            // also the one that most needs to honour Reduce Motion. Without
+            // it the title simply sits still under its mask.
+            guard !Motion.reduceMotion else { return }
 
             animate = true
             offset = -(textSize.width + 20)
