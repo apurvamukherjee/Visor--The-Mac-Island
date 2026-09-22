@@ -83,9 +83,9 @@ struct ClaudeUsageParsingTests {
             line(type: "assistant", timestamp: todayStamp, usage: ["output_tokens": 40])
         ].joined(separator: "\n")
 
-        let total = ClaudeUsageReader.tokens(
-            inAppendedData: Data(text.utf8), today: today, calendar: calendar
-        )
+        let total = ClaudeUsageReader.parse(
+            appended: Data(text.utf8), today: today, calendar: calendar
+        ).tokens
         #expect(total == 140)
     }
 
@@ -98,9 +98,9 @@ struct ClaudeUsageParsingTests {
         let complete = line(type: "assistant", timestamp: stamp, usage: ["input_tokens": 10])
         let text = complete + "\n" + String(complete.prefix(complete.count / 2))
 
-        let total = ClaudeUsageReader.tokens(
-            inAppendedData: Data(text.utf8), today: today, calendar: calendar
-        )
+        let total = ClaudeUsageReader.parse(
+            appended: Data(text.utf8), today: today, calendar: calendar
+        ).tokens
         #expect(total == 10)
     }
 
@@ -108,9 +108,9 @@ struct ClaudeUsageParsingTests {
     func junkIsSkipped() {
         let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_789_000_000))
         let text = "not json at all\n{}\n{\"type\":\"assistant\"}\n"
-        let total = ClaudeUsageReader.tokens(
-            inAppendedData: Data(text.utf8), today: today, calendar: calendar
-        )
+        let total = ClaudeUsageReader.parse(
+            appended: Data(text.utf8), today: today, calendar: calendar
+        ).tokens
         #expect(total == 0)
     }
 }

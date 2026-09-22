@@ -63,8 +63,11 @@ final class AIUsageService: NotchService {
         store.aiUsage = .empty
     }
 
+    /// Either surface keeps the reader running: the badge beside the notch
+    /// and the swipe-down panel inside it draw the same snapshot, and each
+    /// one alone is reason enough to watch the folders.
     private func syncEnabled() {
-        let wanted = NewFeatures.aiUsageTracker.isEnabled()
+        let wanted = NewFeatures.aiUsageTracker.isEnabled() || NewFeatures.usagePanel.isEnabled()
         guard wanted != (stream != nil) else { return }
         if wanted {
             startWatching()
@@ -131,9 +134,12 @@ final class AIUsageService: NotchService {
     }
 
     private func refresh() {
+        // `claude.context` is only valid after the refresh that reads it.
+        let claudeTokens = claude.refresh()
         let snapshot = AIUsageSnapshot(
-            claudeTokens: claude.refresh(),
-            codexTokens: codex.refresh()
+            claudeTokens: claudeTokens,
+            codexTokens: codex.refresh(),
+            claudeContext: claude.context
         )
         guard snapshot != store.aiUsage else { return }
         store.aiUsage = snapshot

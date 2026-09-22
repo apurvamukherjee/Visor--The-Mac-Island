@@ -23,6 +23,10 @@ struct ClaudeUsageReader {
     /// figure into this morning.
     private var day: Date?
     private var total = 0
+    /// The newest session's context, carried between reads: a burst that only
+    /// appends to an *older* transcript says nothing about the live session's
+    /// window, so the last figure read from the newest file stands.
+    private(set) var context: AIUsageContext?
 
     private let root: URL
     private let calendar: Calendar
@@ -44,19 +48,34 @@ struct ClaudeUsageReader {
             day = today
             total = 0
             offsets = [:]
+            context = nil
         }
 
-        for url in Self.transcripts(in: root) {
-            // A file untouched today cannot hold an entry from today, and
-            // skipping it keeps a long history from being opened at all.
-            guard Self.wasModified(url, onOrAfter: today) else { continue }
-            total += consume(url, today: today)
+        // A file untouched today cannot hold an entry from today, and
+        // skipping it keeps a long history from being opened at all.
+        let touched = Self.transcripts(in: root).compactMap { url -> (URL, Date)? in
+            guard let modified = Self.modified(url), modified >= today else { return nil }
+            return (url, modified)
+        }
+        // Only the most recently written transcript counts towards the
+        // context: a total can be summed across sessions, a window cannot.
+        // ponytail: "newest by mtime" is "whichever session last wrote",
+        // which with several sessions open is not necessarily the one you are
+        // looking at — measured, 4 transcripts were live at once here. There
+        // is no signal on disk for which terminal has focus, and the most
+        // recently active session is the honest answer to "how full is the
+        // window"; per-session rows are the upgrade path if that stops being
+        // enough.
+        let newest = touched.max { $0.1 < $1.1 }?.0
+
+        for (url, _) in touched {
+            total += consume(url, today: today, isNewest: url == newest)
         }
         return total
     }
 
     /// Everything appended to one file since it was last read.
-    private mutating func consume(_ url: URL, today: Date) -> Int {
+    private mutating func consume(_ url: URL, today: Date, isNewest: Bool) -> Int {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return 0 }
         defer { try? handle.close() }
 
@@ -74,7 +93,11 @@ struct ClaudeUsageReader {
             return 0
         }
         offsets[url] = size
-        return Self.tokens(inAppendedData: data, today: today, calendar: calendar)
+        let parsed = Self.parse(appended: data, today: today, calendar: calendar)
+        if isNewest, let found = parsed.context {
+            context = found
+        }
+        return parsed.tokens
     }
 
     /// Sums every complete `assistant` line in a chunk of appended bytes.
@@ -83,13 +106,21 @@ struct ClaudeUsageReader {
     /// rather than half-parsed; the offset still advances past it, because
     /// the next event re-reads from the end of what was consumed, and a
     /// dropped line is one message's tokens, not a corrupted total.
-    static func tokens(inAppendedData data: Data, today: Date, calendar: Calendar) -> Int {
-        guard let text = String(data: data, encoding: .utf8) else { return 0 }
+    /// The context comes back alongside the total because both are read off
+    /// the same lines: walking the chunk twice to get them separately would
+    /// parse every entry's JSON a second time for one number.
+    static func parse(
+        appended data: Data,
+        today: Date,
+        calendar: Calendar
+    ) -> (tokens: Int, context: AIUsageContext?) {
+        guard let text = String(data: data, encoding: .utf8) else { return (0, nil) }
         // Built here rather than held as a static: `ISO8601DateFormatter` is
         // not `Sendable`, and one per appended chunk is one per burst of
         // events, not one per line.
         let isoFormatter = Self.makeISOFormatter()
         var sum = 0
+        var context: AIUsageContext?
         for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
             guard
                 let entry = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
@@ -103,8 +134,14 @@ struct ClaudeUsageReader {
                 continue
             }
             sum += Self.tokens(inUsage: usage)
+            // Overwritten each time, so the last complete line of the chunk
+            // wins — which is the most recent turn, and therefore the window
+            // as it stands now.
+            if let model = message["model"] as? String {
+                context = AIUsageContext(tokens: Self.contextTokens(inUsage: usage), model: model)
+            }
         }
-        return sum
+        return (sum, context)
     }
 
     /// New tokens: what was sent fresh, what was written to cache, and what
@@ -121,6 +158,21 @@ struct ClaudeUsageReader {
         let fields = [
             "input_tokens",
             "output_tokens",
+            "cache_creation_input_tokens"
+        ]
+        return fields.reduce(0) { $0 + ((usage[$1] as? Int) ?? 0) }
+    }
+
+    /// What the model actually had in front of it on that turn. The mirror
+    /// image of the field list above: cache reads are the bulk of a long
+    /// session's window, so the figure they are excluded from is the day's
+    /// work and the figure they are the point of is this one. Output is not
+    /// counted — it is produced, not seen, and only joins the window on the
+    /// turn after.
+    static func contextTokens(inUsage usage: [String: Any]) -> Int {
+        let fields = [
+            "input_tokens",
+            "cache_read_input_tokens",
             "cache_creation_input_tokens"
         ]
         return fields.reduce(0) { $0 + ((usage[$1] as? Int) ?? 0) }
@@ -147,9 +199,10 @@ struct ClaudeUsageReader {
         return walker.compactMap { $0 as? URL }.filter { $0.pathExtension == "jsonl" }
     }
 
-    private static func wasModified(_ url: URL, onOrAfter date: Date) -> Bool {
-        let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-        guard let modified else { return false }
-        return modified >= date
+    /// Returns the date rather than a yes/no: the caller needs it twice over,
+    /// once to skip yesterday's files and once to pick the newest of what is
+    /// left.
+    private static func modified(_ url: URL) -> Date? {
+        (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
     }
 }

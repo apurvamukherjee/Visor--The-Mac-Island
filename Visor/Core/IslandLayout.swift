@@ -123,6 +123,11 @@ extension IslandLayout {
         static let paletteQuery: CGFloat = 26
         /// One command: glyph, title.
         static let paletteRow: CGFloat = 30
+        /// One tool on the usage screen: its mark and model over the context
+        /// bar, with today's total under it. Uniform whether or not that tool
+        /// reports a context, so the rows stay a list rather than a ragged
+        /// stack of two different cards.
+        static let usageRow: CGFloat = 60
     }
 
     /// Column widths, absolute because columns hold real text at real
@@ -152,11 +157,16 @@ extension IslandLayout {
         /// A few lines of lyric beside the player. Not a lyric sheet — the
         /// panel shows a window around the active line and nothing scrolls.
         static let lyrics: CGFloat = 170
+        /// Wide enough for a full-length model identifier beside the tool's
+        /// own name, which is the longest thing on the usage screen.
+        static let usage: CGFloat = 280
     }
 
     /// Past this the list scrolls off the island rather than growing it —
     /// an island tall enough for seven rows stops being an island.
     static let maxPaletteRows = 4
+    /// One row per agent, and there are two agents.
+    static let maxUsageRows = 2
     static let maxEventRows = 3
     /// Past this the rows stop fitting and the island shows a count instead.
     static let maxDownloadRows = 3

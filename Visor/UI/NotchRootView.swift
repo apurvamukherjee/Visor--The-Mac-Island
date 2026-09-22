@@ -187,6 +187,12 @@ struct NotchRootView: View {
                 shortcuts: store.paletteShortcuts,
                 showsShortcuts: store.isPaletteShortcutModeActive
             )
+        } else if store.isUsagePanelOpen {
+            ExpandedUsageView(
+                usage: store.aiUsage,
+                claudeBudget: Preferences.dailyTokenBudget(for: .claude),
+                codexBudget: Preferences.dailyTokenBudget(for: .codex)
+            )
         } else {
             expandedActivityContent
         }

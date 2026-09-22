@@ -96,13 +96,26 @@ enum NewFeatures {
         isRecommended: false
     )
 
+    /// Rebinds a gesture that already does something, so it is off by default
+    /// for the plainest reading of §2.1 there is: with the switch off, a
+    /// swipe down still restores a dismissed activity and nothing new exists.
+    static let usagePanel = NewFeature(
+        key: "newFeature.usagePanel",
+        title: "Swipe down for agent usage",
+        detail: "A two-finger swipe down on the island opens today's Claude Code and Codex "
+            + "figures with the live context window; swipe up to go back. "
+            + "Reads the same files as the badge — no network, no permission.",
+        isRecommended: false
+    )
+
     static let all: [NewFeature] = [
         closeIntentDelay,
         visibleDropZones,
         swipeDownOpens,
         commandPalette,
         lyrics,
-        aiUsageTracker
+        aiUsageTracker,
+        usagePanel
     ]
 
     static var keys: [String] {
