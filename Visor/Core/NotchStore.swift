@@ -45,6 +45,10 @@ final class NotchStore {
         let dismiss: () -> Void
     }
 
+    struct PaletteCommands {
+        let run: (PaletteCommandID) -> Void
+    }
+
     struct OnboardingCommands {
         let advance: () -> Void
         let finish: () -> Void
@@ -179,7 +183,6 @@ final class NotchStore {
     private(set) var shelf: [ScreenshotCatch] = []
     private var waveTask: Task<Void, Never>?
 
-    private static let waveDuration: TimeInterval = 1.2
     /// Past this the row stops fitting the island and the oldest is dropped.
     static let shelfLimit = 4
 
@@ -228,13 +231,45 @@ final class NotchStore {
         notchSizeTick += 1
     }
 
+    // MARK: - Lyrics
+
+    /// Fetched only while the panel is open — see `LyricsService`. A track
+    /// playing with the panel shut never phones out.
+    var lyrics: LyricsResult?
+    var isLyricsOpen = false
+
+    /// Ordered out of the way until asked back. The palette's hot key is
+    /// global, so ⌃⌥K is still the way back in — which is why hiding does
+    /// not strand the island.
+    var isIslandHidden = false
+
+    // MARK: - Command palette
+
+    /// A *mode*, like onboarding and the lock screen — not an activity. While
+    /// it is open the island is the palette and nothing else, so it is
+    /// resolved before the priority ladder rather than inside it.
+    /// Plain `var`s, like the rest of the store's state: `private(set)`
+    /// would scope the setter to this file, and the palette's behaviour
+    /// lives next door in `NotchStore+Palette`. The "views read, services
+    /// write" rule is the architecture's, not the access modifier's.
+    var isPaletteOpen = false
+    var paletteQuery = ""
+    var paletteResults: [PaletteCommand] = []
+    var paletteSelection = 0
+    /// Read once when the palette opens rather than per keystroke.
+    var paletteShortcuts = PaletteShortcuts.empty
+    var paletteCommands: PaletteCommands?
+
     /// The shape the island takes right now. Onboarding is checked first and
     /// unconditionally: it is not one more activity competing in the
     /// priority ladder, it is a different mode the island is in, the same
-    /// way `state` is.
+    /// way `state` is. The palette is the second such mode.
     var layout: IslandLayout {
         if let onboardingStep {
             return IslandLayout.onboarding(onboardingStep)
+        }
+        if isPaletteOpen {
+            return IslandLayout.palette(rows: paletteResults.count)
         }
         return IslandLayout.resolved(for: expandedKind, content: islandContent)
     }
@@ -247,7 +282,12 @@ final class NotchStore {
             agendaRows: min(upcoming, IslandLayout.maxEventRows),
             hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
             hasTimerPresets: timerCommands != nil,
-            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows)
+            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows),
+            // Only when the greeting actually owns the wing: a greeting still
+            // stored but outranked must not widen the island for a label
+            // nothing is drawing.
+            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0,
+            hasLyrics: isLyricsOpen
         )
     }
 
@@ -288,7 +328,7 @@ final class NotchStore {
         activate(.wave)
         waveTask?.cancel()
         waveTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.waveDuration), tolerance: .milliseconds(150))
+            try? await Task.sleep(for: Dwell.wave, tolerance: .milliseconds(150))
             guard !Task.isCancelled else { return }
             self?.deactivate(.wave)
         }

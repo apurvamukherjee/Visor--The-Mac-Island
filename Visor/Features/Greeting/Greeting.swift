@@ -1,8 +1,19 @@
+import CoreGraphics
 import Foundation
 
 struct Greeting: Equatable {
     let message: String
     let symbolName: String
+    /// How wide the compact wing has to be for `message` to be readable
+    /// rather than half-swallowed by the camera housing. Taken once, here,
+    /// because the layout that needs it is read on every animation frame.
+    let labelWidth: CGFloat
+
+    init(message: String, symbolName: String) {
+        self.message = message
+        self.symbolName = symbolName
+        labelWidth = CompactLabel.width(message)
+    }
 }
 
 enum GreetingBuilder {

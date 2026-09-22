@@ -18,13 +18,21 @@ final class NotchWindowController {
     private var isHovering = false
     private var isDisplayAsleep = false
     private var hoverIntentTask: Task<Void, Never>?
+    private var closeIntentTask: Task<Void, Never>?
     private var squashTask: Task<Void, Never>?
     private var screenObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
 
-    private static let hoverIntentDelay: Duration = .milliseconds(120)
+    /// The mirror of the hover-intent delay, on the way out. Opening has
+    /// always been filtered through an intent delay and closing through
+    /// nothing at all, so the island was deliberate about opening and
+    /// twitchy about closing — clipping its edge on the way to the scrub bar
+    /// slammed it shut mid-gesture. Slightly longer than the open delay
+    /// because a pointer leaving and coming back is a correction, while a
+    /// pointer arriving is usually on purpose.
+    private static let closeIntentDelay: Duration = .milliseconds(180)
 
     init?(store: NotchStore) {
         guard let screen = Self.targetScreen() else { return nil }
@@ -46,7 +54,7 @@ final class NotchWindowController {
         contentView.onMouseEntered = { [weak self] in self?.handleMouseEntered() }
         contentView.onMouseExited = { [weak self] in self?.handleMouseExited() }
         contentView.onSwipeDismiss = { [weak self] in self?.handleSwipeDismiss() }
-        contentView.onSwipeRestore = { [weak self] in self?.store.restoreDismissedActivity() }
+        contentView.onSwipeRestore = { [weak self] in self?.handleSwipeRestore() }
     }
 
     func start() {
@@ -57,6 +65,8 @@ final class NotchWindowController {
         registerActivityObservation()
         registerOnboardingObservation()
         registerNotchSizeObservation()
+        registerPaletteObservation()
+        registerHiddenObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -90,6 +100,7 @@ final class NotchWindowController {
     func stop() {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
+        cancelCloseIntent()
         squashTask?.cancel()
         squashTask = nil
         if let screenObserver {
@@ -119,8 +130,26 @@ final class NotchWindowController {
         }
     }
 
+    /// Swipe down: bring back whatever was swiped away, and — once asked
+    /// for — open the island with it. Without the opt-in this does nothing
+    /// on an island with nothing dismissed, which is most of them. It
+    /// matters after a swipe-up in particular: that collapses the island
+    /// while the pointer is still on it, so no `mouseEntered` follows and
+    /// hovering cannot reopen it.
+    private func handleSwipeRestore() {
+        store.restoreDismissedActivity()
+        guard NewFeatures.swipeDownOpens.isEnabled(), store.state != .expanded else { return }
+        hoverIntentTask?.cancel()
+        hoverIntentTask = nil
+        expand()
+    }
+
     private func handleMouseEntered() {
         isHovering = true
+        // Coming back cancels a pending close, which is the whole point of
+        // there being one — and it has to happen now, not when the hover
+        // intent fires, or a re-entry inside the close window still closes.
+        cancelCloseIntent()
         scheduleExpand()
     }
 
@@ -128,19 +157,41 @@ final class NotchWindowController {
         isHovering = false
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
-        collapseFromExpanded()
+        guard NewFeatures.closeIntentDelay.isEnabled() else {
+            collapseFromExpanded()
+            return
+        }
+        closeIntentTask?.cancel()
+        closeIntentTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.closeIntentDelay, tolerance: .milliseconds(30))
+            guard !Task.isCancelled, let self, !isHovering else { return }
+            closeIntentTask = nil
+            collapseFromExpanded()
+        }
+    }
+
+    private func cancelCloseIntent() {
+        closeIntentTask?.cancel()
+        closeIntentTask = nil
     }
 
     private func scheduleExpand() {
         hoverIntentTask?.cancel()
         hoverIntentTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.hoverIntentDelay)
+            // Read per hover rather than cached: Settings can move it while
+            // the island is alive, and a hover is not a hot path.
+            try? await Task.sleep(for: Preferences.hoverIntentDelay)
             guard !Task.isCancelled else { return }
             self?.expand()
         }
     }
 
     private func expand() {
+        // Every route in here — hover, a drag arriving, onboarding, a swipe
+        // down — wants no close still pending behind it. Cancelled once
+        // here rather than at each of the four call sites, because the one
+        // that forgot would collapse the island ~180ms after opening it.
+        cancelCloseIntent()
         // Already open: nothing to do, and re-running would buzz a second
         // haptic and restart the open spring mid-flight. Rebuilding the
         // tracking area re-delivers `mouseEntered` under a stationary
@@ -233,6 +284,17 @@ final class NotchWindowController {
         }
     }
 
+    /// The palette is the only thing in Visor that wants the keyboard, so
+    /// the panel's `canBecomeKey` follows it exactly rather than being on
+    /// all the time.
+    private func registerPaletteObservation() {
+        withObservationTracking {
+            _ = store.isPaletteOpen
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handlePaletteChange() }
+        }
+    }
+
     /// Settings moving a size trim re-measures the island in place, so the
     /// sliders can be dialled in against the real notch.
     private func registerNotchSizeObservation() {
@@ -295,6 +357,7 @@ final class NotchWindowController {
         isHovering = false
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
+        cancelCloseIntent()
         clearSquash()
         generation += 1
         store.state = .closed
@@ -363,6 +426,66 @@ final class NotchWindowController {
     }
 }
 
+// MARK: - Palette and hiding
+
+/// Both are *modes* rather than activities, and both need the panel
+/// itself to change — key status for one, window ordering for the other —
+/// which is why they live with the controller and not in a service.
+@MainActor
+private extension NotchWindowController {
+    /// Hiding orders the panel away; the palette's hot key is global, so
+    /// ⌃⌥K is still the way back — which is the only reason hiding the
+    /// island is not a trap.
+    func registerHiddenObservation() {
+        withObservationTracking {
+            _ = store.isIslandHidden
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleHiddenChange() }
+        }
+    }
+
+    func handleHiddenChange() {
+        registerHiddenObservation()
+        guard store.isIslandHidden else {
+            panel.orderFrontRegardless()
+            SkyLightPin.pin(panel)
+            return
+        }
+        guard !store.isPaletteOpen else { return }
+        panel.orderOut(nil)
+    }
+
+    func handlePaletteChange() {
+        registerPaletteObservation()
+        guard store.isPaletteOpen else {
+            panel.acceptsKeyboard = false
+            // Hands the keyboard back to whatever the user was typing in.
+            // The frontmost app never changed — measured on a probe — so
+            // this is giving up key status, not switching apps.
+            NSApp.deactivate()
+            if !isHovering {
+                collapseFromExpanded()
+            }
+            // Closing the palette on a hidden island puts it away again,
+            // rather than leaving the thing the user hid on screen.
+            if store.isIslandHidden {
+                panel.orderOut(nil)
+            }
+            return
+        }
+        hoverIntentTask?.cancel()
+        hoverIntentTask = nil
+        // The palette has to be visible even when the island is hidden —
+        // otherwise the only way back from hiding it would be to relaunch.
+        panel.orderFrontRegardless()
+        SkyLightPin.pin(panel)
+        panel.acceptsKeyboard = true
+        expand()
+        panel.makeKey()
+        panel.makeFirstResponder(contentView)
+    }
+}
+
 // MARK: - Collapse squash
 
 @MainActor
@@ -375,8 +498,10 @@ extension NotchWindowController {
     func collapseFromExpanded() {
         // The welcome flow holds the island open until the user finishes it
         // or replays it from Settings — a mouse-out mid-explanation should
-        // not yank the island shut under an unread sentence.
-        guard !store.isOnboardingActive else { return }
+        // not yank the island shut under an unread sentence. The palette
+        // holds it open for the same reason: it was opened by a keystroke,
+        // so the pointer's whereabouts are not what should close it.
+        guard !store.isOnboardingActive, !store.isPaletteOpen else { return }
         generation += 1
         let gen = generation
         let target: NotchState = store.currentActivity != nil ? .compact : .closed

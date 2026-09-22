@@ -9,11 +9,6 @@ final class BatteryService: NotchService {
     private var peekTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
 
-    private static let peekDuration: TimeInterval = 2.5
-    /// Longer than the plug/unplug peek: an alert is meant to be read, not
-    /// just noticed.
-    private static let alertDuration: TimeInterval = 6
-
     init(store: NotchStore) {
         self.store = store
     }
@@ -93,7 +88,7 @@ final class BatteryService: NotchService {
         store.activate(.charging)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(250))
+            try? await Task.sleep(for: Dwell.battery, tolerance: .milliseconds(250))
             guard !Task.isCancelled else { return }
             self?.store.deactivate(.charging)
         }
@@ -104,7 +99,7 @@ final class BatteryService: NotchService {
         store.activate(.batteryAlert)
         alertTask?.cancel()
         alertTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.alertDuration), tolerance: .milliseconds(250))
+            try? await Task.sleep(for: Dwell.batteryAlert, tolerance: .milliseconds(250))
             guard !Task.isCancelled, let self else { return }
             alertTask = nil
             store.batteryAlert = nil

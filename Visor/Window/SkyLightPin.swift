@@ -1,5 +1,4 @@
 import AppKit
-import os
 
 // Mirrors of the C declarations:
 //   int  SLSMainConnectionID(void);
@@ -42,9 +41,7 @@ enum SkyLightPin {
     enum Level: Int32, CaseIterable {
         /// The island proper: above the desktop, below the lock shield.
         case aboveDesktop = 100
-        /// The lock-screen widget panel, above the shield.
-        case aboveLockShield = 400
-        /// The lock-screen notch mirror, above the widget.
+        /// The lock-screen notch mirror, above the shield.
         case aboveLockShieldNotch = 401
     }
 

@@ -76,6 +76,8 @@ struct NotchRootView: View {
             .animation(Motion.resolved(Motion.strokeVisibility), value: store.isDropTargeted)
     }
 
+    @AppStorage(NewFeatures.visibleDropZones.key) private var showsDropZones = false
+    @AppStorage(NewFeatures.lyrics.key) private var lyricsEnabled = false
     @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
     @AppStorage(Preferences.strokeWidthKey) private var storedStrokeWidth = 1.0
     @AppStorage(Preferences.strokeOpacityKey) private var storedStrokeOpacity = 0.25
@@ -122,19 +124,37 @@ struct NotchRootView: View {
             // Enforces the rule the surface comment states: nothing paints
             // outside the silhouette. It also lets content keep its resting
             // width while the squash narrows the shape around it.
+            // Drawn over whatever the island was showing rather than beside
+            // it: a drag is a mode, and for the length of it the island has
+            // one job.
+            .overlay(alignment: .top) {
+                if showsDropZones, store.isDropTargeted, store.state == .expanded {
+                    DropZonesView(
+                        size: restingSize,
+                        topInset: store.closedSize.height + IslandSpacing.cameraClearance
+                    )
+                    .transition(.opacity)
+                }
+            }
             .clipShape(shape)
             .frame(width: canvasSize.width, height: canvasSize.height, alignment: .top)
             // Drop an image on the notch and it becomes the current catch —
             // the same thing a fresh screenshot becomes. Holding Option
             // while dropping sends the files via AirDrop instead, which is
             // the one gesture that can tell the two apart without a mode
-            // switch the user has to remember.
-            .dropDestination(for: URL.self) { urls, _ in
+            // switch the user has to remember — or, with the drop zones
+            // showing, by which half of the island the file lands on.
+            .dropDestination(for: URL.self) { urls, location in
                 guard let first = urls.first else { return false }
-                if NSEvent.modifierFlags.contains(.option) {
-                    store.airDropCommands?.send(urls)
-                } else {
-                    store.screenshotCommands?.adopt(first)
+                let zone = DropZone.resolve(
+                    location: location,
+                    canvasWidth: canvasSize.width,
+                    zonesVisible: showsDropZones && store.state == .expanded,
+                    optionHeld: NSEvent.modifierFlags.contains(.option)
+                )
+                switch zone {
+                case .airDrop: store.airDropCommands?.send(urls)
+                case .stash: store.screenshotCommands?.adopt(first)
                 }
                 return true
             } isTargeted: { targeted in
@@ -158,6 +178,15 @@ struct NotchRootView: View {
     private var expandedContent: some View {
         if let step = store.onboardingStep {
             ExpandedOnboardingView(step: step, commands: store.onboardingCommands)
+        } else if store.isPaletteOpen {
+            ExpandedPaletteView(
+                query: store.paletteQuery,
+                results: store.paletteResults,
+                selection: store.paletteSelection,
+                windowStart: store.paletteWindowStart,
+                shortcuts: store.paletteShortcuts,
+                showsShortcuts: store.isPaletteShortcutModeActive
+            )
         } else {
             expandedActivityContent
         }
@@ -236,7 +265,12 @@ struct NotchRootView: View {
                 commands: store.nowPlayingCommands,
                 progress: store.nowPlayingProgress,
                 hoverPoint: store.hoverPoint,
-                bleed: store.nowPlayingBleed
+                bleed: store.nowPlayingBleed,
+                volume: store.volume,
+                volumeCommands: store.volumeCommands,
+                lyrics: store.lyrics,
+                isLyricsOpen: store.isLyricsOpen,
+                onToggleLyrics: lyricsEnabled ? { store.isLyricsOpen.toggle() } : nil
             )
         }
     }

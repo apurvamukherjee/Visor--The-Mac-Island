@@ -1,4 +1,3 @@
-import CoreGraphics
 import Foundation
 
 /// Picks the colour that represents an album cover, for tinting the playback

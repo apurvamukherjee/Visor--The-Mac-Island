@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// A soft halo of the album's colour directly behind the artwork, as if the

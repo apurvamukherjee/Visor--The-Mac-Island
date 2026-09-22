@@ -10,9 +10,6 @@ final class TimerService: NotchService {
     private var fireTask: Task<Void, Never>?
     private var clearTask: Task<Void, Never>?
 
-    /// How long "Time's up" stays before the island lets go of it.
-    private static let finishedLinger: TimeInterval = 8
-
     init(store: NotchStore) {
         self.store = store
     }
@@ -83,7 +80,7 @@ final class TimerService: NotchService {
     private func complete() {
         Haptics.timerFinished()
         clearTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.finishedLinger), tolerance: .milliseconds(500))
+            try? await Task.sleep(for: Dwell.timerFinishedLinger, tolerance: .milliseconds(500))
             guard !Task.isCancelled, let self else { return }
             clearTask = nil
             store.timer = nil

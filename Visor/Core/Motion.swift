@@ -64,10 +64,6 @@ enum Motion {
         preset.unmountDelay
     }
 
-    /// Minimum spacing between two queued island changes, so a burst of
-    /// activities does not stack transitions on top of each other.
-    static let queuePacing: Duration = .milliseconds(100)
-
     /// idle ↔ music expanded column redistribution — one coordinated layout
     /// change, not two sequential ones
     static var layout: Animation {
@@ -123,11 +119,6 @@ enum Motion {
     static let squashWidthFraction: CGFloat = 0.2
     static let squashHeightFraction: CGFloat = 0.2
     static let squashRadiusFraction: CGFloat = 0.3
-
-    /// Releasing a swipe: the rubber-banded island settling back.
-    static var stretchReset: Animation {
-        .spring(duration: preset.baseResponse, bounce: 0)
-    }
 
     /// How far a swipe-in-progress squeezes the island. The compression is
     /// clamped so the gesture feels the same on a wing as on a full expanded

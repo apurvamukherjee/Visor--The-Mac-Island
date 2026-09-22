@@ -10,11 +10,34 @@ enum Preferences {
     static let vinylModeKey = "vinylMode"
     /// `MotionPreset.rawValue`. One knob drives every spring in `Motion`.
     static let motionPresetKey = "motionPreset"
-    /// `yyyy-MM-dd` of the last wake/login greeting shown, so it fires at
-    /// most once a day regardless of how many times the Mac wakes.
+    /// When the last wake/login greeting was shown, so it fires at most
+    /// once a day regardless of how many times the Mac wakes. Stored as a
+    /// `Date`; a build before 2026-09-22 wrote a `yyyy-MM-dd` string here,
+    /// which now reads as absent and costs one extra greeting on upgrade.
     static let lastGreetingDayKey = "lastGreetingDay"
     /// Set once the three-step welcome flow has been shown or dismissed.
     static let hasSeenWelcomeKey = "hasSeenWelcome"
+    /// What the greeting calls you. Empty means "use the account's name",
+    /// which is what everyone who never opens Settings gets — the greeting
+    /// was hardcoded to one person before this existed.
+    static let userNameKey = "userName"
+
+    /// The first word of the account's full name, falling back to the short
+    /// user name. macOS already knows who this is; asking would be asking
+    /// for something it could have read.
+    static var defaultUserName: String {
+        let full = NSFullUserName().trimmingCharacters(in: .whitespaces)
+        if let first = full.split(separator: " ").first, !first.isEmpty {
+            return String(first)
+        }
+        return NSUserName()
+    }
+
+    static func userName(in defaults: UserDefaults = .standard) -> String {
+        let stored = defaults.string(forKey: userNameKey)?.trimmingCharacters(in: .whitespaces)
+        guard let stored, !stored.isEmpty else { return defaultUserName }
+        return stored
+    }
 
     // MARK: - Notch customization
 
@@ -36,6 +59,32 @@ enum Preferences {
     /// Show the (decorative) equaliser beside the artwork.
     static let equalizerKey = "nowPlayingEqualizer"
 
+    // MARK: - Hover
+
+    /// How long the pointer has to rest on the island before it opens, in
+    /// milliseconds. 120 is what Visor has always used, and is the default —
+    /// so unlike the switches in `NewFeatures`, this one has a value rather
+    /// than an off position, and cannot ride `bool(forKey:)`'s false.
+    static let hoverIntentDelayKey = "hoverIntentDelayMilliseconds"
+    /// `PaletteCommandID.rawValue` -> a one-letter key, pressed on its own
+    /// inside the palette while the query is still empty.
+    static let paletteShortcutsKey = "paletteShortcuts"
+    static let hoverIntentDelayDefault = 120.0
+    /// 0 is a real choice — open the instant the pointer lands — not a
+    /// missing value, which is why the read below distinguishes the two.
+    static let hoverIntentDelayRange: ClosedRange<Double> = 0 ... 400
+
+    static var hoverIntentDelay: Duration {
+        .milliseconds(Int(hoverIntentDelayMilliseconds(in: .standard)))
+    }
+
+    static func hoverIntentDelayMilliseconds(in defaults: UserDefaults) -> Double {
+        guard let stored = defaults.object(forKey: hoverIntentDelayKey) as? Double else {
+            return hoverIntentDelayDefault
+        }
+        return min(max(stored, hoverIntentDelayRange.lowerBound), hoverIntentDelayRange.upperBound)
+    }
+
     static var hidesInFullscreen: Bool {
         UserDefaults.standard.bool(forKey: hidesInFullscreenKey)
     }
@@ -55,7 +104,13 @@ enum Preferences {
     /// Neither is a setting — clearing them would replay the onboarding flow
     /// and re-fire today's greeting, which is not what "restore defaults"
     /// means to anyone pressing it.
-    static let resettableKeys: [String] = [
+    ///
+    /// Every opt-in change is appended from `NewFeatures.all` rather than
+    /// listed by hand, so a new one cannot ship and then quietly survive a
+    /// restore because somebody forgot this list existed.
+    static let resettableKeys: [String] = ownKeys + NewFeatures.keys
+
+    private static let ownKeys: [String] = [
         vinylModeKey,
         motionPresetKey,
         strokeEnabledKey,
@@ -67,11 +122,10 @@ enum Preferences {
         screenChoiceKey,
         progressTintKey,
         equalizerKey,
+        hoverIntentDelayKey,
+        userNameKey,
+        paletteShortcutsKey,
         LockScreenSettings.liveActivityKey,
-        LockScreenSettings.soundKey,
-        LockScreenSettings.customSoundPathKey,
-        LockScreenSettings.customLockSoundPathKey,
-        LockScreenSettings.customUnlockSoundPathKey,
         LockScreenSettings.styleKey
     ]
 

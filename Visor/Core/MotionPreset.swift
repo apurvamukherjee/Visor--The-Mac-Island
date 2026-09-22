@@ -1,5 +1,3 @@
-import Foundation
-
 /// How fast the whole island moves. One knob rather than a dozen: every
 /// token in `Motion` is derived from the preset's base response, so the
 /// relationships between them (open is quicker than close, content trails

@@ -48,13 +48,11 @@ struct PreferencesRestoreTests {
     func lockScreenDefaults() {
         let defaults = makeDefaults()
         defaults.set(false, forKey: LockScreenSettings.liveActivityKey)
-        defaults.set(false, forKey: LockScreenSettings.soundKey)
         defaults.set(LockScreenStyle.enlarged.rawValue, forKey: LockScreenSettings.styleKey)
 
         Preferences.restoreDefaults(in: defaults)
 
         #expect(LockScreenSettings.isLiveActivityEnabled(in: defaults))
-        #expect(LockScreenSettings.isSoundEnabled(in: defaults))
         #expect(LockScreenSettings.style(in: defaults) == .compact)
     }
 }

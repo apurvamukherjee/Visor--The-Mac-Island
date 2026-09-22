@@ -26,6 +26,7 @@ struct SettingsView: View {
     @AppStorage(Preferences.notchHeightOffsetKey) private var notchHeightOffset = 0.0
     @AppStorage(Preferences.hidesInFullscreenKey) private var hidesInFullscreen = false
     @AppStorage(Preferences.screenChoiceKey) private var screenChoice = NotchScreenChoice.automatic.rawValue
+    @AppStorage(Preferences.userNameKey) private var userName = ""
 
     private var launchAtLoginHint: String {
         LaunchAtLogin.isInstalled
@@ -42,11 +43,24 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        // Scrollable since the notch and lock-screen sections landed: the
-        // window is fixed-width by design, and a taller one would run off a
-        // 13" screen.
-        ScrollView {
-            content
+        // Two tabs since the feature program started adding opt-in changes.
+        // They stay out of the column below: that one is settings between
+        // shipped options, this is a list of things that change how the app
+        // already works, and the two read differently.
+        TabView {
+            // Scrollable since the notch and lock-screen sections landed: the
+            // window is fixed-width by design, and a taller one would run off
+            // a 13" screen.
+            ScrollView {
+                content
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
+
+            NewFeaturesView()
+                .tabItem { Label("New Features", systemImage: "sparkles") }
+
+            ShortcutsView()
+                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
         .frame(width: 340, height: 560)
     }
@@ -74,6 +88,14 @@ struct SettingsView: View {
                 }
                 .onChange(of: motionPreset) { _, raw in
                     Motion.preset = MotionPreset(rawValue: raw) ?? .balanced
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    TextField("Your name", text: $userName, prompt: Text(Preferences.defaultUserName))
+                        .textFieldStyle(.roundedBorder)
+                    Text("What the daily greeting calls you. Left empty it uses your account name.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 Toggle("Launch at login", isOn: $launchAtLogin)
@@ -242,6 +264,7 @@ struct SettingsView: View {
         notchHeightOffset = 0
         hidesInFullscreen = false
         screenChoice = NotchScreenChoice.automatic.rawValue
+        userName = ""
 
         Motion.preset = .balanced
         showSizeFeedback()

@@ -361,6 +361,54 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   never broken (mute is main-element everywhere), and "fires twice" is
   device-specific — the soundbar fires 8-16 times, already deduped.
   **Confirmed working on hardware.** No UI change.
+- **Phase 6 "the palette and the commands it runs" (2026-09-23):** design in
+  `docs/superpowers/specs/2026-09-22-visor-feature-program-design.md`.
+  — **Governing rule (§2.1):** nothing changes by default. Every behavioural
+  change is a `NewFeature` in a new Settings tab, off until asked for. The
+  guarantee is structural, not remembered: `NewFeature` has no `default`
+  field and is read with `bool(forKey:)`, so an unwritten key *is* today's
+  behaviour, and `resettableKeys` is built from `NewFeatures.all` rather
+  than listed by hand. `NewFeaturesTests` pins all of it.
+  — **Deletions (~1,100 lines of Swift):** five dead ported views, the
+  `notchScale`/`isDynamicIsland` environment nothing ever wrote, dead
+  `Motion`/`SkyLightPin` tokens, `LockScreenSettings`' sound keys, and
+  **Lottie** — the welcome wordmark is a masked `Text` wipe, so the package
+  bought one view. `SystemMute` folded into `VolumeService`,
+  `NowPlayingEqualizer` into `PlaybackBars`, three hand-rolled `mm:ss` into
+  `Duration.clockText`.
+  — **Toggles:** close-intent delay (opening was filtered through 120ms and
+  closing through nothing), visible drop zones, swipe-down-opens, hover delay
+  as a slider. `Dwell` names all 13 peek durations in one file — **one
+  constant per site, not three tiers**: nine services held ten distinct
+  values, so tiering them would have moved seven of them, which §2.1 forbids.
+  — **Command palette:** ⌃⌥K, a *mode* like onboarding. Typing goes through
+  `NotchContentView.keyDown` into the store — no `TextField`, so there is no
+  SwiftUI focus to win inside a non-activating panel. 24 commands, each
+  gated on a `PaletteContext` so none is offered when it cannot act.
+  — **Palette shortcuts:** ⌃⌥K then one key. Rows 1-4 are always numbered;
+  letters are bound per command in a Shortcuts settings tab. The rule that
+  makes a single key and a search box share one field: **keys fire only
+  while the query is empty**. `PaletteShortcutResolutionTests` pins it, and
+  the row badges read the same flag so the island cannot advertise a key
+  that would not work.
+  — **Bugs found by their own compiler warnings:** `VolumeService` retained
+  itself (both CoreAudio listener blocks put `[weak self]` on the inner
+  `Task`, not on the block CoreAudio holds); its generic read handed a raw
+  pointer to an unconstrained `T`; `MarqueeText` polled at 20Hz unbounded
+  waiting for a `PreferenceKey`, and scrolled forever ignoring Reduce Motion.
+  — **The greeting was half-hidden behind the camera housing.** The compact
+  wing was a flat 160pt (64 usable) and "Good afternoon, Apurva" measures
+  130. Nothing stopped the row crossing the cutout. Fixed in two places:
+  every text label is now clamped to the wing, and the wing is *sized* from
+  its label (`Greeting` measures itself once at init — `store.layout` is read
+  every animation frame). The greeting name is a Settings field defaulting to
+  `NSFullUserName()`'s first word; it was hardcoded to "Apurva".
+  — **Probes before code, per §7 of the spec.** All recorded in RESEARCH
+  §6.4. The one worth repeating: a probe run from a shell inherits the
+  terminal's TCC grant and will tell you `AXIsProcessTrusted == true`.
+  Launch it with `open` or the measurement is worthless.
+  — Build 0 warnings, 223 tests in 45 suites, swiftformat, swiftlint (6, 0
+  serious). ⌃⌥K confirmed firing on hardware; the rest unverified.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

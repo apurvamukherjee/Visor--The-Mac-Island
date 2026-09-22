@@ -14,15 +14,6 @@ final class NowPlayingService: NotchService {
     /// on every skip, so a nil has to survive this long before it counts.
     private static let clearGrace: Duration = .milliseconds(900)
 
-    /// How long a track stays on the island after it is paused. Ported from
-    /// the reference's pause-hide timer, which uses the same 5s.
-    ///
-    /// It is a delay rather than an immediate collapse because a pause is
-    /// very often a step on the way to something else — skipping, seeking,
-    /// answering a call — and an island that shuts the instant the music
-    /// stops flaps open and closed around every one of those.
-    private static let pauseCollapseDelay: Duration = .seconds(5)
-
     init(store: NotchStore) {
         self.store = store
     }
@@ -163,7 +154,7 @@ final class NowPlayingService: NotchService {
         // forever and the island would never collapse.
         guard pauseCollapseTask == nil, store.isActive(.nowPlaying) else { return }
         pauseCollapseTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.pauseCollapseDelay, tolerance: .seconds(1))
+            try? await Task.sleep(for: Dwell.pauseCollapse, tolerance: .seconds(1))
             guard !Task.isCancelled, let self else { return }
             pauseCollapseTask = nil
             guard store.nowPlaying?.isPlaying == false else { return }
