@@ -13,8 +13,8 @@
 [![CPU](https://img.shields.io/badge/idle%20CPU-0.0%25-brightgreen?style=flat-square)](#power)
 [![Commands](https://img.shields.io/badge/palette-34%20commands-black?style=flat-square)](#command-palette)
 [![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#tech-stack)
-[![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen?style=flat-square)](#build)
-[![Release](https://img.shields.io/badge/release-2.4.0-blue?style=flat-square)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen?style=flat-square)](#build)
+[![Release](https://img.shields.io/badge/release-2.5.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 <br />
@@ -211,6 +211,32 @@ The two figures are deliberate mirrors of each other, and both are right because
 
 <br />
 
+<div align="center">
+
+## Three screens, one island
+
+</div>
+
+Turn the expanded island between three screens with a two-finger swipe:
+
+```
+agenda  ↑   the quick look up
+player  ●   home — the only screen with controls
+usage   ↓   the quick look down
+```
+
+**The player sits in the middle on purpose.** It is the only one of the three you actually operate — the two either side are quick looks — so the thing with buttons on it is the resting position, and the common case needs no swipe at all. The island always opens there.
+
+Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
+
+Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did.
+
+<br />
+
+---
+
+<br />
+
 ## What it does
 
 ### On the island
@@ -235,7 +261,7 @@ The two figures are deliberate mirrors of each other, and both are right because
 | **Command palette** | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then one key. 34 commands, each gated on whether it can actually act. No Accessibility permission. |
 | **Drop zones** | Drag a file over the island and it splits in two: stash it on the shelf, or AirDrop it. |
 | **AI usage badge** | Today's Claude Code and Codex tokens, read from your own local files, in a window beside the notch. |
-| **Usage screen** | Swipe down for the full picture: tool, model, today's tokens and a live context bar showing how full the window is. |
+| **Usage screen** | One screen down from the player: tool, model, today's tokens and a live context bar showing how full the window is. |
 
 ### On the lock screen
 
@@ -251,7 +277,7 @@ The panel runs in its own window above the lock shield. The island's own panel s
 | --- | --- |
 | **Capsule mode** | On a screen with no cutout, the same shape resolves symmetric corners and floats as a capsule. One shape morphing, never two cross-fading. |
 | **Customisation** | Optional outline, ±16pt width and ±4pt height trims with live feedback, hide-in-fullscreen, display selection, progress tint styles, an optional equaliser, and five animation speeds. |
-| **Swipe to page** | A two-finger swipe up steps back through what the island is showing; a swipe down opens the usage screen, or restores whatever you swiped away. Neither closes the island — the pointer leaving does that, and only that. |
+| **Swipe between screens** | Turn between the agenda, the player and today's agent usage with a two-finger swipe. The player is the middle screen and the island always opens on it. Opt-in; with it off, swipe still dismisses and restores as it always did. |
 | **Restore defaults** | Settings › About clears every stored preference back to how it shipped. |
 | **New Features** | Every behavioural change ships **off**, listed in its own Settings tab with what it does and whether it's recommended. Updating Visor never changes how your island behaves until you ask it to. |
 
@@ -307,8 +333,8 @@ The rules that get it there:
 | --- | --- |
 | Hover the notch | Expand |
 | Two-finger swipe sideways | Previous / next track |
-| Two-finger swipe up | Step back: dismiss what's showing, or leave the usage screen |
-| Two-finger swipe down | Open agent usage *(opt-in)*, or bring back what you dismissed |
+| Two-finger swipe up | Turn up a screen *(opt-in)*, or dismiss what's showing |
+| Two-finger swipe down | Turn down a screen *(opt-in)*, or bring back what you dismissed |
 | Double-click | Play / pause *(on the island's surface — buttons keep their own clicks)* |
 | Right-click | Settings |
 | Drag a file onto it | The notch opens and takes it |
@@ -393,7 +419,7 @@ Where a feature could not be built honestly without a permission it didn't deser
 | **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation, Carbon (one hotkey registration), SQLite3 |
 | **Private frameworks** | SkyLight, for pinning the island above the desktop and the lock overlay above the shield. Every symbol is resolved at runtime — a macOS that renames one degrades the feature instead of crashing the app. |
 | **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
-| **Tests** | Swift Testing — 252 across 55 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
+| **Tests** | Swift Testing — 255 across 55 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
 | **Tooling** | SwiftFormat, SwiftLint |
 | **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter), for Now Playing metadata. |
 
