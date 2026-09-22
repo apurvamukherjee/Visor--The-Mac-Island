@@ -38,6 +38,29 @@ enum Preferences {
     /// Show the (decorative) equaliser beside the artwork.
     static let equalizerKey = "nowPlayingEqualizer"
 
+    // MARK: - Hover
+
+    /// How long the pointer has to rest on the island before it opens, in
+    /// milliseconds. 120 is what Visor has always used, and is the default —
+    /// so unlike the switches in `NewFeatures`, this one has a value rather
+    /// than an off position, and cannot ride `bool(forKey:)`'s false.
+    static let hoverIntentDelayKey = "hoverIntentDelayMilliseconds"
+    static let hoverIntentDelayDefault = 120.0
+    /// 0 is a real choice — open the instant the pointer lands — not a
+    /// missing value, which is why the read below distinguishes the two.
+    static let hoverIntentDelayRange: ClosedRange<Double> = 0 ... 400
+
+    static var hoverIntentDelay: Duration {
+        .milliseconds(Int(hoverIntentDelayMilliseconds(in: .standard)))
+    }
+
+    static func hoverIntentDelayMilliseconds(in defaults: UserDefaults) -> Double {
+        guard let stored = defaults.object(forKey: hoverIntentDelayKey) as? Double else {
+            return hoverIntentDelayDefault
+        }
+        return min(max(stored, hoverIntentDelayRange.lowerBound), hoverIntentDelayRange.upperBound)
+    }
+
     static var hidesInFullscreen: Bool {
         UserDefaults.standard.bool(forKey: hidesInFullscreenKey)
     }
@@ -75,6 +98,7 @@ enum Preferences {
         screenChoiceKey,
         progressTintKey,
         equalizerKey,
+        hoverIntentDelayKey,
         LockScreenSettings.liveActivityKey,
         LockScreenSettings.styleKey
     ]

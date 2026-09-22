@@ -21,8 +21,6 @@ final class DownloadService: NotchService {
 
     /// A single download write produces a burst of directory events.
     private static let debounce: Duration = .milliseconds(200)
-    /// How long a finished download stays on the island before it clears.
-    private static let completionLinger: Duration = .seconds(4)
     /// A plain file with no progress attribute counts as a download only
     /// while it is this fresh — otherwise every file already in the folder
     /// would read as one every time the folder changed.
@@ -93,7 +91,7 @@ final class DownloadService: NotchService {
     private func scheduleClear() {
         clearTask?.cancel()
         clearTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.completionLinger, tolerance: .milliseconds(500))
+            try? await Task.sleep(for: Dwell.downloadLinger, tolerance: .milliseconds(500))
             guard !Task.isCancelled else { return }
             self?.store.deactivate(.download)
         }

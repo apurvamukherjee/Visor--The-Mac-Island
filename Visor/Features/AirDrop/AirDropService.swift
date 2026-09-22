@@ -15,9 +15,6 @@ final class AirDropService: NSObject, NotchService {
     private var sessions: [UUID: ShareSession] = [:]
     private var clearTask: Task<Void, Never>?
 
-    /// How long a finished transfer stays on the island.
-    private static let completionLinger: Duration = .seconds(3)
-
     init(store: NotchStore) {
         self.store = store
         super.init()
@@ -88,7 +85,7 @@ final class AirDropService: NSObject, NotchService {
         store.airDropTransfer?.status = status
         clearTask?.cancel()
         clearTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.completionLinger, tolerance: .milliseconds(300))
+            try? await Task.sleep(for: Dwell.airDropLinger, tolerance: .milliseconds(300))
             guard !Task.isCancelled else { return }
             self?.clear()
         }

@@ -179,7 +179,6 @@ final class NotchStore {
     private(set) var shelf: [ScreenshotCatch] = []
     private var waveTask: Task<Void, Never>?
 
-    private static let waveDuration: TimeInterval = 1.2
     /// Past this the row stops fitting the island and the oldest is dropped.
     static let shelfLimit = 4
 
@@ -288,7 +287,7 @@ final class NotchStore {
         activate(.wave)
         waveTask?.cancel()
         waveTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.waveDuration), tolerance: .milliseconds(150))
+            try? await Task.sleep(for: Dwell.wave, tolerance: .milliseconds(150))
             guard !Task.isCancelled else { return }
             self?.deactivate(.wave)
         }

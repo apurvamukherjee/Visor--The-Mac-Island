@@ -27,10 +27,40 @@ struct NewFeaturesView: View {
                     ForEach(NewFeatures.all) { feature in
                         NewFeatureRow(feature: feature)
                     }
+
+                    Divider()
+
+                    HoverDelaySlider()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(24)
+        }
+    }
+}
+
+/// The one value in this tab rather than a switch: hover delay has a
+/// number, not an off position, so it cannot ride `NewFeature`'s "unset
+/// means today's behaviour" guarantee and carries its own default.
+private struct HoverDelaySlider: View {
+    @AppStorage(Preferences.hoverIntentDelayKey)
+    private var milliseconds = Preferences.hoverIntentDelayDefault
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text("Hover delay")
+                Spacer()
+                Text("\(Int(milliseconds)) ms")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .font(.callout)
+            Slider(value: $milliseconds, in: Preferences.hoverIntentDelayRange)
+            Text("How long the pointer rests on the island before it opens. 120 ms is the default.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -50,7 +80,19 @@ private struct NewFeatureRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Toggle(feature.title, isOn: $isOn)
+            Toggle(isOn: $isOn) {
+                HStack(spacing: 6) {
+                    Text(feature.title)
+                    if feature.isRecommended {
+                        Text("Recommended")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(.secondary.opacity(0.18), in: Capsule())
+                    }
+                }
+            }
             Text(feature.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)

@@ -14,7 +14,6 @@ final class GreetingService: NotchService {
     private var dismissTask: Task<Void, Never>?
 
     private static let settleDelay: Duration = .seconds(1)
-    private static let peekDuration: TimeInterval = 3.5
 
     init(store: NotchStore, name: String) {
         self.store = store
@@ -74,7 +73,7 @@ final class GreetingService: NotchService {
         store.activate(.greeting)
         dismissTask?.cancel()
         dismissTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Self.peekDuration), tolerance: .milliseconds(250))
+            try? await Task.sleep(for: Dwell.greeting, tolerance: .milliseconds(250))
             guard !Task.isCancelled else { return }
             self?.store.deactivate(.greeting)
         }
