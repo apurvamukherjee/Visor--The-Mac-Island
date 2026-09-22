@@ -18,6 +18,10 @@ struct ExpandedMusicView: View {
     let hoverPoint: CGPoint?
     /// Pre-blurred artwork for the halo behind the cover.
     let bleed: CGImage?
+    /// System output volume, for the mute button. Nil when the output has no
+    /// volume of its own, which is also when there is nothing to mute.
+    let volume: VolumeInfo?
+    let volumeCommands: NotchStore.VolumeCommands?
 
     private static let artworkSide: CGFloat = 56
     /// Fixed, so a long title can never reflow the rows beneath it. The
@@ -41,10 +45,6 @@ struct ExpandedMusicView: View {
     /// The face currently on screen, which lags `artwork` by half a flip.
     @State private var shownArtwork: CGImage?
     @State private var flipAngle = 0.0
-    /// Read on appear and after each toggle rather than observed: device mute
-    /// only changes when someone changes it, and a listener here would be a
-    /// live CoreAudio callback for a glyph nobody is looking at.
-    @State private var isMuted: Bool?
 
     @AppStorage(Preferences.vinylModeKey) private var vinylMode = false
     @AppStorage(Preferences.equalizerKey) private var showEqualizer = false
@@ -99,7 +99,11 @@ struct ExpandedMusicView: View {
                 .clipped()
 
                 if showEqualizer {
-                    NowPlayingEqualizer(isPlaying: info.isPlaying, tint: tint)
+                    // The same bars the artwork badge draws. There used to be
+                    // a second, sine-driven implementation here; it ran a
+                    // `TimelineView(.animation)` every frame on the main
+                    // thread to do what these hand to the render server once.
+                    PlaybackBars(isPlaying: info.isPlaying, height: 16, tint: tint)
                 }
                 Spacer(minLength: 0)
             }
@@ -298,20 +302,23 @@ struct ExpandedMusicView: View {
                 commands?.next()
             }
 
-            if let isMuted {
+            // Mute is the device's, not the player's: MediaRemote only
+            // speaks transport. `VolumeService` already owns that CoreAudio
+            // property and publishes the result, so this reads the store
+            // rather than keeping a second copy of the same bool — which is
+            // what the deleted `SystemMute` was.
+            if let volume {
                 PlayerControlButton(
-                    systemImage: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                    systemImage: volume.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                     fontSize: 15,
                     width: 34,
                     height: 30
                 ) {
-                    SystemMute.toggle()
-                    self.isMuted = SystemMute.isMuted
+                    volumeCommands?.toggleMute()
                 }
-                .opacity(isMuted ? 1 : 0.55)
+                .opacity(volume.isMuted ? 1 : 0.55)
             }
         }
-        .onAppear { isMuted = SystemMute.isMuted }
         .frame(maxWidth: .infinity)
     }
 }

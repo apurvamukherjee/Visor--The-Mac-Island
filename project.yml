@@ -11,12 +11,6 @@ packages:
   MediaRemoteAdapter:
     url: https://github.com/ejbills/mediaremote-adapter.git
     revision: 5b6afde3f501a3da567e23bf7f23d562938a1809
-  # Plays the reference's `welcome.json` on the first onboarding step: a
-  # single shape layer with a gradient fill and a trim path, which is the
-  # cursive "Welcome" drawing itself on. Nothing else in Visor uses it.
-  Lottie:
-    url: https://github.com/airbnb/lottie-spm.git
-    from: 4.5.0
 targets:
   Visor:
     type: application
@@ -24,8 +18,6 @@ targets:
     dependencies:
       - package: MediaRemoteAdapter
         embed: true
-      - package: Lottie
-        product: Lottie
     sources:
       - path: Visor
     settings:

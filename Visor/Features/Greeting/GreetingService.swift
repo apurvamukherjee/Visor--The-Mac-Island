@@ -15,12 +15,6 @@ final class GreetingService: NotchService {
 
     private static let settleDelay: Duration = .seconds(1)
     private static let peekDuration: TimeInterval = 3.5
-    private static let dayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = .current
-        return formatter
-    }()
 
     init(store: NotchStore, name: String) {
         self.store = store
@@ -62,12 +56,19 @@ final class GreetingService: NotchService {
         }
     }
 
+    /// A stored `Date` and `isDateInToday`, rather than comparing
+    /// `yyyy-MM-dd` strings through a `DateFormatter`: the calendar already
+    /// knows where the day boundary is, including the ones a fixed format
+    /// gets wrong.
     private var isDueToday: Bool {
-        Self.dayFormatter.string(from: .now) != UserDefaults.standard.string(forKey: Preferences.lastGreetingDayKey)
+        guard let last = UserDefaults.standard.object(forKey: Preferences.lastGreetingDayKey) as? Date else {
+            return true
+        }
+        return !Calendar.current.isDateInToday(last)
     }
 
     private func show() {
-        UserDefaults.standard.set(Self.dayFormatter.string(from: .now), forKey: Preferences.lastGreetingDayKey)
+        UserDefaults.standard.set(Date.now, forKey: Preferences.lastGreetingDayKey)
         store.greetingText = GreetingBuilder.greeting(for: .now, name: name)
         Haptics.greeting()
         store.activate(.greeting)
