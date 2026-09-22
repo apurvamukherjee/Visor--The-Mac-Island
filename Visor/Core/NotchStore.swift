@@ -231,6 +231,18 @@ final class NotchStore {
         notchSizeTick += 1
     }
 
+    // MARK: - Lyrics
+
+    /// Fetched only while the panel is open — see `LyricsService`. A track
+    /// playing with the panel shut never phones out.
+    var lyrics: LyricsResult?
+    var isLyricsOpen = false
+
+    /// Ordered out of the way until asked back. The palette's hot key is
+    /// global, so ⌃⌥K is still the way back in — which is why hiding does
+    /// not strand the island.
+    var isIslandHidden = false
+
     // MARK: - Command palette
 
     /// A *mode*, like onboarding and the lock screen — not an activity. While
@@ -272,7 +284,8 @@ final class NotchStore {
             // Only when the greeting actually owns the wing: a greeting still
             // stored but outranked must not widen the island for a label
             // nothing is drawing.
-            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0
+            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0,
+            hasLyrics: isLyricsOpen
         )
     }
 

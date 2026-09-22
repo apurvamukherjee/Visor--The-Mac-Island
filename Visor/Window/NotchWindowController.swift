@@ -66,6 +66,7 @@ final class NotchWindowController {
         registerOnboardingObservation()
         registerNotchSizeObservation()
         registerPaletteObservation()
+        registerHiddenObservation()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
@@ -294,27 +295,6 @@ final class NotchWindowController {
         }
     }
 
-    private func handlePaletteChange() {
-        registerPaletteObservation()
-        guard store.isPaletteOpen else {
-            panel.acceptsKeyboard = false
-            // Hands the keyboard back to whatever the user was typing in.
-            // The frontmost app never changed — measured on a probe — so
-            // this is giving up key status, not switching apps.
-            NSApp.deactivate()
-            if !isHovering {
-                collapseFromExpanded()
-            }
-            return
-        }
-        hoverIntentTask?.cancel()
-        hoverIntentTask = nil
-        panel.acceptsKeyboard = true
-        expand()
-        panel.makeKey()
-        panel.makeFirstResponder(contentView)
-    }
-
     /// Settings moving a size trim re-measures the island in place, so the
     /// sliders can be dialled in against the real notch.
     private func registerNotchSizeObservation() {
@@ -443,6 +423,66 @@ final class NotchWindowController {
         case .main:
             NSScreen.main
         }
+    }
+}
+
+// MARK: - Palette and hiding
+
+/// Both are *modes* rather than activities, and both need the panel
+/// itself to change — key status for one, window ordering for the other —
+/// which is why they live with the controller and not in a service.
+@MainActor
+private extension NotchWindowController {
+    /// Hiding orders the panel away; the palette's hot key is global, so
+    /// ⌃⌥K is still the way back — which is the only reason hiding the
+    /// island is not a trap.
+    func registerHiddenObservation() {
+        withObservationTracking {
+            _ = store.isIslandHidden
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.handleHiddenChange() }
+        }
+    }
+
+    func handleHiddenChange() {
+        registerHiddenObservation()
+        guard store.isIslandHidden else {
+            panel.orderFrontRegardless()
+            SkyLightPin.pin(panel)
+            return
+        }
+        guard !store.isPaletteOpen else { return }
+        panel.orderOut(nil)
+    }
+
+    func handlePaletteChange() {
+        registerPaletteObservation()
+        guard store.isPaletteOpen else {
+            panel.acceptsKeyboard = false
+            // Hands the keyboard back to whatever the user was typing in.
+            // The frontmost app never changed — measured on a probe — so
+            // this is giving up key status, not switching apps.
+            NSApp.deactivate()
+            if !isHovering {
+                collapseFromExpanded()
+            }
+            // Closing the palette on a hidden island puts it away again,
+            // rather than leaving the thing the user hid on screen.
+            if store.isIslandHidden {
+                panel.orderOut(nil)
+            }
+            return
+        }
+        hoverIntentTask?.cancel()
+        hoverIntentTask = nil
+        // The palette has to be visible even when the island is hidden —
+        // otherwise the only way back from hiding it would be to relaunch.
+        panel.orderFrontRegardless()
+        SkyLightPin.pin(panel)
+        panel.acceptsKeyboard = true
+        expand()
+        panel.makeKey()
+        panel.makeFirstResponder(contentView)
     }
 }
 

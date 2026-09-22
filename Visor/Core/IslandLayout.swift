@@ -37,6 +37,9 @@ struct IslandContent: Equatable, Sendable {
     /// which is the one that overflowed. The compact island is symmetric
     /// about the cutout, so a wing this wide costs twice as much island.
     var compactLeadingWidth: CGFloat = 0
+    /// Whether the player is showing its lyrics column. The island widens
+    /// for it rather than the panel overlapping the card.
+    var hasLyrics = false
     static let empty = IslandContent()
 }
 
@@ -146,6 +149,9 @@ extension IslandLayout {
         /// Wide enough that a command title and its glyph never truncate,
         /// which is the one thing a palette cannot do.
         static let palette: CGFloat = 300
+        /// A few lines of lyric beside the player. Not a lyric sheet — the
+        /// panel shows a window around the active line and nothing scrolls.
+        static let lyrics: CGFloat = 170
     }
 
     /// Past this the list scrolls off the island rather than growing it —
