@@ -170,7 +170,9 @@ final class PaletteService: NotchService {
             .quickNote: { [self] in system.makeQuickNote() },
             .compressShelfFile: { [self] in withShelfFile(system.compress) },
             .expandShelfFile: { [self] in withShelfFile(system.expand) },
-            .convertShelfImage: { [self] in withShelfFile(system.convertToJPEG) }
+            .convertShelfImage: { [self] in withShelfFile(system.convertToJPEG) },
+            .forceQuitFrontmost: { [self] in system.forceQuitFrontmostApp() },
+            .openActivityMonitor: { [self] in system.openActivityMonitor() }
         ].merging(launchGroupActions()) { _, new in new }
     }
 

@@ -46,6 +46,24 @@ struct ShortcutsView: View {
 
                 Divider()
 
+                Text("GESTURES")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    GestureRow(symbol: "cursorarrow.rays", label: "Hover the notch to expand it")
+                    GestureRow(symbol: "hand.tap.fill", label: "Double-click to play or pause")
+                    GestureRow(symbol: "hand.draw.fill", label: "Two-finger swipe sideways to change track")
+                    GestureRow(symbol: "chevron.up.chevron.down", label: "Swipe up and down to turn between screens")
+                    GestureRow(symbol: "airplayaudio", label: "Hold Option while dropping to AirDrop instead")
+                    GestureRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
+                    GestureRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
+                }
+
+                Divider()
+
+                Divider()
+
                 ForEach(Self.ordinaryCommands) { command in
                     ShortcutRow(
                         command: command,
@@ -249,5 +267,25 @@ private struct LaunchGroupRow: View {
             updated.apps.append(LaunchGroupApp(bundleIdentifier: identifier, displayName: displayName))
         }
         onGroupChange(updated)
+    }
+}
+
+/// One row of the gesture sheet: a System Settings-style tinted icon tile
+/// plus a label, in place of the sentence-per-gesture prose this replaced.
+private struct GestureRow: View {
+    let symbol: String
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(.secondary, in: RoundedRectangle(cornerRadius: 6))
+            Text(label)
+                .font(.footnote)
+            Spacer(minLength: 0)
+        }
     }
 }
