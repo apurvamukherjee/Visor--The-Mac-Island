@@ -17,6 +17,27 @@ enum Preferences {
     static let lastGreetingDayKey = "lastGreetingDay"
     /// Set once the three-step welcome flow has been shown or dismissed.
     static let hasSeenWelcomeKey = "hasSeenWelcome"
+    /// What the greeting calls you. Empty means "use the account's name",
+    /// which is what everyone who never opens Settings gets — the greeting
+    /// was hardcoded to one person before this existed.
+    static let userNameKey = "userName"
+
+    /// The first word of the account's full name, falling back to the short
+    /// user name. macOS already knows who this is; asking would be asking
+    /// for something it could have read.
+    static var defaultUserName: String {
+        let full = NSFullUserName().trimmingCharacters(in: .whitespaces)
+        if let first = full.split(separator: " ").first, !first.isEmpty {
+            return String(first)
+        }
+        return NSUserName()
+    }
+
+    static func userName(in defaults: UserDefaults = .standard) -> String {
+        let stored = defaults.string(forKey: userNameKey)?.trimmingCharacters(in: .whitespaces)
+        guard let stored, !stored.isEmpty else { return defaultUserName }
+        return stored
+    }
 
     // MARK: - Notch customization
 
@@ -99,6 +120,7 @@ enum Preferences {
         progressTintKey,
         equalizerKey,
         hoverIntentDelayKey,
+        userNameKey,
         LockScreenSettings.liveActivityKey,
         LockScreenSettings.styleKey
     ]

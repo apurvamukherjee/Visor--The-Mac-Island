@@ -32,6 +32,11 @@ struct IslandContent: Equatable, Sendable {
     var hasTimerPresets = false
     /// Download rows that will really be drawn, already clamped.
     var downloadRows = 0
+    /// How wide the text in the *compact* left wing needs to be. Zero unless
+    /// something with a long label owns the wing — today only the greeting,
+    /// which is the one that overflowed. The compact island is symmetric
+    /// about the cutout, so a wing this wide costs twice as much island.
+    var compactLeadingWidth: CGFloat = 0
     static let empty = IslandContent()
 }
 

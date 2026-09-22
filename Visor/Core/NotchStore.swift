@@ -268,7 +268,11 @@ final class NotchStore {
             agendaRows: min(upcoming, IslandLayout.maxEventRows),
             hasAgendaOverflow: upcoming > IslandLayout.maxEventRows,
             hasTimerPresets: timerCommands != nil,
-            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows)
+            downloadRows: min(downloads.count, IslandLayout.maxDownloadRows),
+            // Only when the greeting actually owns the wing: a greeting still
+            // stored but outranked must not widen the island for a label
+            // nothing is drawing.
+            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0
         )
     }
 

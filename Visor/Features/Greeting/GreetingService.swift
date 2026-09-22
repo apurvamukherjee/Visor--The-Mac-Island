@@ -1,23 +1,21 @@
 import AppKit
 import Foundation
 
-/// A once-a-day peek: "Good morning, Apurva" the first time the island is
+/// A once-a-day peek: "Good morning, <name>" the first time the island is
 /// idle after login or after the Mac wakes from sleep on a new day. Modelled
 /// on `BatteryService`'s charging peek — a timed `.greeting` activity, not a
 /// new window-controller mechanism.
 @MainActor
 final class GreetingService: NotchService {
     private let store: NotchStore
-    private let name: String
     private var wakeObserver: NSObjectProtocol?
     private var showTask: Task<Void, Never>?
     private var dismissTask: Task<Void, Never>?
 
     private static let settleDelay: Duration = .seconds(1)
 
-    init(store: NotchStore, name: String) {
+    init(store: NotchStore) {
         self.store = store
-        self.name = name
     }
 
     func start() {
@@ -68,7 +66,9 @@ final class GreetingService: NotchService {
 
     private func show() {
         UserDefaults.standard.set(Date.now, forKey: Preferences.lastGreetingDayKey)
-        store.greetingText = GreetingBuilder.greeting(for: .now, name: name)
+        // Read at show time, not at init: Settings can change it between
+        // launches and there is no reason to make the user restart for it.
+        store.greetingText = GreetingBuilder.greeting(for: .now, name: Preferences.userName())
         Haptics.greeting()
         store.activate(.greeting)
         dismissTask?.cancel()

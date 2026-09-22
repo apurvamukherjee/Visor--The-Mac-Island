@@ -209,15 +209,29 @@ struct CompactActivityView: View {
         .transition(.island)
     }
 
+    /// Every text label in the wing, clamped to the wing.
+    ///
+    /// The clamp is the fix for a whole class of bug rather than one label:
+    /// nothing stopped the row running across the cutout, so a long enough
+    /// string was drawn *behind the camera housing*. Truncating is visible
+    /// and honest; disappearing is neither. Only the text labels are clamped
+    /// — the shelf's chips and the padlock are sized by their own layouts.
     private func label(_ systemName: String, _ text: String, tint: Color) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: CompactLabel.spacing) {
             Image(systemName: systemName)
-                .font(.system(size: 11))
+                .font(.system(size: CompactLabel.glyphSize))
                 .foregroundStyle(tint)
             Text(text)
                 .font(.system(.caption2, design: .rounded).monospacedDigit())
                 .lineLimit(1)
         }
+        .frame(maxWidth: wingWidth, alignment: .leading)
+    }
+
+    /// The island is symmetric about the cutout, so the left wing is half
+    /// the extra width, less the padding the row already carries.
+    private var wingWidth: CGFloat {
+        max(0, store.layout.compactExtraWidth / 2 - (NotchRadii.compact.bottom + 2))
     }
 
     private func open(_ shot: ScreenshotCatch) {

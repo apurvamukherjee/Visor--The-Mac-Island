@@ -19,6 +19,7 @@ final class PaletteService: NotchService {
     private var hotKey: EventHotKeyRef?
     private var handler: EventHandlerRef?
     private var defaultsObserver: NSObjectProtocol?
+    private let system = SystemCommands()
 
     /// ⌃⌥K. Avoids ⌘ and ⇧ entirely: those are where app shortcuts live,
     /// and a palette that steals one is worse than no palette.
@@ -56,6 +57,7 @@ final class PaletteService: NotchService {
         }
         defaultsObserver = nil
         unregister()
+        system.stop()
         store.paletteCommands = nil
         store.closePalette()
     }
@@ -143,6 +145,36 @@ final class PaletteService: NotchService {
         case .openSettings: showSettings()
         case .replayWelcome: store.onboardingCommands?.replay()
         case .quit: NSApplication.shared.terminate(nil)
+        case .keepAwake: system.toggleKeepAwake()
+        case .lockScreen: system.lockScreen()
+        case .sleepDisplay: system.sleepDisplay()
+        case .toggleDarkMode: system.toggleDarkMode()
+        case .toggleMicrophone: system.toggleMicrophoneMute()
+        case .takeScreenshot: system.openScreenshotTool()
+        case .openDownloads: system.openDownloads()
+        case .copyTrack: copyCurrentTrack()
+        case .searchTrack: searchCurrentTrack()
+        case .timerFive: store.timerCommands?.start(5 * 60)
+        case .timerTwentyFive: store.timerCommands?.start(25 * 60)
         }
+    }
+
+    /// "Artist — Title", or just the title when the source app reports no
+    /// artist. One string for both commands, so what is copied is exactly
+    /// what is searched for.
+    private func trackDescription() -> String? {
+        guard let info = store.nowPlaying else { return nil }
+        guard let artist = info.artist, !artist.isEmpty else { return info.title }
+        return "\(artist) — \(info.title)"
+    }
+
+    private func copyCurrentTrack() {
+        guard let description = trackDescription() else { return }
+        system.copyToPasteboard(description)
+    }
+
+    private func searchCurrentTrack() {
+        guard let description = trackDescription() else { return }
+        system.searchTheWeb(for: description)
     }
 }
