@@ -18,7 +18,68 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
-## [Unreleased]
+## [2.1.0] — 2026-09-23 (build 20)
+
+### Added
+- **A command palette on ⌃⌥K.** 18 commands — transport (play/pause, next,
+  previous), mute, keep-awake, lock screen, sleep display, toggle dark mode,
+  toggle microphone, screenshot, copy/search the current track, open
+  Downloads, 5- and 25-minute timers, settings, replay welcome, quit. Each
+  declares its own availability (`always`, `whilePlaying`,
+  `whileVolumeExists`, `whileMicrophoneExists`), so the list shows what can
+  actually be run right now rather than greyed-out rows.
+
+  The hotkey is `RegisterEventHotKey`, **not** a `CGEventTap`. A tap sees
+  every keystroke on the machine and needs Accessibility — the permission
+  the media-key HUD was cut to avoid. Carbon registers one combination with
+  the window server and is handed only that one. Measured before the feature
+  was written, on an ad-hoc-signed `LSUIElement` bundle launched through
+  LaunchServices so it carried its own TCC identity rather than the
+  terminal's: `AXIsProcessTrusted() == false`, `RegisterEventHotKey`
+  returned `noErr`, and **no prompt appeared**.
+
+  ⌃⌥ deliberately, avoiding ⌘ and ⇧ entirely: that is where app shortcuts
+  live, and a palette that steals one is worse than no palette. The
+  registration follows the *setting*, not the launch — turning the palette
+  off hands the combination back to whatever else wanted it, driven by
+  `UserDefaults.didChangeNotification` (an observer, not a poll).
+
+- **Drop zones on the island.** The island splits into two drop targets:
+  stash to the shelf, or AirDrop. `DropZone` is pure and unit-tested —
+  getting the split backwards AirDrops somebody's file to whoever is nearby
+  instead of putting it on the shelf, which is not a bug worth finding by
+  trying it.
+
+- **Hover slide and a close delay**, so the island does not snap shut the
+  instant the cursor leaves an edge.
+
+- **Greetings**, with their own compact wing and label layout
+  (`CompactLabel`, `CompactWingTests`).
+
+- **A New Features screen** listing what each addition does, which are
+  recommended, and a toggle per feature — every new behaviour in this
+  release is opt-in-visible rather than silently switched on.
+
+### Changed
+- **Every transient dwell time moved into one `Dwell` file.** Thirteen
+  sleeps across nine services had drifted to ten different numbers for the
+  same job — the same drift `IslandSpacing` exists to prevent, in the time
+  dimension. One constant per site, named for the site, each holding
+  *exactly* the value that service already used: this is a relocation, not
+  a retune, and nothing changed on screen.
+- `IslandLayout` split into `IslandLayout` + `IslandLayout+Resolution` —
+  the file had grown past the point where the resolution rules were
+  readable next to the geometry.
+- Idle power pass across the services, plus settings for it.
+
+### Removed
+- Dead UI left over from the old-code port: the Lottie welcome JSON (the
+  SF Symbols `.symbolEffect(.replace)` pair replaced it in 2.0), the
+  unused equaliser and seek-bar views, `LiquidGlassBackground`,
+  `NowPlayingArtworkBackground`, `AnimateImage`, `PlaybackSourceButton`,
+  `SystemMute`, and the small `Support/extension+*` helpers. ~3,800 lines,
+  no behaviour change.
+- `COMMIT-PROMPTS.md`, `COMMITS.sh` and three superseded phase plan docs.
 
 ### Fixed
 - **The volume island never appeared on anything but the built-in speakers.**
