@@ -48,7 +48,10 @@ struct IslandPageTests {
     /// round, so a run of swipes in one direction settles instead of cycling.
     @Test
     func theStackClampsAtBothEnds() {
-        let full = IslandPage.allCases
+        // The stack as it stands with nothing caught, which is the stack the
+        // ends of this test are about. `.shelf` sits beyond `.agenda` and
+        // only joins when there is something on it — see `availablePages`.
+        let full: [IslandPage] = [.agenda, .home, .usage]
         #expect(IslandPage.agenda.stepped(by: -1, in: full) == .agenda)
         #expect(IslandPage.usage.stepped(by: 1, in: full) == .usage)
         #expect(IslandPage.home.stepped(by: -1, in: full) == .agenda)
@@ -71,8 +74,17 @@ struct IslandPageTests {
         #expect(IslandPage.home.stepped(by: 1, in: store.availablePages) == .usage)
 
         store.activate(.nowPlaying)
-        #expect(store.availablePages == IslandPage.allCases)
+        // Not `allCases`: `.shelf` needs something caught before it is a
+        // screen, and nothing has been caught here.
+        #expect(store.availablePages == [.agenda, .home, .usage])
         #expect(IslandPage.home.stepped(by: -1, in: store.availablePages) == .agenda)
+
+        // And once something *is* caught, the shelf joins beyond the agenda
+        // without displacing anything — the player keeps the expanded island.
+        store.activate(.screenshot)
+        #expect(store.availablePages == IslandPage.allCases)
+        #expect(store.expandedKind == .nowPlaying)
+        #expect(IslandPage.agenda.stepped(by: -1, in: store.availablePages) == .shelf)
     }
 
     /// A page that drops out from under you — the track ends while the agenda

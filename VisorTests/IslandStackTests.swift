@@ -9,6 +9,50 @@ import Testing
 @MainActor
 @Suite("Island stack")
 struct IslandStackTests {
+    /// A catch must not cost you the player. `.screenshot` outranked
+    /// `.nowPlaying` in `expandedPriority`, so the moment a screenshot
+    /// landed the expanded island became the shelf — and the shelf was the
+    /// home page's content, not a page, so no swipe brought the card back.
+    @Test("A screenshot does not displace the music card")
+    func aCatchDoesNotReplaceThePlayer() {
+        let kind = resolveExpandedKind([
+            .screenshot: Activity(kind: .screenshot),
+            .nowPlaying: Activity(kind: .nowPlaying)
+        ])
+        #expect(kind == .nowPlaying, "a caught file took the expanded island from the player")
+    }
+
+    /// With nothing playing the shelf still owns the expanded island — the
+    /// demotion is about losing to music, not about never winning.
+    @Test("A screenshot still owns the expanded island when nothing is playing")
+    func aCatchStillWinsWhenNothingPlays() {
+        #expect(resolveExpandedKind([.screenshot: Activity(kind: .screenshot)]) == .screenshot)
+    }
+
+    /// The collapse must not begin before the chins have finished tucking.
+    /// This shipped broken in the other direction — a flat 120ms wait against
+    /// a retraction spring running at `baseResponse` — so the frame started
+    /// shrinking with the chins roughly a quarter of the way home. Pinned
+    /// across every preset, because the wait and the spring are derived from
+    /// the same number and a future edit could move one without the other.
+    @Test("The retract wait covers the retract animation, on every preset")
+    func retractWaitCoversItsAnimation() {
+        let previous = Motion.preset
+        defer { Motion.preset = previous }
+        for preset in MotionPreset.allCases {
+            Motion.preset = preset
+            let animation = preset.retractResponse
+            #expect(animation > 0, "\(preset) retracts in no time at all")
+            guard !Motion.reduceMotion else { continue }
+            let wait = Double(Dwell.stackRetract.components.seconds)
+                + Double(Dwell.stackRetract.components.attoseconds) / 1e18
+            #expect(
+                wait >= animation,
+                "\(preset): collapse fires at \(wait)s into a \(animation)s retraction"
+            )
+        }
+    }
+
     /// `isCardStacked` also reads the paging switch from the standard
     /// defaults, so the store cases pin it rather than inheriting whatever
     /// this machine happens to have set.
@@ -203,11 +247,42 @@ struct IslandStackTests {
             store.activate(.nowPlaying)
             let closed = CGSize(width: 185, height: 33)
 
-            let sizes = IslandPage.allCases.map { page -> CGSize in
+            // `availablePages`, not `allCases`: the shelf screen only exists
+            // while something is on it, and the box is built by reducing
+            // `covering` over exactly the pages a swipe can reach. Iterating
+            // `allCases` asks the island to hold a box for a page that is not
+            // in the stack, which is the opposite of what this rule says.
+            let sizes = store.availablePages.map { page -> CGSize in
                 store.islandPage = page
                 return store.layout.expandedSize(closed: closed)
             }
 
+            #expect(Set(sizes.map(\.width)).count == 1)
+            #expect(Set(sizes.map(\.height)).count == 1)
+        }
+    }
+
+    /// The case the demotion created: a catch and a track at once. The shelf
+    /// is a *page* now rather than something that takes the expanded island
+    /// from the player, so it joins the stack — and "one box for every page"
+    /// has to keep holding with it there. This is the configuration the rule
+    /// is most likely to break in, because the shelf is the one page whose
+    /// own layout was never in the box before.
+    @Test("One box still covers every page once the shelf joins the stack")
+    func theBoxCoversTheShelfPage() {
+        withPagingEnabled {
+            let store = makeStore(style: .cardStack)
+            store.activate(.nowPlaying)
+            store.activate(.screenshot)
+            let closed = CGSize(width: 185, height: 33)
+
+            #expect(store.availablePages.contains(.shelf), "a catch did not add its page")
+            #expect(store.expandedKind == .nowPlaying, "the catch took the island from the player")
+
+            let sizes = store.availablePages.map { page -> CGSize in
+                store.islandPage = page
+                return store.layout.expandedSize(closed: closed)
+            }
             #expect(Set(sizes.map(\.width)).count == 1)
             #expect(Set(sizes.map(\.height)).count == 1)
         }

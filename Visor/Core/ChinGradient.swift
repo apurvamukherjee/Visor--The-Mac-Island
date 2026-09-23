@@ -79,6 +79,7 @@ enum ChinGradient: String, CaseIterable, Sendable {
     /// the flat tints were removed for.
     static func accent(for page: IslandPage?) -> (hue: Double, saturation: Double) {
         switch page {
+        case .shelf: (0.78, 0.50)
         case .home: (0.62, 0.55)
         case .agenda: (0.38, 0.45)
         case .usage: (0.06, 0.60)

@@ -61,6 +61,7 @@ extension NotchStore {
         case .home: IslandLayout.resolved(for: expandedKind, content: islandContent)
         case .agenda: IslandLayout.idle(agendaPageContent)
         case .usage: IslandLayout.usage(rows: usageRows)
+        case .shelf: IslandLayout.shelf
         }
     }
 
@@ -107,8 +108,32 @@ extension NotchStore {
     /// gave a swipe up from the player that buzzed, changed the page, and
     /// showed the identical view, which reads as the gesture having failed.
     var availablePages: [IslandPage] {
-        expandedKind == nil ? [.home, .usage] : IslandPage.allCases
+        // The shelf is only a screen while it has something on it. An empty
+        // shelf page is a swipe that lands on nothing, and — since the box
+        // covers every reachable page — it would also hold the island at the
+        // shelf's height all day for a screen with no content.
+        var pages: [IslandPage] = hasShelfContent ? [.shelf] : []
+        pages += expandedKind == nil ? [.home, .usage] : [.agenda, .home, .usage]
+        return pages
     }
+
+    /// Whether anything the shelf screen draws actually exists. The three
+    /// lingering catchers sit below `.nowPlaying` in `expandedPriority` so
+    /// they cannot displace the player; this is how they stay reachable.
+    ///
+    /// Read from `activities` rather than from `shelf`/`downloads`/
+    /// `airDropTransfer` directly, so a page's availability and the ladder
+    /// that ranks it cannot disagree: whoever activated the kind is the same
+    /// service that filled the array, and checking the array separately
+    /// invents a second source of truth for one fact.
+    var hasShelfContent: Bool {
+        Self.shelfKinds.contains { activities[$0] != nil }
+    }
+
+    /// The lingering catchers, in one place — they are named by
+    /// `expandedPriority`'s tail and by `hasShelfContent`, and a kind added
+    /// to one and not the other is a page that never appears.
+    static let shelfKinds: [ActivityKind] = [.screenshot, .airDrop, .download]
 
     /// How many tool rows the usage screen will really draw.
     ///

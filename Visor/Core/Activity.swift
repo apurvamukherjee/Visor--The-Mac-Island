@@ -53,9 +53,21 @@ private let compactPriority: [ActivityKind] = [
 /// `.pausedTrack` is here too, and resolves to the same player card: the
 /// whole point of the dot is that hovering it opens a transport row you can
 /// press play on. Below `.timer` for the reason the comment above gives.
+///
+/// `.screenshot`, `.airDrop` and `.download` sit below music for exactly the
+/// argument the paragraph above makes for `.timer`: all three *linger*. A
+/// caught file sits on the shelf until it is dragged or dismissed, an
+/// AirDrop and a download run for as long as they run, and while any of
+/// them did outrank `.nowPlaying` here the expanded island stopped being the
+/// player the moment one appeared — with no way to get the card back, since
+/// the shelf is not a page a swipe can leave. They keep their place in
+/// `compactPriority`: a catch still announces itself in the wings, which is
+/// where a transient notice belongs. The shelf now has `IslandPage.shelf` of
+/// its own, so it is reachable rather than imposed.
 private let expandedPriority: [ActivityKind] = [
-    .screenshot, .airDrop, .volume, .network, .batteryAlert, .bluetooth, .download,
-    .nowPlaying, .timer, .screenRecording, .pausedTrack
+    .volume, .network, .batteryAlert, .bluetooth,
+    .nowPlaying, .timer, .screenRecording, .pausedTrack,
+    .screenshot, .airDrop, .download
 ]
 
 func resolveCurrentActivity(_ activities: [ActivityKind: Activity]) -> Activity? {

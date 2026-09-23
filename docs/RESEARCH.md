@@ -318,8 +318,52 @@ while geometry was still protruding and clipping the still-moving corners —
 `.logicallyComplete` landing 117ms before the spring did. Chins are that same
 failure at a larger scale: 18pt of card below the frame, cut off in a hard
 horizontal line. `collapseFromExpanded` therefore pulls them back behind the
-front card (`Dwell.stackRetract`, 120ms) and re-enters itself, so the frame
-is never smaller than what is drawn.
+front card and re-enters itself, so the frame is never smaller than what is
+drawn.
+
+**The retraction has to actually finish (2026-09-24).** The order above was
+right and still did not work, because the wait was not tied to the animation
+it was waiting for. Three separate faults, all on the same collapse:
+
+1. **The wait was a third of the animation.** `Dwell.stackRetract` was a flat
+   `120ms` while the retraction rode `Motion.morph` — a bounced spring at
+   `MotionPreset.baseResponse`, **0.41s to 0.53s** depending on the speed
+   setting. The collapse therefore began with the chins roughly a quarter of
+   the way home, and they finished travelling while the shape shrank out from
+   under them. The retraction now has its own token, `Motion.retract`
+   (`retractResponse = baseResponse - 0.13`, bounce 0 — this is the first
+   beat of a dismissal, and a chin that overshoots past the card's edge pops
+   back into view after it has gone), and `Dwell.stackRetract` is **computed
+   from that same number** rather than picked by eye:
+   `retractResponse * 1.15`. The 1.15 is settle headroom — a spring is
+   visually done somewhat after its nominal duration. Reduce Motion returns
+   `.zero`, since there is no animation left to wait for.
+   `IslandStackTests` pins `wait >= animation` across **every** preset, and
+   the check was confirmed to fail on all five when the multiplier is cut.
+
+2. **The deck was deleted mid-collapse, not tucked.** `stackedCard` was
+   gated on `store.state == .expanded`, so the instant the state changed the
+   whole `IslandStack` left the view hierarchy. A removed SwiftUI view with
+   no transition gets the default opacity fade — so the chins dissolved *in
+   place*, at their full expanded position, while the panel frame shrank past
+   them. That is the "fades in the middle of the screen" report, and it is
+   why the 2.8.0 fix (dropping the reveal flag when a retraction starts) was
+   not enough on its own: it corrected *when* the chins were told to tuck,
+   not whether anything was left on screen to tuck. The deck now survives to
+   `.closed` and `isRevealed` carries the `.expanded` check instead.
+   **Tucked is a position; removed is a fade.**
+
+3. **The re-entered collapse untucked them.** `collapseFromExpanded` cleared
+   `store.isStackRetracting` on its way through, which sent the chins back
+   out at the exact moment the squash began. The flag is now cleared only by
+   `cancelChinRetraction()`, which `expand()` calls before its own
+   `guard`, so every open starts clean and no stuck state survives a close.
+
+A fourth, found while fixing those: the chin's frame was a fixed
+`chinBodyHeight` at an offset of `size.height - chinBodyHeight`. As the card
+shrinks through the collapse that offset goes negative and the chin pokes out
+*above* the front card — a coloured band under a closing island. Height is
+now `min(chinBodyHeight, size.height)` and the offset floored at 0.
 
 **Reveal is delayed, not immediate.** The island opens showing one clean card
 and the deck offers itself a beat later (`Preferences.stackRevealDelay`,
@@ -383,6 +427,58 @@ and three ways to pick a combination that reads as one blur.
 **Unverified on hardware:** whether the retract beat before closing reads as
 deliberate or as lag, and which gradient family reads best against a bright
 wallpaper. Both are one constant / one picker.
+
+### 2.6d The shelf is a page, not a takeover (2026-09-24)
+
+`expandedPriority` ranks who gets the *expanded* island, and `.screenshot`,
+`.airDrop` and `.download` all sat above `.nowPlaying`. So the moment a
+screenshot landed the expanded island stopped being the player — and there
+was no way to get it back, because the shelf was the **home page's content**
+rather than a page of its own. A swipe moved between agenda, home and usage;
+every one of them still had the shelf sitting on home.
+
+This is exactly the argument §2.6's own priority comment already makes for
+`.timer` and `.screenRecording`, applied to the three kinds it had missed:
+
+> a charging peek outranks music in the wings but must never replace the
+> music card when the user hovers. A long-running timer sits below music for
+> the opposite reason — it would otherwise hide the card for minutes.
+
+**The test is lifetime, not importance.** An alert is *transient* — a network
+change, a battery warning — so it takes the card, says its piece and leaves.
+A catch is not: a file sits on the shelf until it is dragged or dismissed, a
+download runs as long as it runs. Anything that lingers must not own the one
+screen the island opens on.
+
+So the three moved to the **bottom** of `expandedPriority`, below
+`.pausedTrack`, and the shelf became `IslandPage.shelf` at raw value `-2` —
+beyond `.agenda`, furthest from the player, because the files are not going
+anywhere. They keep their place in `compactPriority` unchanged: a catch still
+announces itself in the wings, which is where a transient notice belongs.
+
+**Two things this had to not break:**
+
+- **One box for every page (§2.6b) still holds.** The box is built by
+  reducing `covering` over `availablePages`, so `.shelf` is absorbed like any
+  other screen and every page resolves to the same size. The existing test
+  iterated `IslandPage.allCases` rather than `availablePages` and so failed
+  the moment a fourth case existed — a test artifact, since `allCases` asks
+  the island to hold a box for a page no swipe can reach. Narrowed to
+  `availablePages`, plus a new case for the configuration that actually
+  matters: **a catch and a track at once**, which is the first time the
+  shelf's own layout has ever been in the box.
+- **A page that draws nothing must not be reachable.** `.shelf` joins
+  `availablePages` only when `hasShelfContent`. That reads from `activities`
+  rather than from `shelf`/`downloads`/`airDropTransfer` directly, because
+  whoever activated the kind is the same service that filled the array, and
+  checking the array separately invents a second source of truth for one
+  fact. `NotchStore.shelfKinds` names the three in one place, so a kind added
+  to `expandedPriority`'s tail and not to the availability check would be a
+  page that never appears.
+
+**Not done:** the shelf page has no chin tint of its own beyond the hue added
+to `ChinGradient.accent` (0.78/0.50). Whether four chins is one too many for
+the deck to still read as a stack is a hardware question.
 
 ---
 

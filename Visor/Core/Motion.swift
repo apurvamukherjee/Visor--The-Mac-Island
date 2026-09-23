@@ -33,6 +33,16 @@ enum Motion {
         .spring(duration: preset.closeResponse, bounce: 0)
     }
 
+    /// The deck's chins tucking back behind the front card, immediately
+    /// before a collapse. Bounce 0 for the same reason `close` has none:
+    /// this is the first beat of a dismissal, and a chin that overshoots
+    /// past the card's edge pops back into view after it has gone.
+    /// `Dwell.stackRetract` is derived from the same number, so the collapse
+    /// begins only once the tuck has actually landed.
+    static var retract: Animation {
+        .spring(duration: preset.retractResponse, bounce: 0)
+    }
+
     /// closed ↔ compact (live activity appears/disappears)
     static var morph: Animation {
         .spring(duration: preset.baseResponse, bounce: MotionPreset.closeBounce)

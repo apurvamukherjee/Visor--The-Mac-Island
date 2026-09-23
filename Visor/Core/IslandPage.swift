@@ -1,4 +1,4 @@
-/// The three screens the expanded island pages between, top to bottom.
+/// The screens the expanded island pages between, top to bottom.
 ///
 /// The raw values are positions on that axis rather than labels, which is
 /// what makes stepping and clamping fall out of the type instead of being
@@ -10,6 +10,14 @@
 /// thing you operate at the resting position means the common case needs no
 /// swipe at all.
 enum IslandPage: Int, CaseIterable, Sendable {
+    /// The catch shelf: screenshots, stashed files, a running AirDrop or
+    /// download. Its own screen rather than something that takes over the
+    /// home page, which is what it did while `.screenshot` outranked
+    /// `.nowPlaying` — a catch replaced the player and no swipe could get
+    /// it back. Furthest from the player because it is the least urgent of
+    /// the four: the files are not going anywhere. Present only when there
+    /// is something on it (see `availablePages`).
+    case shelf = -2
     case agenda = -1
     case home = 0
     case usage = 1

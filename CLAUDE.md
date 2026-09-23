@@ -83,6 +83,14 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   chin is 95% hidden and renders the deck as a slab.
 - **Depth and the swipe must agree.** The chin you can see is depth +1, so a
   swipe up brings *that* card forward.
+- **Anything that lingers gets a page, never the card.** `expandedPriority`
+  is ranked by *lifetime*, not importance: a transient alert takes the island
+  and leaves, but a screenshot, AirDrop or download sits until dismissed, so
+  all three rank below `.nowPlaying` and live on `IslandPage.shelf`. A
+  screen that draws nothing is never reachable — `availablePages` gates it.
+- **A retraction's wait is derived from its animation, never a constant.**
+  `Dwell.stackRetract` is computed from `Motion.retract`; a flat number
+  against a preset-scaled spring fires the collapse mid-animation.
 - Shape leads, content follows (content in delayed, content out fast).
 - Respect Reduce Motion.
 
@@ -621,6 +629,35 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   sees none of this until the style is selected.
   Build 0 warnings, 288 tests in 59 suites, swiftformat, swiftlint (3, 0
   serious — baseline). **Not yet seen on hardware.**
+- **Shelf page + retract timing (2026-09-24):** two reported faults, both
+  real, both root-caused rather than patched at the symptom.
+  — **Chins faded mid-screen on close.** Three faults on one collapse. The
+  wait was a flat 120ms against a retraction riding `Motion.morph`
+  (0.41-0.53s by preset), so the collapse started with the chins a quarter
+  of the way home; `stackedCard` was gated on `.expanded`, so the deck was
+  *removed* from the hierarchy on the state change and took SwiftUI's default
+  opacity fade **in place** — the reported symptom exactly; and the
+  re-entered `collapseFromExpanded` cleared `isStackRetracting`, sending them
+  back out as the squash began. New `Motion.retract` token (bounce 0), a
+  computed `Dwell.stackRetract`, the deck surviving to `.closed`, and the
+  flag cleared only by `cancelChinRetraction()`. A fourth found on the way:
+  the chin's fixed height went negative-offset as the card shrank, poking out
+  above it. The 2.8.0 entry fixed *when* the chins tuck, not whether anything
+  remained to tuck — this supersedes it.
+  — **A screenshot killed the music card.** `.screenshot`/`.airDrop`/
+  `.download` outranked `.nowPlaying` in `expandedPriority`, and the shelf
+  was the home page's *content*, so no swipe recovered the player. All three
+  moved below music — the same lifetime test already applied to `.timer` —
+  and the shelf became `IslandPage.shelf` (raw `-2`), present only while
+  `hasShelfContent`, which reads `activities` so availability and the ladder
+  cannot drift. `compactPriority` untouched: a catch still peeks in the
+  wings. Three existing tests encoded the old rules and were updated, not
+  deleted; one (`pagingDoesNotResize`) was iterating `allCases` rather than
+  `availablePages` and is now joined by the case that matters — a catch and
+  a track at once, the first time the shelf's layout is in the shared box.
+  Build 0 warnings, 299 tests in 61 suites, swiftformat, swiftlint (3, 0
+  serious — baseline). Detail: RESEARCH §2.6c, §2.6d. **Not seen on
+  hardware.**
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

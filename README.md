@@ -99,6 +99,8 @@ A toggle in Settings, off by default — the cover is the honest representation 
 
 Take a screenshot anywhere on the system and it slides into the notch and waits. Up to four stack side by side — drag one straight into Slack or Figma, click to open it, or clear the shelf with **All**.
 
+**It never costs you the player.** A caught file lives on its own screen, one swipe up past the agenda, so music playing stays on the island while the shelf waits behind it. The catch still announces itself in the wings when it arrives — it just does not take the card over and keep it.
+
 </div>
 
 <table>
@@ -217,25 +219,28 @@ The two figures are deliberate mirrors of each other, and both are right because
 
 <div align="center">
 
-## Three screens, one island
+## Screens, one island
 
 </div>
 
-Turn the expanded island between three screens with a two-finger swipe:
+Turn the expanded island between screens with a two-finger swipe:
 
 ```
+shelf   ↑↑  what you have caught — only when you have caught something
 agenda  ↑   the quick look up
 player  ●   home — the only screen with controls
 usage   ↓   the quick look down
 ```
 
-**The player sits in the middle on purpose.** It is the only one of the three you actually operate — the two either side are quick looks — so the thing with buttons on it is the resting position, and the common case needs no swipe at all. The island always opens there.
+**The player sits in the middle on purpose.** It is the only one you actually operate — the others are quick looks — so the thing with buttons on it is the resting position, and the common case needs no swipe at all. The island always opens there.
+
+**The shelf only exists when it has something on it.** An empty screen is a swipe that lands on nothing, so it joins the stack when you catch a file and leaves when the last one goes.
 
 Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
 
 ### Or turn it into a deck
 
-*Settings › New Features › Paging style › **Card stack*** stops drawing the three screens as one card that cross-fades and starts drawing them as a deck: the screen you are on stays exactly as it is, and the two others peek out below it as short tinted cards — tiles, each one the edge of a screen you could swipe to.
+*Settings › New Features › Paging style › **Card stack*** stops drawing the screens as one card that cross-fades and starts drawing them as a deck: the screen you are on stays exactly as it is, and the others peek out below it as short tinted cards — tiles, each one the edge of a screen you could swipe to.
 
 The point is that the other screens stop being invisible. With the cross-fade, nothing on the island tells you a swipe would do anything; with the deck, the two tiles under the front card are the affordance, and you can see at a glance that there is more island than the part you are looking at.
 
@@ -270,7 +275,7 @@ Every family stays dark on purpose. A tile that reads as a bright band is the th
 
 Cross-fade remains the default, so an existing install sees none of this until the style is selected.
 
-**The notch does not resize as you turn — or when the music starts.** All three screens share one box, and the player measures it, whether or not anything is playing — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the two quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
+**The notch does not resize as you turn — or when the music starts.** Every screen shares one box, and the player measures it, whether or not anything is playing — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
 
 Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did, and nothing about the island's size changes.
 

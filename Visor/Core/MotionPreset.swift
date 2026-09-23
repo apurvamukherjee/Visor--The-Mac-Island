@@ -61,6 +61,17 @@ enum MotionPreset: String, CaseIterable, Sendable {
         baseResponse - 0.08
     }
 
+    /// How long the deck's chins take to tuck back behind the front card
+    /// before the island is allowed to close. Derived rather than flat, so
+    /// the "Animation speed" setting moves it with everything else — at a
+    /// flat 120ms against `Motion.retract`'s own period the collapse fired
+    /// roughly a quarter of the way through the tuck, and the chins were
+    /// still out and moving when the shape started shrinking under them.
+    /// That is the "fades in the middle of the screen" report.
+    var retractResponse: Double {
+        baseResponse - 0.13
+    }
+
     /// `1 - dampingFraction`. 0.20 is the content-bearing default; the
     /// close spring runs at SwiftUI's own 0.825 damping, hence 0.175.
     static let standardBounce = 0.20

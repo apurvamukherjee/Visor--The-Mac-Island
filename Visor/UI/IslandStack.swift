@@ -72,13 +72,17 @@ struct IslandStack<Front: View>: View {
 
         return shape
             .fill(gradient.fill(depth: step, page: page))
+            // Never taller than the card it hides behind. As the island
+            // collapses the card shrinks past `chinBodyHeight`, and a fixed
+            // height would leave the chin's top edge sticking out above the
+            // front card — visible as a coloured band under a closing island.
             .frame(
                 width: max(0, size.width - 2 * inset),
-                height: IslandStackMetrics.chinBodyHeight
+                height: min(IslandStackMetrics.chinBodyHeight, size.height)
             )
             // The chin hangs off the bottom of the front card rather than
             // sitting inside it, so the offset is measured from the card's
             // own lower edge.
-            .offset(y: size.height - IslandStackMetrics.chinBodyHeight + (isRevealed ? peek : 0))
+            .offset(y: max(0, size.height - IslandStackMetrics.chinBodyHeight) + (isRevealed ? peek : 0))
     }
 }

@@ -255,6 +255,20 @@ struct NotchRootView: View {
                 events: store.calendarEvents,
                 rowLimit: IslandLayout.maxPagedEventRows
             )
+        case .shelf:
+            // The same view the home page used to draw when `.screenshot`
+            // outranked music. It is a screen now, so a catch no longer
+            // costs you the player.
+            ExpandedShelfView(
+                shelf: store.shelf,
+                onOpen: { shot in
+                    NSWorkspace.shared.open(shot.url)
+                    store.removeFromShelf(shot)
+                },
+                onDismiss: { store.removeFromShelf($0) },
+                onDropCompleted: { store.removeFromShelf($0) },
+                onClearAll: { store.clearShelf() }
+            )
         case .home:
             expandedActivityContent
         case .usage:

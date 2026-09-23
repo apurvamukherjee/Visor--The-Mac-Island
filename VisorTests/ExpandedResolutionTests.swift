@@ -31,11 +31,20 @@ struct ExpandedResolutionTests {
         #expect(resolveExpandedKind(active) == .nowPlaying)
     }
 
+    /// Alerts are *transient* — a network change, a battery warning — so they
+    /// take the card, say their piece and go. The shelf is not: a caught file
+    /// sits there until it is dragged or dismissed, so it now loses to
+    /// everything and lives on `IslandPage.shelf` instead. It outranked these
+    /// alerts and music both, which meant one screenshot ended the music card
+    /// for as long as the file stayed on the shelf.
     @Test
-    func alertsTakeTheIslandFromMusicButTheShelfOutranksThem() {
+    func transientAlertsTakeTheIslandButTheShelfNoLongerDoes() {
         #expect(resolveExpandedKind(activities([.nowPlaying, .network])) == .network)
         #expect(resolveExpandedKind(activities([.nowPlaying, .batteryAlert])) == .batteryAlert)
-        #expect(resolveExpandedKind(activities([.network, .batteryAlert, .screenshot])) == .screenshot)
+        #expect(resolveExpandedKind(activities([.network, .batteryAlert, .screenshot])) == .network)
+        #expect(resolveExpandedKind(activities([.nowPlaying, .screenshot])) == .nowPlaying)
+        #expect(resolveExpandedKind(activities([.nowPlaying, .download])) == .nowPlaying)
+        #expect(resolveExpandedKind(activities([.nowPlaying, .airDrop])) == .nowPlaying)
     }
 
     /// A timer runs for minutes, so it sits *below* music — otherwise it

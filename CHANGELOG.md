@@ -18,6 +18,62 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.9.0] — 2026-09-24 (build 31)
+
+### Added
+
+- **The catch shelf is its own screen.** Screenshots, stashed files, a
+  running AirDrop or download now live on `IslandPage.shelf`, reachable by
+  swiping up past the agenda. It appears only while something is actually on
+  it, so an empty shelf is never a swipe that lands on nothing.
+
+### Changed
+
+- **A caught file no longer takes the island from the player.**
+  `.screenshot`, `.airDrop` and `.download` outranked `.nowPlaying` in
+  `expandedPriority`, so one screenshot ended the music card — and since the
+  shelf was the home page's *content* rather than a page, no swipe brought it
+  back. All three moved below music, on the same test the ladder already
+  applied to `.timer` and `.screenRecording`: **anything that lingers must
+  not own the screen the island opens on.** A catch still announces itself in
+  the compact wings, which is unchanged.
+- **The retraction before a collapse is now timed to its own animation.**
+  `Motion.retract` is a new token (bounce 0, `baseResponse - 0.13`) and
+  `Dwell.stackRetract` is computed from it rather than being a flat constant,
+  so the "Animation speed" setting moves both together.
+
+### Fixed
+
+- **The chins faded in mid-air when the island closed.** Three faults on one
+  collapse, all real, none of them the one 2.8.0 fixed:
+  1. The wait was a flat `120ms` against a retraction riding `Motion.morph` —
+     a spring at `baseResponse`, **0.41-0.53s**. The collapse began with the
+     chins about a quarter of the way home and they finished travelling while
+     the shape shrank out from under them.
+  2. `stackedCard` was gated on `store.state == .expanded`, so the deck left
+     the view hierarchy the instant the state changed. A removed SwiftUI view
+     with no transition gets the default opacity fade, so the chins dissolved
+     *in place*, at full expanded position, under an already-shrinking frame.
+     That is the reported symptom exactly. The deck now survives to `.closed`.
+  3. The re-entered `collapseFromExpanded` cleared `isStackRetracting` on its
+     way through, sending the chins back out as the squash began. It is now
+     cleared only by `cancelChinRetraction()`, which `expand()` calls before
+     its own `guard`.
+- **A chin could poke out above the front card while closing.** Its frame was
+  a fixed `chinBodyHeight` at `size.height - chinBodyHeight`; once the card
+  shrank past that height the offset went negative. Height is now clamped to
+  the card's and the offset floored at 0.
+
+### Deliberately left out
+
+- **A tint of its own for the shelf page's chin**, beyond the hue added to
+  `ChinGradient.accent`. Whether four chins still read as a stack at all is a
+  hardware question, and picking a fifth family before answering it is
+  guessing.
+- **Any change to `compactPriority`.** A catch announcing itself in the wings
+  is a transient notice in the right place; only the *expanded* ladder was
+  wrong.
+
 ## [2.8.0] — 2026-09-23 (build 30)
 
 ### Fixed

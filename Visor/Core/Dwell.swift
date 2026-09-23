@@ -52,5 +52,18 @@ enum Dwell {
     /// How long the chins take to retract before the island collapses.
     /// Load-bearing, not styling: the frame must never be smaller than what
     /// is drawn. See `NotchWindowController.collapseFromExpanded`.
-    static let stackRetract: Duration = .milliseconds(120)
+    ///
+    /// Computed, not a constant, and tied to `Motion.retract`'s own period
+    /// rather than picked by eye. It shipped as a flat 120ms against a
+    /// `Motion.morph` retraction running at `baseResponse` — 0.41-0.53s —
+    /// so the collapse started with the chins about a quarter of the way
+    /// home, and they finished travelling while the shape shrank out from
+    /// under them. The 1.15 is settle headroom: a spring is visually done
+    /// somewhat after its nominal duration, and the frame must never shrink
+    /// past geometry that is still moving. Reduce Motion skips the wait
+    /// entirely, since there is no animation left to wait for.
+    static var stackRetract: Duration {
+        guard !Motion.reduceMotion else { return .zero }
+        return .milliseconds(Int(Motion.preset.retractResponse * 1150))
+    }
 }

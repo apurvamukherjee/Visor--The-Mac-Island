@@ -9,19 +9,26 @@ extension NotchRootView {
     /// cross-fade path is what it has always been.
     @ViewBuilder
     var stackedCard: some View {
-        if store.isCardStacked, store.state == .expanded {
+        if store.isCardStacked, store.state != .closed {
+            // Kept in the hierarchy through `.compact`, not torn out the
+            // instant the state leaves `.expanded`. Removing the deck mid-
+            // collapse gave SwiftUI no transition to run, so the chins took
+            // the default opacity fade and dissolved where they stood —
+            // halfway down the screen, under a frame that had already
+            // shrunk past them. Tucked is a position; removed is a fade.
             IslandStack(
                 store: store,
                 size: cardSize,
                 radii: radii,
-                isRevealed: isStackRevealed && !store.isStackRetracting,
+                isRevealed: isStackRevealed && !store.isStackRetracting && store.state == .expanded,
                 gradient: ChinGradient(rawValue: chinGradient) ?? .charcoal
             ) {
                 islandCard
             }
             .animation(Motion.resolved(Motion.morph), value: isStackRevealed)
-            .animation(Motion.resolved(Motion.morph), value: store.isStackRetracting)
+            .animation(Motion.resolved(Motion.retract), value: store.isStackRetracting)
             .animation(Motion.resolved(Motion.morph), value: store.islandPage)
+            .animation(Motion.resolved(Motion.close), value: store.state)
             .task(id: store.state) { await revealChins() }
             .onChange(of: store.isStackRetracting) { _, retracting in
                 // A retraction is the start of a collapse. Drop the reveal

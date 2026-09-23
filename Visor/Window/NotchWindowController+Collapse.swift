@@ -29,7 +29,13 @@ extension NotchWindowController {
             retractChinsThenCollapse()
             return
         }
-        store.isStackRetracting = false
+        // The retraction flag is deliberately *not* cleared here. It was,
+        // and clearing it on the re-entered call sent the chins back out at
+        // the exact moment the squash began — they slid out, then dissolved
+        // as the frame shrank past them. They stay tucked for the whole
+        // collapse and are released by `finishShrink`'s state change, which
+        // has already taken the deck to `.closed`.
+        //
         // The page is deliberately *not* reset here. Clearing it first
         // re-resolved the layout while the island was still open, so
         // collapsing from the agent screen morphed out to the player's larger
@@ -86,7 +92,7 @@ extension NotchWindowController {
     /// Re-entered through `collapseFromExpanded`, which the retraction flag
     /// then lets straight through.
     func retractChinsThenCollapse() {
-        withAnimation(Motion.resolved(Motion.morph)) {
+        withAnimation(Motion.resolved(Motion.retract)) {
             store.isStackRetracting = true
         }
         retractTask?.cancel()
