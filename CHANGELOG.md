@@ -18,11 +18,10 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
-## [Unreleased]
+## [2.6.1] — 2026-09-23 (build 26)
 
-Not yet built or released — no `.dmg` in `new-releases/` and no version
-bump. Paging stops resizing the notch, the shelf stops refusing files, and
-four bugs are fixed.
+Paging stops resizing the notch, the shelf stops refusing files, and four
+bugs are fixed. No new user-facing feature, so a patch release.
 
 ### Added
 
