@@ -16,25 +16,39 @@ extension NotchStore {
             return IslandLayout.palette(rows: paletteResults.count)
         }
         let activity = IslandLayout.resolved(for: expandedKind, content: islandContent)
-        switch islandPage {
-        case .home:
-            return activity
-        case .agenda:
-            return paged(IslandLayout.idle(islandContent), wings: activity)
-        case .usage:
-            return paged(IslandLayout.usage(rows: usageRows), wings: activity)
+        guard NewFeatures.islandPaging.isEnabled() else { return activity }
+        // One box, held by every screen the swipe can reach, so turning a
+        // page cross-fades content inside a shape that does not move. Sizing
+        // each page for itself made the notch grow and shrink under a gesture
+        // that only ever meant "show me the next thing".
+        return availablePages.reduce(activity) { $0.covering(pageLayout(for: $1)) }
+    }
+
+    /// What one screen would need on its own, before the box is taken.
+    private func pageLayout(for page: IslandPage) -> IslandLayout {
+        switch page {
+        case .home: IslandLayout.resolved(for: expandedKind, content: islandContent)
+        case .agenda: IslandLayout.idle(agendaPageContent)
+        case .usage: IslandLayout.usage(rows: usageRows)
         }
     }
 
-    /// Paging changes the **expanded** island and nothing else. The compact
-    /// wings belong to whatever activity is running, always — they are what
-    /// the island looks like at rest, so a screen you swiped to must not
-    /// still be deciding their width once it has closed. Getting this wrong
-    /// made the island collapse to one wing and then jump to another.
-    private func paged(_ page: IslandLayout, wings: IslandLayout) -> IslandLayout {
-        var resolved = page
-        resolved.compactExtraWidth = wings.compactExtraWidth
-        return resolved
+    /// What the agenda *page* draws, which is a row shorter than the idle
+    /// home screen and carries no timer presets.
+    ///
+    /// Both cuts buy the same thing: the player measures the box, so a page
+    /// that wanted more would make the island's height track how many
+    /// meetings you have. The presets are still on the home screen, which is
+    /// where they were reached from anyway, and the row the agenda gives up
+    /// is counted by the "+N more" line rather than lost.
+    var agendaPageContent: IslandContent {
+        let upcoming = CalendarEventMapper.upcomingCount(calendarEvents, now: .now)
+        let rows = min(upcoming, IslandLayout.maxPagedEventRows)
+        return IslandContent(
+            agendaRows: rows,
+            hasAgendaOverflow: upcoming > rows,
+            compactLeadingWidth: islandContent.compactLeadingWidth
+        )
     }
 
     /// Filtered exactly the way the agenda view filters, so the island can

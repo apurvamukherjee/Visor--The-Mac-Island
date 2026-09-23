@@ -192,9 +192,15 @@ struct NotchRootView: View {
             // next. Without the identity SwiftUI treats them as one view
             // whose contents changed, and the agenda's rows visibly become
             // the player's controls in place.
+            //
+            // The same `.island` transition the island opens and closes with,
+            // rather than a bare opacity fade. The box no longer moves under
+            // a swipe, so a straight cross-fade had nothing to soften the
+            // swap and the new screen simply appeared; the blur and the small
+            // scale give the change somewhere to happen.
             pagedContent
                 .id(store.islandPage)
-                .transition(.opacity.animation(Motion.resolved(Motion.contentIn)))
+                .transition(.island)
         }
     }
 
@@ -202,10 +208,13 @@ struct NotchRootView: View {
     @ViewBuilder
     private var pagedContent: some View {
         switch store.islandPage {
+        // A row shorter than the home screen and with no timer presets, so
+        // the page fits the box the player measures — see
+        // `agendaPageContent`, which sizes the island from the same numbers.
         case .agenda:
             ExpandedIdleView(
                 events: store.calendarEvents,
-                onStartTimer: store.timerCommands.map { commands in { commands.start($0) } }
+                rowLimit: IslandLayout.maxPagedEventRows
             )
         case .home:
             expandedActivityContent

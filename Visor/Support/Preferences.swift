@@ -150,6 +150,7 @@ enum Preferences {
         hoverIntentDelayKey,
         userNameKey,
         paletteShortcutsKey,
+        launchGroupsKey,
         claudeDailyBudgetKey,
         codexDailyBudgetKey,
         LockScreenSettings.liveActivityKey,

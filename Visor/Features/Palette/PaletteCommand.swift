@@ -32,6 +32,7 @@ enum PaletteCommandID: String, CaseIterable, Sendable {
     case convertShelfImage
     case forceQuitFrontmost
     case openActivityMonitor
+    case stashClipboard
     /// Ten fixed slots rather than an open-ended list: each is a user-named,
     /// user-populated set of apps (`LaunchGroup`), but the *slot* is a plain
     /// `PaletteCommandID` case like every other command, so it needs no new
@@ -56,6 +57,8 @@ enum PaletteCommandID: String, CaseIterable, Sendable {
 struct PaletteContext: Equatable, Sendable {
     var hasTrack = false
     var hasVolume = false
+    /// Not every input device has a mute — the probe found a Continuity
+    /// iPhone microphone with none at all.
     var hasMicrophone = false
     /// One output device is not a choice, so there is nothing to switch to.
     var hasMultipleOutputs = false
@@ -65,11 +68,23 @@ struct PaletteContext: Equatable, Sendable {
     /// The app a force quit would end, by name — nil when there is none, and
     /// that nil is also what keeps the row out of the palette. Carried as the
     /// name rather than a flag so the row can say which app it means: one
-    /// `NSWorkspace` read answers both questions.
+    /// `NSWorkspace` read answers both questions. Nothing to quit when the
+    /// frontmost app is Visor itself or the Finder, which is the only time
+    /// this is nil.
     var forceQuitTargetName: String?
+    /// Whether the clipboard holds something the shelf could take — a file,
+    /// or image data copied out of an app that never wrote a file. An empty
+    /// clipboard is an absent command, not a command that does nothing.
+    var hasStashableClipboard = false
     /// Which launch-group slots have a name and at least one app. A slot
     /// with neither is not "empty content", it is an absent command.
     var configuredLaunchGroups: Set<PaletteCommandID> = []
+
+    /// The key-path form of `forceQuitTargetName`, which the palette gates on
+    /// while the row itself uses the name.
+    var hasForceQuitTarget: Bool {
+        forceQuitTargetName != nil
+    }
 }
 
 struct PaletteCommand: Identifiable, Equatable, Sendable {
@@ -84,20 +99,20 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
     /// "Next track" with nothing playing is offering a button that does
     /// nothing, which this codebase already decided is worse than an absent
     /// one (see `MusicSeekRow`).
+    ///
+    /// One case carrying a key path rather than one case per gate. This was
+    /// nine near-identical cases and a nine-arm switch that did nothing but
+    /// name the `PaletteContext` field to read — so every new gate cost a
+    /// case, an arm, and a point of cyclomatic complexity, and the switch
+    /// tripped the limit on the tenth. The *reason* each gate exists now
+    /// lives on the field it reads, which is where somebody looking for it
+    /// would go.
     enum Availability: Sendable, Equatable {
         case always
-        case whilePlaying
-        case whileVolumeExists
-        /// Not every input device has a mute — the probe found a Continuity
-        /// iPhone microphone with none at all.
-        case whileMicrophoneExists
-        case whileMultipleOutputs
-        case whileShelfHasFile
-        case whileShelfHasArchive
-        case whileShelfHasImage
-        /// Nothing to quit when the frontmost app is Visor itself or the
-        /// Finder, which is the only time this is false.
-        case whileForceQuitTargetExists
+        /// `& Sendable` is required rather than decorative: a bare `KeyPath`
+        /// is not `Sendable` under strict concurrency, even when both its
+        /// root and its value are.
+        case whileTrue(any KeyPath<PaletteContext, Bool> & Sendable)
         /// The associated id is the slot's own — each launch-group command
         /// checks only its own membership in `configuredLaunchGroups`.
         case whileGroupConfigured(PaletteCommandID)
@@ -105,14 +120,7 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
         func isSatisfied(by context: PaletteContext) -> Bool {
             switch self {
             case .always: true
-            case .whilePlaying: context.hasTrack
-            case .whileVolumeExists: context.hasVolume
-            case .whileMicrophoneExists: context.hasMicrophone
-            case .whileMultipleOutputs: context.hasMultipleOutputs
-            case .whileShelfHasFile: context.hasShelfFile
-            case .whileShelfHasArchive: context.hasShelfArchive
-            case .whileShelfHasImage: context.hasShelfImage
-            case .whileForceQuitTargetExists: context.forceQuitTargetName != nil
+            case let .whileTrue(flag): context[keyPath: flag]
             case let .whileGroupConfigured(id): context.configuredLaunchGroups.contains(id)
             }
         }
@@ -140,28 +148,28 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Play or Pause",
             symbol: "playpause.fill",
             keywords: ["music", "resume", "stop"],
-            availability: .whilePlaying
+            availability: .whileTrue(\.hasTrack)
         ),
         PaletteCommand(
             id: .nextTrack,
             title: "Next Track",
             symbol: "forward.end.fill",
             keywords: ["skip", "forward"],
-            availability: .whilePlaying
+            availability: .whileTrue(\.hasTrack)
         ),
         PaletteCommand(
             id: .previousTrack,
             title: "Previous Track",
             symbol: "backward.end.fill",
             keywords: ["back", "rewind"],
-            availability: .whilePlaying
+            availability: .whileTrue(\.hasTrack)
         ),
         PaletteCommand(
             id: .toggleMute,
             title: "Mute or Unmute",
             symbol: "speaker.slash.fill",
             keywords: ["volume", "silence"],
-            availability: .whileVolumeExists
+            availability: .whileTrue(\.hasVolume)
         ),
         PaletteCommand(
             id: .openSettings,
@@ -180,14 +188,14 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Copy Track Name",
             symbol: "doc.on.clipboard",
             keywords: ["clipboard", "share", "title"],
-            availability: .whilePlaying
+            availability: .whileTrue(\.hasTrack)
         ),
         PaletteCommand(
             id: .searchTrack,
             title: "Find Track on YouTube",
             symbol: "magnifyingglass",
             keywords: ["search", "video", "web"],
-            availability: .whilePlaying
+            availability: .whileTrue(\.hasTrack)
         ),
         PaletteCommand(
             id: .keepAwake,
@@ -200,7 +208,7 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Mute or Unmute Microphone",
             symbol: "mic.slash.fill",
             keywords: ["mic", "silence", "meeting", "call"],
-            availability: .whileMicrophoneExists
+            availability: .whileTrue(\.hasMicrophone)
         ),
         PaletteCommand(
             id: .lockScreen,
@@ -246,7 +254,7 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Switch Audio Output",
             symbol: "hifispeaker.fill",
             keywords: ["speaker", "headphones", "airpods", "sound", "device"],
-            availability: .whileMultipleOutputs
+            availability: .whileTrue(\.hasMultipleOutputs)
         ),
         PaletteCommand(
             id: .quickNote,
@@ -259,21 +267,21 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Compress Shelf File",
             symbol: "archivebox.fill",
             keywords: ["zip", "archive", "shrink"],
-            availability: .whileShelfHasFile
+            availability: .whileTrue(\.hasShelfFile)
         ),
         PaletteCommand(
             id: .expandShelfFile,
             title: "Expand Shelf File",
             symbol: "arrow.up.bin.fill",
             keywords: ["unzip", "extract", "open archive"],
-            availability: .whileShelfHasArchive
+            availability: .whileTrue(\.hasShelfArchive)
         ),
         PaletteCommand(
             id: .convertShelfImage,
             title: "Convert Shelf Image to JPEG",
             symbol: "photo.fill",
             keywords: ["jpg", "compress", "convert", "image"],
-            availability: .whileShelfHasImage
+            availability: .whileTrue(\.hasShelfImage)
         ),
         PaletteCommand(
             id: .toggleIslandHidden,
@@ -302,7 +310,14 @@ struct PaletteCommand: Identifiable, Equatable, Sendable {
             title: "Force Quit Frontmost App",
             symbol: "xmark.octagon.fill",
             keywords: ["kill", "unresponsive", "frozen", "beachball", "stuck"],
-            availability: .whileForceQuitTargetExists
+            availability: .whileTrue(\.hasForceQuitTarget)
+        ),
+        PaletteCommand(
+            id: .stashClipboard,
+            title: "Stash Clipboard",
+            symbol: "doc.on.clipboard",
+            keywords: ["paste", "clipboard", "hold", "keep", "shelf", "copy"],
+            availability: .whileTrue(\.hasStashableClipboard)
         ),
         PaletteCommand(
             id: .openActivityMonitor,

@@ -147,6 +147,14 @@ extension AnyTransition {
 
 Blur is GPU work, but only for ~300 ms during transitions, then it's gone. Never leave a blur on a resting view.
 
+**Page swaps use it too (2026-09-23).** Turning between the three expanded
+screens was a bare `.opacity` fade. That was right while each screen resolved
+its own size — the shape moving under the swap was itself the feedback — and
+wrong the moment every screen shared one box (§2.6b): with the shape holding
+still there was nothing left to soften the change, so the new screen simply
+appeared. Same `.island` transition as open and close; no new curve, no new
+token.
+
 ### 2.4b Album halo (Phase 5, 2026-09-16)
 
 A soft glow of the album's colour sits directly behind the artwork in the
@@ -203,6 +211,53 @@ closed ────────────────────────�
      ▼
   compact(transient) ──(2–3 s)──▶ previous state
 ```
+
+### 2.6b One box for every page (2026-09-23)
+
+The expanded island pages between three screens — agenda, player, usage —
+and each used to resolve its own size. So a swipe both changed what was on
+screen *and* resized the notch, which read as the island being dragged about
+by a gesture that only ever meant "show me the next thing".
+
+**Every screen the swipe can reach now resolves to one box.**
+`IslandLayout.covering(_:)` grows the expanded size to hold another layout
+and keeps the receiver's own wings and radii — the wings belong to the
+activity, always, because they are what the island looks like at rest and a
+screen you swiped to must not still be deciding them once it has closed.
+
+The **player measures the box**, and that is a constraint on the other two
+rather than an outcome:
+
+| Screen | Extra height | Fits 160? |
+| --- | --- | --- |
+| Player | 160 | — it *is* the box |
+| Agenda, 2 rows + overflow | 136 | yes |
+| Agenda, 3 rows, no overflow | 153 | yes |
+| Agenda, 3 rows + overflow | 178 | **no** |
+| Agenda, 2 rows + presets | 170 | **no** |
+| Usage, 2 rows | 157 | yes |
+
+So the agenda **page** gives up two things the idle **home** screen keeps: a
+third event row (`IslandLayout.maxPagedEventRows` = 2, against
+`maxEventRows` = 3) and the timer presets. Both were measured, not guessed —
+either one put back makes the island taller than the card it opens on, and
+the player's height would then track how many meetings you have. The row the
+page gives up is counted by the "+N more" line rather than lost.
+
+Content-resolved sizing (§the island is only ever as big as its contents) is
+unaffected: the box is still resolved from what `.home` is showing, so a
+quiet day still gets a smaller island. What changed is that *turning a page*
+is no longer a size change.
+
+**One constant, not a conditional.** The table shows three rows *do* fit when
+there is no "+N more" line under them — a day with exactly three events could
+show all three. `maxPagedEventRows` is a flat 2 anyway, because a cap that
+depends on whether the overflow line happens to be there is a page whose
+length changes with the calendar, and the whole point of this section is that
+it does not. The case it costs is narrow: exactly three upcoming events, no
+more. Worth revisiting only if that turns out to be a common day.
+
+Gated on the paging opt-in, so with the switch off nothing moved.
 
 ---
 

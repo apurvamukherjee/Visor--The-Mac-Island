@@ -7,94 +7,71 @@ import SwiftUI
 /// between equally-shipped options — they are changes to a working app, and
 /// mixing them into the existing column would bury that distinction under a
 /// twelfth section.
+///
+/// `Form`/`.grouped`, like every other pane. This was a hand-rolled
+/// `ScrollView` of `VStack`s and `Divider`s, which gave the sidebar two panes
+/// that looked like inset cards and two that looked like a plain document —
+/// in one window, a click apart.
 struct NewFeaturesView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        Form {
+            Section {
+                ForEach(NewFeatures.all) { feature in
+                    NewFeatureRow(feature: feature)
+                }
+            } footer: {
                 Text("Nothing here is on until you turn it on. With every switch off, "
                     + "Visor behaves exactly as it always has.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-
-                if NewFeatures.all.isEmpty {
-                    Text("Nothing to try yet.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 40)
-                } else {
-                    ForEach(NewFeatures.all) { feature in
-                        NewFeatureRow(feature: feature)
-                    }
-
-                    Divider()
-
-                    HoverDelaySlider()
-
-                    Divider()
-
-                    AIUsageBudgetFields()
-                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
-        }
-    }
-}
 
-/// The one value in this tab rather than a switch: hover delay has a
-/// number, not an off position, so it cannot ride `NewFeature`'s "unset
-/// means today's behaviour" guarantee and carries its own default.
-private struct HoverDelaySlider: View {
-    @AppStorage(Preferences.hoverIntentDelayKey)
-    private var milliseconds = Preferences.hoverIntentDelayDefault
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text("Hover delay")
-                Spacer()
-                Text("\(Int(milliseconds)) ms")
+            Section {
+                LabeledSlider(
+                    "Hover delay",
+                    value: $hoverDelay,
+                    range: Preferences.hoverIntentDelayRange,
+                    format: { "\(Int($0)) ms" }
+                )
+            } header: {
+                Text("Hover")
+            } footer: {
+                Text("How long the pointer rests on the island before it opens. "
+                    + "120 ms is the default.")
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            .font(.callout)
-            Slider(value: $milliseconds, in: Preferences.hoverIntentDelayRange)
-            Text("How long the pointer rests on the island before it opens. 120 ms is the default.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-}
-
-/// The daily token targets the usage badge measures against.
-///
-/// Empty is the shipped state and means no percentage is drawn at all. These
-/// are *your* numbers: neither Anthropic nor OpenAI publishes the real plan
-/// limit anywhere this machine can read, so a percentage against anything
-/// else would be a guess presented as a fact.
-private struct AIUsageBudgetFields: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Daily token budget")
-                .font(.callout)
-
-            ForEach(AIUsageTool.allCases, id: \.rawValue) { tool in
-                BudgetField(tool: tool)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("Optional. Set a target and the badge shows how far through it you are. "
-                + "Left empty it just shows the count — there is no way to read your real "
-                + "plan limit from this Mac, so the badge never pretends to.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Section {
+                ForEach(AIUsageTool.allCases, id: \.rawValue) { tool in
+                    BudgetField(tool: tool)
+                }
+            } header: {
+                Text("Daily token budget")
+            } footer: {
+                Text("Optional. Set a target and the badge shows how far through it you are. "
+                    + "Left empty it just shows the count — there is no way to read your real "
+                    + "plan limit from this Mac, so the badge never pretends to.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+        .formStyle(.grouped)
     }
+
+    /// The one value in this tab rather than a switch: hover delay has a
+    /// number, not an off position, so it cannot ride `NewFeature`'s "unset
+    /// means today's behaviour" guarantee and carries its own default.
+    @AppStorage(Preferences.hoverIntentDelayKey)
+    private var hoverDelay = Preferences.hoverIntentDelayDefault
 }
 
+/// One tool's target. Empty is the shipped state and means no percentage is
+/// drawn at all — these are *your* numbers, since neither vendor publishes a
+/// real plan limit anywhere this machine can read.
 private struct BudgetField: View {
     let tool: AIUsageTool
 
@@ -106,10 +83,7 @@ private struct BudgetField: View {
     }
 
     var body: some View {
-        HStack {
-            Text(tool.title)
-                .font(.callout)
-            Spacer(minLength: 8)
+        LabeledContent(tool.title) {
             TextField(
                 "",
                 value: $budget,
@@ -137,8 +111,8 @@ private struct NewFeatureRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Toggle(isOn: $isOn) {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(feature.title)
                     if feature.isRecommended {
@@ -150,11 +124,11 @@ private struct NewFeatureRow: View {
                             .background(.secondary.opacity(0.18), in: Capsule())
                     }
                 }
+                Text(feature.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(feature.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

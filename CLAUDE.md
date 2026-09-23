@@ -479,6 +479,54 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   tests in 52 suites, swiftformat, swiftlint (6, 0 serious — unchanged).
   **Not yet seen:** the music hide/return rule, and the Codex figure with
   real data.
+- **One box per page + audit (2026-09-23):** paging resized the notch,
+  because each of the three screens resolved its own size — so a swipe both
+  changed what was showing and moved the shape. Every reachable screen now
+  folds into one box (`IslandLayout.covering`), which grows the expanded size
+  and keeps the **activity's** own wings and radii. The **player measures the
+  box**: 421x193, constant. Measured, not guessed — the agenda at three rows
+  plus "+N more" is 178pt against the player's 160, so the agenda *page*
+  gives up a row (`maxPagedEventRows` 2, vs `maxEventRows` 3) and the timer
+  presets, which stay on the idle home screen. Three rows *without* the
+  overflow line would fit (153); the cap is a flat 2 anyway, because a length
+  that depends on the calendar is the thing this rule exists to remove.
+  Detail: RESEARCH §2.6b. The page swap moved from a bare opacity fade to
+  `.transition(.island)` — right while the shape moved under it, wrong once
+  it holds still.
+  — **Four bugs, all real.** A swipe *up* opened a closed island: paging
+  routed both directions through "open it if it isn't up", granting a
+  behaviour that belongs to `swipeDownOpens` with that switch off.
+  `launchGroupsKey` was declared beside `paletteShortcutsKey` and never added
+  to `resettableKeys`, so a restore wiped the shortcut keys and kept the ten
+  groups — `PreferencesRestoreTests` iterates that list, so a missing key is
+  invisible to it. Two consecutive `Divider()` in `ShortcutsView`. And New
+  Features + Shortcuts were hand-rolled `ScrollView`/`VStack` columns while
+  the other three panes were grouped `Form`s, so one window held two panes
+  that looked like a different app.
+  — **Stash:** `adopt` rejected anything not an image and logged it, so a
+  dropped video or PDF vanished silently — guard deleted, the thumbnail path
+  already falls back to a glyph. New palette command **Stash Clipboard** (37
+  commands now): a copied file is held where it lives, copied image data is
+  written to a file because the shelf holds URLs and a bare image cannot be
+  dropped into Finder; PNG preferred over TIFF (both are on the board after
+  ⌃⌘⇧4, the TIFF is the enormous one). `NSPasteboard` injectable, so the
+  tests never read the real clipboard. AirDrop never needed a change — it has
+  no type filter.
+  — `PaletteCommand.Availability` collapsed from nine near-identical cases +
+  a nine-arm switch to one `whileTrue(KeyPath<PaletteContext, Bool> &
+  Sendable)`; the switch tripped the complexity limit on the tenth gate.
+  `& Sendable` is load-bearing under strict concurrency, not decorative.
+  — **Audit, listed not applied:** dead `Motion.SwipeFeedback` and
+  `Motion`/`MotionPreset.unmountDelay` (both kept alive only by their own
+  tests), four byte-identical `Haptics` functions, `PressedButtonStyle`'s
+  unused config and dead `#if os(macOS)` branches, `ExpandedUsageView.tools`
+  duplicating `NotchStore.usageRows`, and 22 hand-rolled `min(max(…))`
+  clamps. ~130 lines, 0 deps.
+  Build 0 warnings, 266 tests in 56 suites, swiftformat, swiftlint (3, 0
+  serious — **down from 6**). **None of it seen on hardware.**
+  **Still open:** dragging an image straight out of a browser is rejected —
+  that vends TIFF/PNG *data*, not a file URL, and the drop target is
+  `dropDestination(for: URL.self)`.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state
