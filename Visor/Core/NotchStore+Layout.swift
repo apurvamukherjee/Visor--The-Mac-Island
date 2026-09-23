@@ -21,7 +21,17 @@ extension NotchStore {
         // page cross-fades content inside a shape that does not move. Sizing
         // each page for itself made the notch grow and shrink under a gesture
         // that only ever meant "show me the next thing".
-        let box = availablePages.reduce(activity) { $0.covering(pageLayout(for: $1)) }
+        // One box for every page — and the *same* box whatever is playing.
+        //
+        // `covering` alone made the box the max of whatever was reachable, so
+        // it tracked the current activity: 421x193 with a track loaded and
+        // 366x190 without, a 55pt jump the moment music started. The player
+        // is the page with the most in it and the one the island always opens
+        // on, so it is what every screen is measured against — the same
+        // reason it already floors the paged agenda's row count.
+        let box = availablePages
+            .reduce(activity) { $0.covering(pageLayout(for: $1)) }
+            .covering(IslandLayout.nowPlaying(islandContent))
         guard isCardStacked else { return box }
         var stacked = box
         stacked.chinReveal = IslandStackMetrics.reveal(

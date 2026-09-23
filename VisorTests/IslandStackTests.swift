@@ -127,4 +127,89 @@ struct IslandStackTests {
         #expect(store.isCardStacked == false)
         #expect(store.layout.chinReveal == 0)
     }
+
+    /// The affordance has to point at the gesture that uses it: the chin you
+    /// can see is at depth 1, so that is the card a swipe up must bring
+    /// forward. Pinned because the sign lives in `turned(by:)` and nothing
+    /// else would catch it flipping back.
+    @Test("The visible chin is the one a swipe up reaches")
+    func visibleChinIsOneStepUp() {
+        let pages: [IslandPage] = [.agenda, .home, .usage]
+        let depths = IslandStackMetrics.depths(front: .home, in: pages)
+        let afterSwipeUp = IslandPage.home.cycled(by: 1, in: pages)
+
+        #expect(depths[afterSwipeUp] == 1)
+    }
+
+    /// The inset is a fraction of the box, not a constant. A flat 11pt was
+    /// 2.6% of the player's 421pt box — below the width at which an edge
+    /// reads as a separate card at all.
+    @Test("Chin inset scales with the box")
+    func chinInsetScalesWithWidth() {
+        let narrow = IslandStackMetrics.chinInset(depth: 1, width: 230)
+        let wide = IslandStackMetrics.chinInset(depth: 1, width: 421)
+
+        #expect(wide > narrow)
+        #expect(wide / 421 == IslandStackMetrics.chinInsetFraction)
+        // Depth 2 is twice depth 1, on any width.
+        #expect(IslandStackMetrics.chinInset(depth: 2, width: 421) == 2 * wide)
+    }
+
+    /// A narrow island must not inset its chins into nothing.
+    @Test("Inset has a floor")
+    func chinInsetHasAFloor() {
+        #expect(IslandStackMetrics.chinInset(depth: 1, width: 100) == IslandStackMetrics.minimumChinInset)
+    }
+
+    /// An unwritten key is today's behaviour, same guarantee as PagingStyle.
+    @Test("Chin gradient defaults to charcoal")
+    func gradientDefaults() {
+        let suite = "visor.tests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return }
+
+        #expect(ChinGradient.current(in: defaults) == .charcoal)
+        defaults.set("neon", forKey: Preferences.chinGradientKey)
+        #expect(ChinGradient.current(in: defaults) == .charcoal)
+        defaults.set(ChinGradient.ember.rawValue, forKey: Preferences.chinGradientKey)
+        #expect(ChinGradient.current(in: defaults) == .ember)
+    }
+
+    /// **One card, whatever is playing.** `covering` alone made the box the
+    /// max of what was *reachable*, so it tracked the current activity —
+    /// 421x193 with a track loaded and 366x190 without, a 55pt jump the
+    /// moment music started. Every page is now measured against the player.
+    ///
+    /// The *card* is what must not move. Total island height still differs by
+    /// one chin, because a quiet island genuinely has one fewer page to stack
+    /// (`availablePages` drops `.agenda` when nothing owns the island), and a
+    /// chin that is not there cannot protrude.
+    @Test("The card is the same size whether or not music is playing")
+    func cardDoesNotTrackTheActivity() {
+        withPagingEnabled {
+            let playing = makeStore(style: .cardStack)
+            playing.activate(.nowPlaying)
+            let quiet = makeStore(style: .cardStack)
+
+            #expect(playing.layout.expandedExtraWidth == quiet.layout.expandedExtraWidth)
+            #expect(playing.layout.expandedExtraHeight == quiet.layout.expandedExtraHeight)
+        }
+    }
+
+    /// And the same on every page, not just the one it opens on.
+    @Test("Turning a page does not resize the island")
+    func pagingDoesNotResize() {
+        withPagingEnabled {
+            let store = makeStore(style: .cardStack)
+            store.activate(.nowPlaying)
+            let closed = CGSize(width: 185, height: 33)
+
+            let sizes = IslandPage.allCases.map { page -> CGSize in
+                store.islandPage = page
+                return store.layout.expandedSize(closed: closed)
+            }
+
+            #expect(Set(sizes.map(\.width)).count == 1)
+            #expect(Set(sizes.map(\.height)).count == 1)
+        }
+    }
 }

@@ -19,11 +19,34 @@ struct NotchRadii: Equatable, Sendable {
 enum IslandStackMetrics {
     /// How far each chin sits below the card in front of it.
     static let chinOffset: CGFloat = 9
-    /// How far each chin is drawn in at the sides. This is what makes a
-    /// chin read as a card behind rather than a second edge on the same
-    /// shape — an equal-width card peeking under another is one silhouette
-    /// with a lip, not two cards.
-    static let chinInset: CGFloat = 11
+    /// How far each chin is drawn in at the sides, **as a fraction of the
+    /// box's own width**. This is what makes a chin read as a card behind
+    /// rather than a second edge on the same shape — an equal-width card
+    /// peeking under another is one silhouette with a lip, not two cards.
+    ///
+    /// A fraction rather than the flat 11pt it started as. That constant was
+    /// tuned against the ~230pt idle island and measured 2.6% per side once
+    /// the player's 421pt box was behind it, which is below the width at
+    /// which an edge reads as a separate card at all — the island grew and
+    /// the affordance quietly stopped working. A proportion reads the same
+    /// on every page.
+    static let chinInsetFraction: CGFloat = 0.038
+    /// Never inset so far that a chin disappears behind a narrow island.
+    static let minimumChinInset: CGFloat = 9
+
+    /// How tall a chin is *drawn*. Chins used to be full-height cards
+    /// stacked behind the front one, which meant a 193pt card existed to
+    /// show 9pt of itself — 95% of every chin was hidden, and the deck
+    /// rendered as one heavy slab with two slivers under it. A chin is now
+    /// only as tall as the part that shows, plus enough body for its own
+    /// bottom corners to curve through.
+    static let chinBodyHeight: CGFloat = 26
+
+    /// Inset for a card at `depth`, against a box `width` wide.
+    static func chinInset(depth: Int, width: CGFloat) -> CGFloat {
+        CGFloat(depth) * max(width * chinInsetFraction, minimumChinInset)
+    }
+
     /// How much rounder each chin is than the card in front, so the stack
     /// recedes instead of reading as three identical slabs.
     static let chinRadiusDrop: CGFloat = 3

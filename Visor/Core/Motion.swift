@@ -58,12 +58,6 @@ enum Motion {
         preset.hideShowDelay * 0.24
     }
 
-    /// How long an outgoing layout stays mounted. Strictly longer than the
-    /// close, or it tears down mid-morph.
-    static var unmountDelay: Double {
-        preset.unmountDelay
-    }
-
     /// idle ↔ music expanded column redistribution — one coordinated layout
     /// change, not two sequential ones
     static var layout: Animation {
@@ -119,24 +113,6 @@ enum Motion {
     static let squashWidthFraction: CGFloat = 0.2
     static let squashHeightFraction: CGFloat = 0.2
     static let squashRadiusFraction: CGFloat = 0.3
-
-    /// How far a swipe-in-progress squeezes the island. The compression is
-    /// clamped so the gesture feels the same on a wing as on a full expanded
-    /// card.
-    ///
-    /// There is deliberately no blur or fade here any more: the squeeze is
-    /// the whole feedback. Blurring the content as well read as the island
-    /// losing focus rather than being pushed.
-    enum SwipeFeedback {
-        static let widthFactor: CGFloat = 0.18
-        static let minimumWidth: CGFloat = 28
-        static let maximumWidth: CGFloat = 44
-
-        /// Points of squeeze for a given island width at full progress.
-        static func compression(for width: CGFloat) -> CGFloat {
-            min(max(width * widthFactor, minimumWidth), maximumWidth)
-        }
-    }
 
     /// Cached, not queried per read. These are read from view bodies and from
     /// `mouseMoved`, and each raw access is an IPC round-trip into the

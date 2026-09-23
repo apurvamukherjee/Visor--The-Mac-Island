@@ -14,7 +14,8 @@ extension NotchRootView {
                 store: store,
                 size: currentSize,
                 radii: radii,
-                isRevealed: isStackRevealed && !store.isStackRetracting
+                isRevealed: isStackRevealed && !store.isStackRetracting,
+                gradient: ChinGradient(rawValue: chinGradient) ?? .charcoal
             ) {
                 islandCard
             }

@@ -15,7 +15,7 @@ struct VolumeInfo: Equatable, Sendable {
     }
 
     static func clamped(_ level: Float) -> Float {
-        min(max(level, 0), 1)
+        level.clamped(to: 0 ... 1)
     }
 }
 

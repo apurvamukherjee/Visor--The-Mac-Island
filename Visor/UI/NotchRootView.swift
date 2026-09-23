@@ -56,12 +56,13 @@ struct NotchRootView: View {
         shape
             .fill(.black)
             // The front card's own colour, off by default and only ever
-            // reached with the deck on. `.home`'s tint is `.clear`, so the
-            // player page stays black even with the switch on — it is the
-            // page with no accent of its own.
+            // reached with the deck on. Drawn from the same family as the
+            // chins at depth 0, so the stack reads as one material rather
+            // than a black card sitting on coloured ones.
             .overlay {
                 if frontCardTintEnabled, store.isCardStacked, store.state == .expanded {
-                    shape.fill(store.islandPage.tint.opacity(0.18))
+                    shape.fill((ChinGradient(rawValue: chinGradient) ?? .charcoal).fill(depth: 0))
+                        .opacity(0.55)
                 }
             }
             // Nothing paints outside the silhouette: the ring is the shape's
@@ -90,6 +91,7 @@ struct NotchRootView: View {
     @State var isStackRevealed = false
 
     @AppStorage(NewFeatures.islandStackTint.key) private var frontCardTintEnabled = false
+    @AppStorage(Preferences.chinGradientKey) var chinGradient = ChinGradient.charcoal.rawValue
     @AppStorage(NewFeatures.visibleDropZones.key) private var showsDropZones = false
     @AppStorage(NewFeatures.lyrics.key) private var lyricsEnabled = false
     @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false

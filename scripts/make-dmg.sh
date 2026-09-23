@@ -161,11 +161,41 @@ if [ "$ACTUAL" != "$EXPECTED" ]; then
     exit 1
 fi
 
+# One last sweep immediately before detaching. The delete above happens while
+# the volume is still live, and macOS recreates .fseventsd during the detach
+# itself — measured on build 29, which shipped one past an assertion that had
+# just passed. Unmounting with `diskutil` rather than `hdiutil detach` lets the
+# filesystem settle first, and the post-convert check below is what actually
+# guarantees it: the live mount cannot be trusted to stay clean.
+# `.fseventsd` is recreated during the detach itself — measured on build 29,
+# which shipped one past an assertion that had just passed. Dropping a
+# `no_log` file in it is what actually stops macOS maintaining the directory;
+# deleting it alone only wins the race until the unmount.
+rm -rf "$MOUNTPT/.fseventsd" 2>/dev/null || true
+mkdir -p "$MOUNTPT/.fseventsd" 2>/dev/null || true
+touch "$MOUNTPT/.fseventsd/no_log" 2>/dev/null || true
+sync
+rm -rf "$MOUNTPT/.fseventsd" 2>/dev/null || true
+sync
 hdiutil detach "$DEV" >/dev/null
 trap - EXIT
 
 hdiutil convert "$RW" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null
 rm -f "$RW"
+
+# Assert on the image that actually ships, not on the read-write volume that
+# built it. Everything above can pass and still convert an image with an
+# .fseventsd in it, which is exactly what happened on build 29.
+VERIFY_MNT="$(hdiutil attach "$DMG" -nobrowse -readonly | grep -o '/Volumes/.*' | tail -1)"
+SHIPPED="$(ls -A "$VERIFY_MNT" | sort | tr '\n' ' ')"
+hdiutil detach "$VERIFY_MNT" >/dev/null 2>&1 || true
+if [ "$SHIPPED" != "$EXPECTED" ]; then
+    echo "Converted .dmg contents unexpected." >&2
+    echo "  expected: $EXPECTED" >&2
+    echo "  actual:   $SHIPPED" >&2
+    rm -f "$DMG"
+    exit 1
+fi
 # Keep a dated copy in the repo so a build is downloadable straight from
 # GitHub. dist/ is gitignored and gets overwritten; this one is permanent.
 VERSION="$(sed -n 's/.*MARKETING_VERSION: "\(.*\)".*/\1/p' project.yml)"

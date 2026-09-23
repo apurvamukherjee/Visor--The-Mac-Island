@@ -341,9 +341,48 @@ also the colour the island *closes* in. Full-card tint is its own opt-in
 (`NewFeatures.islandStackTint`, off), so it can be seen on hardware without
 being committed to.
 
-**Unverified on hardware:** whether 9pt of lip is enough to read a tint
-against a bright wallpaper, and whether the retract beat reads as deliberate
-or as lag. Both are single constants.
+**Three rules the first pass got wrong, now load-bearing (2026-09-23).**
+
+1. **One box for every page, and the same box whatever is playing.**
+   `covering` resolves every reachable screen into one size (§2.6b), but on
+   its own it took the max of what was *reachable*, so the box still tracked
+   the current activity: **421x193 with a track loaded, 366x190 without** — a
+   55pt jump the moment music started. The resolution now also covers
+   `nowPlaying` unconditionally, so **the player measures the island, always**.
+   It is the page with the most in it and the one every open lands on, which
+   is the same reason it already floors the paged agenda's row count.
+   Total island height still differs by one chin between a quiet and a
+   playing island, and that is correct: `availablePages` drops `.agenda` when
+   nothing owns the island, and a page that is not there cannot protrude.
+
+2. **Chin insets are proportional, never absolute.** The first pass used a
+   flat 11pt. Measured against the player's box that is **2.6% per side** —
+   below the width at which an edge reads as a separate card — so the deck
+   silently stopped working on exactly the page it is most often seen on. It
+   is now `chinInsetFraction` (3.8% of the box) with a `minimumChinInset`
+   floor, so it reads the same on the 230pt idle island and the 421pt player.
+
+3. **Chins are short cards, not full-height ones.** They were drawn at the
+   front card's full height and peeked 9pt, so **95% of every chin was
+   hidden** and the deck rendered as one heavy slab with two slivers under
+   it. A chin is now `chinBodyHeight` tall — only the part that shows, plus
+   enough body for its own corners.
+
+**Depth and the swipe must agree.** Depth counts forward from the front card,
+so the chin you can *see* is at depth +1, and a swipe up has to bring that
+card forward. `turned(by:)` inverts the delta for the stacked path only;
+without the flip a swipe up reached the depth-2 card and the visible
+affordance pointed at the wrong gesture. `IslandStackTests` pins it.
+
+**Chin colour is a preset family, never a per-page literal.** `ChinGradient`
+holds four dark gradients; each card takes a *lighter* stop by depth, because
+receding by darkening runs a chin into the black island above it. Three
+per-page colour wells would have been three keys to store, three to restore
+and three ways to pick a combination that reads as one blur.
+
+**Unverified on hardware:** whether the retract beat before closing reads as
+deliberate or as lag, and which gradient family reads best against a bright
+wallpaper. Both are one constant / one picker.
 
 ---
 

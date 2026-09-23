@@ -14,7 +14,7 @@
 [![Commands](https://img.shields.io/badge/palette-36%20commands-black?style=flat-square)](#command-palette)
 [![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#tech-stack)
 [![Tests](https://img.shields.io/badge/tests-259%20passing-brightgreen?style=flat-square)](#build)
-[![Release](https://img.shields.io/badge/release-2.6.0-blue?style=flat-square)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-2.7.1-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 <br />
@@ -233,7 +233,9 @@ usage   ↓   the quick look down
 
 Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
 
-**The notch does not resize as you turn.** All three screens share one box, and the player measures it — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the two quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
+**Or turn it into a deck.** *Paging style › Card stack* draws the two adjacent screens as cards peeking below the front one, and the stack then cycles endlessly in both directions rather than stopping at the ends — a card you can see continuing should not dead-end. Swipe up and the card you can see comes forward. The cards are dark gradients in one of four families — Charcoal, Midnight, Ember, Slate — each sitting a shade lighter the further back it is, so two adjacent cards stay distinct instead of merging into the black island above them. Cross-fade remains the default; the deck is there when you want to see that the other screens exist.
+
+**The notch does not resize as you turn — or when the music starts.** All three screens share one box, and the player measures it, whether or not anything is playing — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the two quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
 
 Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did, and nothing about the island's size changes.
 

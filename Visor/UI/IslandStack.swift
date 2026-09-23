@@ -24,9 +24,11 @@ struct IslandStack<Front: View>: View {
     var size: CGSize
     var radii: NotchRadii
     /// False until the reveal delay has passed, and again while the island
-    /// is retracting before a collapse. The chins sit at depth 0 — exactly
-    /// behind the front card — when it is false.
+    /// is retracting before a collapse. The chins sit tucked behind the
+    /// front card's lower edge when it is false.
     var isRevealed: Bool
+    /// The family every chin is filled from, chosen in Settings.
+    var gradient: ChinGradient
     @ViewBuilder var front: () -> Front
 
     /// Deepest first, so a nearer chin draws over a further one.
@@ -46,32 +48,37 @@ struct IslandStack<Front: View>: View {
         }
     }
 
-    /// One peeking card. Drawn at the front card's full size and pushed
-    /// down, rather than drawn as a short lip: a lip would have to know the
-    /// front card's radius to meet it cleanly, and this way the geometry is
-    /// the same shape every time.
-    private func chinCard(page: IslandPage, depth: Int) -> some View {
-        let step = CGFloat(min(depth, IslandStackMetrics.maxDepth))
+    /// One peeking card.
+    ///
+    /// Drawn only as tall as the part that shows, not at the front card's
+    /// full height. A full-height chin existed to reveal 9pt of itself, so
+    /// 95% of it sat hidden behind the front card and the deck rendered as
+    /// one heavy slab — the reason the feature read as broken on the
+    /// player's larger box. Bottom-aligned in the same frame as the front
+    /// card, so its lower edge lands `chinOffset` below it per depth.
+    private func chinCard(page _: IslandPage, depth: Int) -> some View {
+        let step = min(depth, IslandStackMetrics.maxDepth)
+        let peek = CGFloat(step) * IslandStackMetrics.chinOffset
         var chinRadii = radii
-        chinRadii.bottom = max(0, radii.bottom - step * IslandStackMetrics.chinRadiusDrop)
+        chinRadii.bottom = max(
+            0,
+            radii.bottom - CGFloat(step) * IslandStackMetrics.chinRadiusDrop
+        )
         // No shoulder on a chin: the flare exists to blend the island into
-        // the menu bar, and a card 9pt further down has no bezel to meet.
+        // the menu bar, and a card below the front one has no bezel to meet.
         chinRadii.top = 0
         let shape = NotchShape(chinRadii, isCapsule: store.isCapsule)
+        let inset = IslandStackMetrics.chinInset(depth: step, width: size.width)
 
         return shape
-            .fill(.black)
-            .overlay {
-                if page.usesMaterialChin {
-                    shape.fill(.ultraThinMaterial).opacity(0.5)
-                } else {
-                    shape.fill(page.tint.opacity(0.22))
-                }
-            }
+            .fill(gradient.fill(depth: step))
             .frame(
-                width: max(0, size.width - step * 2 * IslandStackMetrics.chinInset),
-                height: size.height
+                width: max(0, size.width - 2 * inset),
+                height: IslandStackMetrics.chinBodyHeight
             )
-            .offset(y: isRevealed ? step * IslandStackMetrics.chinOffset : 0)
+            // The chin hangs off the bottom of the front card rather than
+            // sitting inside it, so the offset is measured from the card's
+            // own lower edge.
+            .offset(y: size.height - IslandStackMetrics.chinBodyHeight + (isRevealed ? peek : 0))
     }
 }

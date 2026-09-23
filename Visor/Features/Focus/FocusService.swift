@@ -47,20 +47,17 @@ final class FocusService: NotchService {
         observers.forEach(center.removeObserver)
         observers.removeAll()
         store.isFocusOn = false
-        store.focusPeek = nil
         store.deactivate(.focus)
     }
 
     private func apply(isOn: Bool) {
         guard isOn != store.isFocusOn else { return }
         store.isFocusOn = isOn
-        store.focusPeek = isOn
         store.activate(.focus)
         peekTask?.cancel()
         peekTask = Task { [weak self] in
             try? await Task.sleep(for: Dwell.focus, tolerance: .milliseconds(200))
             guard !Task.isCancelled else { return }
-            self?.store.focusPeek = nil
             self?.store.deactivate(.focus)
         }
     }

@@ -64,11 +64,17 @@ struct NewFeaturesView: View {
                     format: { "\(Int($0)) ms" }
                 )
                 .disabled(pagingStyle != PagingStyle.cardStack.rawValue)
+                Picker("Card colour", selection: $chinGradient) {
+                    ForEach(ChinGradient.allCases, id: \.rawValue) { gradient in
+                        Text(gradient.title).tag(gradient.rawValue)
+                    }
+                }
+                .disabled(pagingStyle != PagingStyle.cardStack.rawValue)
             } header: {
                 Text("Paging")
             } footer: {
                 Text("How the island moves between its screens, and how long after it "
-                    + "opens the chins slide out. 0 ms shows them straight away. "
+                    + "opens the cards behind it slide out. 0 ms shows them straight away. "
                     + "Needs “Swipe between screens” on.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -105,6 +111,7 @@ struct NewFeaturesView: View {
     @AppStorage(Preferences.pagingStyleKey) private var pagingStyle = PagingStyle.crossFade.rawValue
     @AppStorage(Preferences.stackRevealDelayKey)
     private var stackReveal = Preferences.stackRevealDelayDefault
+    @AppStorage(Preferences.chinGradientKey) private var chinGradient = ChinGradient.charcoal.rawValue
 }
 
 /// One tool's target. Empty is the shipped state and means no percentage is

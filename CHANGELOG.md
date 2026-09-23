@@ -18,6 +18,48 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.7.1] — 2026-09-23 (build 29)
+
+### Fixed
+
+- **The card stack did not work on the page it is most often seen on.**
+  Measured, not guessed: with music playing the island is 421x193, and each
+  card behind the front one was inset a flat 11pt — **2.6% per side** — while
+  being drawn at the front card's full height to reveal 9pt of itself, so
+  **95% of every card was hidden**. The deck rendered as one heavy slab with
+  two slivers under it. Cards are now only as tall as the part that shows,
+  and the inset is a proportion of the island's width, so the deck reads the
+  same on the narrow idle island and the wide player.
+- **The island changed size depending on whether music was playing** —
+  421x193 with a track loaded, 366x190 without, a 55pt jump the moment
+  playback started. Every screen is now measured against the player, so the
+  card is one size always.
+- **Swiping up reached the wrong card.** The card you can see peeking is the
+  next one in the stack, but a swipe up was skipping past it to the one
+  hidden behind. Up now brings the visible card forward.
+
+### Changed
+
+- **Cards behind the front one are dark gradients, not flat tints**, chosen
+  from four families in Settings → New Features → Card colour: Charcoal,
+  Midnight, Ember and Slate. Each card takes a lighter step of the family the
+  further back it sits, so two adjacent cards stay distinct instead of
+  merging into the black island above them. The old white/clear/orange tints
+  gave the player page no colour at all.
+
+### Removed
+
+- Dead code found by an over-engineering audit: unused motion tokens kept
+  alive only by their own tests, a write-only store field, an unused dwell
+  constant and an unread command property. No behaviour change — with the
+  paging style left on Cross-fade, this release is identical to 2.7.0.
+
+### Not yet verified on hardware
+
+- Which gradient family reads best against a bright wallpaper, and whether
+  the retract beat before closing reads as deliberate or as lag. Both are one
+  picker / one constant.
+
 ## [2.7.0] — 2026-09-23 (build 28)
 
 ### Added

@@ -111,22 +111,25 @@ extension IslandLayout {
         compactExtraWidth: 176
     )
 
-    /// Smaller and rounder than the rest: a countdown is a single
-    /// glanceable figure with two controls, not a panel, so it reads as a
-    /// pill. So does the volume bar.
-    static let timer = IslandLayout(
-        expandedExtraWidth: 175,
-        expandedExtraHeight: extraHeight(Block.countdown),
-        compactExtraWidth: 150,
-        expandedRadii: NotchRadii(top: 11, bottom: 34)
-    )
+    /// Smaller and rounder than the rest: a single glanceable figure with at
+    /// most a control or two, not a panel, so it reads as a pill. The timer,
+    /// the volume bar and the recording clock are all this shape, which is
+    /// why they are built from one factory rather than written out three
+    /// times with the same radii.
+    static let pillRadii = NotchRadii(top: 11, bottom: 34)
 
-    static let volume = IslandLayout(
-        expandedExtraWidth: 175,
-        expandedExtraHeight: extraHeight(Block.volumeBar),
-        compactExtraWidth: 150,
-        expandedRadii: NotchRadii(top: 11, bottom: 34)
-    )
+    static func pill(width: CGFloat = 175, block: CGFloat) -> IslandLayout {
+        IslandLayout(
+            expandedExtraWidth: width,
+            expandedExtraHeight: extraHeight(block),
+            compactExtraWidth: 150,
+            expandedRadii: pillRadii
+        )
+    }
+
+    static let timer = pill(block: Block.countdown)
+
+    static let volume = pill(block: Block.volumeBar)
 
     /// One row per download in flight, so a single file does not get the
     /// island a batch needs — the same content-resolved sizing the agenda
@@ -162,12 +165,10 @@ extension IslandLayout {
         compactExtraWidth: 55
     )
 
-    /// A pill, like the timer and the volume bar: one glyph and one clock.
-    static let screenRecording = IslandLayout(
-        expandedExtraWidth: extraWidth(content: Column.recording),
-        expandedExtraHeight: extraHeight(Block.recording),
-        compactExtraWidth: 150,
-        expandedRadii: NotchRadii(top: 11, bottom: 34)
+    /// One glyph and one clock.
+    static let screenRecording = pill(
+        width: extraWidth(content: Column.recording),
+        block: Block.recording
     )
 
     /// The welcome flow. One size for all three steps rather than resizing

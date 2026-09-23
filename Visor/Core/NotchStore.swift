@@ -143,11 +143,10 @@ final class NotchStore {
     var screenRecording: ScreenRecording?
     /// Owned by `BluetoothService`; an event, so it clears itself.
     var bluetoothAlert: BluetoothAlert?
-    /// Owned by `FocusService`. `isFocusOn` is the condition; `focusPeek`
-    /// is the transient announcement of it changing, which is what drives
-    /// the `.focus` activity.
+    /// Owned by `FocusService`. The condition itself; the transient
+    /// announcement of it changing is the `.focus` activity, which the
+    /// service activates and deactivates around this.
     var isFocusOn = false
-    var focusPeek: Bool?
     /// Owned by `NetworkService`. Non-nil means a VPN is actually up — see
     /// `VPNStatus` for why that is not the same as a `utun` interface
     /// existing.

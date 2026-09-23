@@ -104,10 +104,22 @@ enum Preferences {
     }
 
     static func hoverIntentDelayMilliseconds(in defaults: UserDefaults) -> Double {
-        guard let stored = defaults.object(forKey: hoverIntentDelayKey) as? Double else {
-            return hoverIntentDelayDefault
-        }
-        return min(max(stored, hoverIntentDelayRange.lowerBound), hoverIntentDelayRange.upperBound)
+        milliseconds(forKey: hoverIntentDelayKey, default: hoverIntentDelayDefault,
+                     range: hoverIntentDelayRange, in: defaults)
+    }
+
+    /// A stored millisecond value, or its shipped default when the key has
+    /// never been written. `object(forKey:)` rather than `double(forKey:)`
+    /// because an absent key and a deliberate 0 must not read the same —
+    /// both sliders treat 0 as a real choice.
+    private static func milliseconds(
+        forKey key: String,
+        default fallback: Double,
+        range: ClosedRange<Double>,
+        in defaults: UserDefaults
+    ) -> Double {
+        guard let stored = defaults.object(forKey: key) as? Double else { return fallback }
+        return stored.clamped(to: range)
     }
 
     static var hidesInFullscreen: Bool {
@@ -124,6 +136,9 @@ enum Preferences {
     /// than an off position, so it cannot ride `bool(forKey:)`'s false; and
     /// like it, 0 is a choice (chins out from the start), not an absence.
     static let stackRevealDelayKey = "islandStackRevealMilliseconds"
+
+    /// `ChinGradient.rawValue`. Unset is `.charcoal` — see `ChinGradient`.
+    static let chinGradientKey = "islandChinGradient"
     static let stackRevealDelayDefault = 600.0
     static let stackRevealDelayRange: ClosedRange<Double> = 0 ... 1500
 
@@ -132,10 +147,8 @@ enum Preferences {
     }
 
     static func stackRevealDelayMilliseconds(in defaults: UserDefaults) -> Double {
-        guard let stored = defaults.object(forKey: stackRevealDelayKey) as? Double else {
-            return stackRevealDelayDefault
-        }
-        return min(max(stored, stackRevealDelayRange.lowerBound), stackRevealDelayRange.upperBound)
+        milliseconds(forKey: stackRevealDelayKey, default: stackRevealDelayDefault,
+                     range: stackRevealDelayRange, in: defaults)
     }
 
     /// How far the width/height trims may run, matching the reference's own
@@ -174,6 +187,7 @@ enum Preferences {
         hoverIntentDelayKey,
         pagingStyleKey,
         stackRevealDelayKey,
+        chinGradientKey,
         userNameKey,
         paletteShortcutsKey,
         launchGroupsKey,

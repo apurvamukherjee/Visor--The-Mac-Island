@@ -178,19 +178,4 @@ struct MotionPresetTests {
             #expect(faster.hideShowDelay < slower.hideShowDelay)
         }
     }
-
-    /// Content must still be mounted while the shape is closing over it.
-    @Test
-    func contentOutlivesTheClose() {
-        for preset in MotionPreset.allCases {
-            #expect(preset.unmountDelay > preset.closeResponse)
-        }
-    }
-
-    @Test
-    func swipeCompressionIsClamped() {
-        #expect(Motion.SwipeFeedback.compression(for: 10) == Motion.SwipeFeedback.minimumWidth)
-        #expect(Motion.SwipeFeedback.compression(for: 10000) == Motion.SwipeFeedback.maximumWidth)
-        #expect(Motion.SwipeFeedback.compression(for: 200) == 200 * Motion.SwipeFeedback.widthFactor)
-    }
 }

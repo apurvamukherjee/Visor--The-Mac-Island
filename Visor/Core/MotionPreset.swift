@@ -61,14 +61,6 @@ enum MotionPreset: String, CaseIterable, Sendable {
         baseResponse - 0.08
     }
 
-    /// How long an outgoing layout stays mounted. Derived from the close
-    /// rather than tuned on a ladder of its own: the invariant that matters
-    /// is that content outlives the shape's collapse, and two hand-tuned
-    /// ladders stopped honouring it the moment the close got quicker.
-    var unmountDelay: Double {
-        closeResponse + 0.06
-    }
-
     /// `1 - dampingFraction`. 0.20 is the content-bearing default; the
     /// close spring runs at SwiftUI's own 0.825 damping, hence 0.175.
     static let standardBounce = 0.20

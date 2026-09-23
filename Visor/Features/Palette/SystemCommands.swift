@@ -15,10 +15,6 @@ final class SystemCommands {
     /// *is* the state — there is nothing else to store.
     private var sleepAssertion: IOPMAssertionID?
 
-    var isKeepingAwake: Bool {
-        sleepAssertion != nil
-    }
-
     func stop() {
         releaseSleepAssertion()
     }

@@ -54,9 +54,17 @@ extension NotchWindowController {
 
     /// Where a swipe of `delta` lands. The stack wraps; the cross-fade
     /// clamps. One place, so up and down cannot disagree about which.
+    ///
+    /// The stack **inverts** the delta, and that is the whole point of it
+    /// being resolved here. Depth counts forward from the front card, so the
+    /// chin you can actually see peeking is at depth +1 — and a swipe up has
+    /// to bring *that* card forward, not the one hidden behind it. Without
+    /// the flip, swiping up reached the depth-2 card and the visible
+    /// affordance pointed at the wrong gesture. Cross-fade has no visible
+    /// neighbours to disagree with, so its direction is untouched.
     func turned(by delta: Int) -> IslandPage {
         store.isCardStacked
-            ? store.islandPage.cycled(by: delta, in: store.availablePages)
+            ? store.islandPage.cycled(by: -delta, in: store.availablePages)
             : store.islandPage.stepped(by: delta, in: store.availablePages)
     }
 

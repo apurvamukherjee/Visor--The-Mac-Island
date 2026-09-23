@@ -73,6 +73,16 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - Every service conforms to `NotchService` with start()/stop(); stop() releases processes, observers, run-loop sources.
 - All animations come from `Motion` tokens. No raw .spring/.easeInOut/durations elsewhere.
 - One black NotchShape morphs between states. Never cross-fade two shapes.
+- **One box for every page, and the same box whatever is playing.** Every
+  screen a swipe reaches resolves to one size (`covering`) *and* that size
+  always covers `nowPlaying` — the player measures the island. Without the
+  second half the box tracked the activity: 421x193 playing, 366x190 not.
+- **Chin insets are proportional, never absolute.** A flat inset tuned on the
+  idle island measures 2.6% against the player's and stops reading as a card.
+- **Chins are short cards.** Draw only the part that shows; a full-height
+  chin is 95% hidden and renders the deck as a slab.
+- **Depth and the swipe must agree.** The chin you can see is depth +1, so a
+  swipe up brings *that* card forward.
 - Shape leads, content follows (content in delayed, content out fast).
 - Respect Reduce Motion.
 
@@ -579,6 +589,38 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   Build 0 warnings, 287 tests in 59 suites, swiftformat, swiftlint (3, 0
   serious — **back to baseline**). **None of it seen on hardware**; the
   checklist is in the plan's Task 7.
+- **Card stack fixed + audit applied (2026-09-23):** the deck shipped in
+  2.7.0 did not work on the page it is most often seen on. Measured, not
+  guessed: with music playing the shared box is 421x193, and each chin was a
+  **full-height card inset a flat 11pt** — 2.6% per side, with 95% of the
+  chin hidden behind the front card. The deck rendered as one heavy slab
+  with two slivers.
+  — **Three fixes, all now rules in RESEARCH §2.6c and above:** insets are a
+  fraction of the box (`chinInsetFraction`, floored); chins are short cards
+  (`chinBodyHeight`), not full-height ones; one box per page is unchanged and
+  now stated as permanent.
+  — **Swipe direction was inverted.** Depth counts forward, so the visible
+  chin is depth +1, but swipe-up called `cycled(by: -1)` and reached the
+  *hidden* depth-2 card. `turned(by:)` now flips the delta for the stacked
+  path only; cross-fade is untouched.
+  — **Flat tints replaced by `ChinGradient`** — four dark preset families
+  (Charcoal/Midnight/Ember/Slate), one Settings picker, each card taking a
+  *lighter* stop by depth because darkening runs a chin into the black island
+  above it. Unwritten key resolves `.charcoal`, same construction as
+  `PagingStyle`. `IslandPage.tint`/`usesMaterialChin` deleted with it.
+  — **Audit applied (the /ponytail-audit pass):** deleted `Motion.SwipeFeedback`,
+  `Motion`/`MotionPreset.unmountDelay` and their two tests (all alive only via
+  their own tests), `NotchStore.focusPeek` (written 3x, read 0x — and an
+  `@Observable` write fires a tick), `Dwell.stackReveal` and
+  `SystemCommands.isKeepingAwake`. Refactors: `IslandLayout.pill()` factory
+  for timer/volume/screenRecording (`NotchRadii(top: 11, bottom: 34)` was
+  written out three times), one `Preferences.milliseconds(forKey:…)` behind
+  both delay readers, and `Comparable.clamped(to:)` replacing the two private
+  clamp helpers two features had each grown.
+  — **Cross-fade remains the default throughout**, so an existing install
+  sees none of this until the style is selected.
+  Build 0 warnings, 288 tests in 59 suites, swiftformat, swiftlint (3, 0
+  serious — baseline). **Not yet seen on hardware.**
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

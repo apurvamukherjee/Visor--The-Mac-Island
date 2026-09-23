@@ -143,7 +143,7 @@ enum NotchGeometry {
     }
 
     private static func clamp(_ value: CGFloat, to range: ClosedRange<Double>) -> CGFloat {
-        min(max(value, CGFloat(range.lowerBound)), CGFloat(range.upperBound))
+        value.clamped(to: CGFloat(range.lowerBound) ... CGFloat(range.upperBound))
     }
 
     /// Shares the closed rect's horizontal center and top edge, per the

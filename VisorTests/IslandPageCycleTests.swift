@@ -52,10 +52,4 @@ struct IslandPageCycleTests {
         #expect(IslandPage.usage.stepped(by: 1, in: all) == .usage)
         #expect(IslandPage.agenda.stepped(by: -1, in: all) == .agenda)
     }
-
-    @Test("Every page has its own tint")
-    func tintsAreDistinct() {
-        let tints = IslandPage.allCases.map(\.tint)
-        #expect(Set(tints.map(\.description)).count == tints.count)
-    }
 }
