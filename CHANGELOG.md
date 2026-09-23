@@ -18,6 +18,102 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [Unreleased]
+
+Not yet built or released — no `.dmg` in `new-releases/` and no version
+bump. Paging stops resizing the notch, the shelf stops refusing files, and
+four bugs are fixed.
+
+### Added
+
+- **Stash Clipboard**, in the palette. A copied *file* is stashed where it
+  already lives — duplicating a file the user chose the location of would
+  leave two of them. Image data copied out of an app that never wrote a
+  file is written to one, because the shelf holds URLs: a chip is dragged
+  out *as a file*, and a bare image cannot be dropped into Finder.
+
+  PNG is preferred over TIFF. Both are on the pasteboard after a
+  <kbd>⌃</kbd><kbd>⌘</kbd><kbd>⇧</kbd><kbd>4</kbd>, and the TIFF is the
+  lossless-but-enormous one macOS puts there itself.
+
+  The row is **absent** when the clipboard holds neither, the same rule
+  every other command follows. `NSPasteboard` is injectable, so the tests
+  use a scratch board and never read the user's real clipboard.
+
+### Changed
+
+- **Turning a page no longer resizes the notch.** Every screen the swipe can
+  reach resolves to one box, and the player measures it — so the player is a
+  constant 421x193 and the agenda and the usage figures are drawn inside that
+  same shape. A swipe cross-fades content; the outline holds still.
+
+  The trade, measured rather than guessed: the agenda **page** shows two
+  events and no timer presets, against the idle **home** screen's three
+  events with presets. Three rows plus the overflow line is 178pt of extra
+  height against the player's 160, so either cut put back would make the
+  island taller than the card it opens on and the player's height would
+  track how many meetings you have. The row the page gives up is counted by
+  the "+N more" line rather than lost. Detail: RESEARCH §2.6b.
+
+- **The page swap blurs.** It was a bare opacity fade, which was right while
+  the shape moved under it and wrong once the shape held still — with
+  nothing to soften the change the new screen simply appeared. Now the same
+  `.island` transition open and close already use. No new curve, no new
+  `Motion` token.
+
+- **The shelf holds any file, not only images.** `adopt` rejected anything
+  that was not an image and logged it, so a video, a PDF or a zip dropped on
+  the island vanished with no sign anything had happened. The thumbnail
+  pipeline already fell back to a glyph for whatever ImageIO cannot decode.
+  (AirDrop was never affected — `AirDropService` has no type filter, so
+  images and videos both went through it before this.)
+
+- **New Features and Shortcuts are grouped `Form`s**, like the other three
+  panes. They were hand-rolled `ScrollView`/`VStack`/`Divider` columns, so
+  one settings window held two panes that looked like inset cards and two
+  that looked like a plain document, a click apart. The hover slider now
+  reuses the existing `LabeledSlider` rather than re-implementing it, and
+  the dead "Nothing to try yet" empty state is gone — the feature list has
+  seven entries and cannot be empty.
+
+- **`PaletteCommand.Availability` is one case carrying a key path** in place
+  of nine near-identical cases and a nine-arm switch that did nothing but
+  name the `PaletteContext` field to read. Every new gate used to cost a
+  case, an arm and a point of cyclomatic complexity; the clipboard gate
+  tripped the limit on the tenth. The reason each gate exists moved onto the
+  field it reads.
+
+### Fixed
+
+- **A swipe *up* opened a closed island.** Paging routed both directions
+  through the same "open it if it isn't up" path, so turning paging on
+  granted a behaviour that belongs to the *Swipe down to open* switch —
+  which was off. Opening stays one direction, one switch. Landing is
+  unchanged: every open still arrives on the player.
+
+- **"Restore original settings" left Launch Groups behind.**
+  `launchGroupsKey` was declared beside `paletteShortcutsKey` and never
+  added to `resettableKeys`, so a restore wiped the shortcut *keys* and kept
+  the ten named groups. `PreferencesRestoreTests` could not catch it: it
+  iterates `resettableKeys`, so a key missing from that list is invisible to
+  it.
+
+- **A double rule in Shortcuts** — two consecutive `Divider()` under the
+  gesture list. Gone with the `Form` conversion.
+
+### Left out, deliberately
+
+- **Dragging an image straight out of a browser onto the island** still does
+  nothing. That vends TIFF/PNG *data*, not a file URL, and the drop target
+  is `dropDestination(for: URL.self)`. Adding a second drop target for
+  `Data` is not something SwiftUI does cleanly, and *Stash Clipboard* covers
+  the same need for anything already copied. Revisit if it comes up in use.
+
+- **A dedicated clipboard hotkey.** The palette already carries a bindable
+  letter per command through *Settings → Shortcuts*, so a second hotkey
+  registration would buy one keystroke and cost a new surface and a
+  collision to handle.
+
 ## [2.6.0] — 2026-09-23 (build 25)
 
 Rebuilds Settings as a sidebar window, and adds two palette commands for

@@ -41,22 +41,27 @@ extension NotchWindowController {
             openIslandForSwipe()
             return
         }
-        turn(to: store.islandPage.stepped(by: 1, in: store.availablePages))
-    }
-
-    /// Turn to a screen, or open the island if it is not up yet.
-    ///
-    /// A swipe onto a closed island only ever opens it — onto the player,
-    /// like every other way of opening it. Landing straight on the screen the
-    /// gesture was reaching for would mean the island opened somewhere
-    /// different depending on which direction your fingers moved, and the
-    /// player being where you always find it is worth more than saving the
-    /// second swipe.
-    func turn(to page: IslandPage) {
+        // Down is still the direction that opens, and still only when asked
+        // to — paging changes which screen a swipe lands on, never whether a
+        // closed island answers a gesture at all.
         guard store.state == .expanded else {
+            guard NewFeatures.swipeDownOpens.isEnabled() else { return }
             openIslandForSwipe()
             return
         }
+        turn(to: store.islandPage.stepped(by: 1, in: store.availablePages))
+    }
+
+    /// Turn to a screen. Paging turns pages; it does not open the island.
+    ///
+    /// This used to open a closed island from either direction, which handed
+    /// paging a behaviour that belongs to `swipeDownOpens` — turning paging
+    /// on then made a swipe *up* open the island even with that switch off.
+    /// Opening stays where it was: one direction, one switch. `.home` is
+    /// still where every open lands, so nothing about where you arrive
+    /// changed.
+    func turn(to page: IslandPage) {
+        guard store.state == .expanded else { return }
         // Already at an end. No haptic either: a buzz with nothing moving
         // reads as the gesture having failed rather than the stack having
         // run out.

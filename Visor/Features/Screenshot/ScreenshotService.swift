@@ -80,13 +80,15 @@ final class ScreenshotService: NotchService {
 
     /// A file dragged onto the island. Same presentation as a screenshot the
     /// system just wrote — once it is in the notch there is no difference.
+    /// Any file, not only images.
+    ///
+    /// This used to reject anything that was not an image and log it, so a
+    /// video, a PDF or a zip dropped on the island simply vanished with no
+    /// sign anything had happened. The shelf is where the island holds a
+    /// thing until you take it somewhere else, and that job does not depend
+    /// on the file being a picture — `thumbnail(for:)` already falls back to
+    /// a glyph for anything ImageIO cannot decode.
     func adopt(_ url: URL) {
-        let isImage = (try? url.resourceValues(forKeys: [.contentTypeKey]))?
-            .contentType?.conforms(to: .image) ?? false
-        guard isImage else {
-            Log.screenshot.notice("Ignoring dropped non-image")
-            return
-        }
         // A dropped file is usually older than the mark; move the mark past it
         // so the folder watcher doesn't re-announce it as a fresh capture.
         lastSeen = .now

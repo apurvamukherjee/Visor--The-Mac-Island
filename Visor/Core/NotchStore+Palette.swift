@@ -101,6 +101,7 @@ extension NotchStore {
             hasShelfArchive: shelfFile.map(SystemCommands.isArchive) ?? false,
             hasShelfImage: shelfFile.map(SystemCommands.isImage) ?? false,
             forceQuitTargetName: SystemCommands.forceQuitTarget?.localizedName,
+            hasStashableClipboard: SystemCommands.hasStashableClipboard(),
             configuredLaunchGroups: launchGroups.configuredIDs
         )
         // A configured slot is retitled with the user's own name and apps

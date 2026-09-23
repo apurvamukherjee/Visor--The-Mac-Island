@@ -92,19 +92,97 @@ struct IslandPageTests {
         }
     }
 
-    /// Each screen is sized for itself, so each collapses from its own
-    /// footprint rather than morphing to a neighbour's first.
+    /// Every screen draws inside one box, so a swipe cross-fades content
+    /// inside a shape that does not move. Each page used to resolve its own
+    /// size, which made the notch grow and shrink under a gesture that only
+    /// ever meant "show me the next thing".
+    ///
+    /// Driven through `covering` rather than the store, because the store
+    /// reads the paging switch out of `UserDefaults.standard` — a suite this
+    /// test has no business writing to, and whose value on a developer's own
+    /// machine would decide whether the test passed.
     @Test
-    func everyScreenResolvesToItsOwnExpandedSize() {
-        let store = NotchStore()
-        store.activate(.nowPlaying)
+    func everyScreenSharesOneBox() {
+        let closed = CGSize(width: 185, height: 33)
+        let player = IslandLayout.nowPlaying(IslandContent())
+        let pages = [
+            player,
+            IslandLayout.idle(IslandContent(
+                agendaRows: IslandLayout.maxPagedEventRows,
+                hasAgendaOverflow: true
+            )),
+            IslandLayout.usage(rows: IslandLayout.maxUsageRows)
+        ]
 
-        var sizes: [CGSize] = []
-        for page in IslandPage.allCases {
-            store.islandPage = page
-            sizes.append(store.layout.expandedSize(closed: CGSize(width: 185, height: 33)))
+        let box = pages.reduce(player) { $0.covering($1) }
+
+        for page in pages {
+            #expect(box.expandedExtraWidth >= page.expandedExtraWidth)
+            #expect(box.expandedExtraHeight >= page.expandedExtraHeight)
         }
-        #expect(Set(sizes.map(\.height)).count == sizes.count)
+        // And the player is what the box measures: it is the biggest of the
+        // three on both axes, so the card the island opens on never grows a
+        // band of black to make room for a neighbour.
+        #expect(box.expandedSize(closed: closed) == player.expandedSize(closed: closed))
+    }
+
+    /// The trade that buys the line above, and the reason the page's row cap
+    /// is a smaller number than the home screen's: the agenda fits the
+    /// player's box at two rows and does not fit it at three. Either of the
+    /// two cuts put back — the third row, or the timer presets — makes the
+    /// island taller than the card it opens on.
+    @Test
+    func theAgendaPageFitsThePlayerAndAFullerOneWouldNot() {
+        let player = IslandLayout.nowPlaying(IslandContent())
+        let paged = IslandContent(
+            agendaRows: IslandLayout.maxPagedEventRows,
+            hasAgendaOverflow: true
+        )
+        var withHomesRows = paged
+        withHomesRows.agendaRows = IslandLayout.maxEventRows
+        var withPresets = paged
+        withPresets.hasTimerPresets = true
+
+        #expect(IslandLayout.idle(paged).expandedExtraHeight <= player.expandedExtraHeight)
+        #expect(IslandLayout.idle(withHomesRows).expandedExtraHeight > player.expandedExtraHeight)
+        #expect(IslandLayout.idle(withPresets).expandedExtraHeight > player.expandedExtraHeight)
+        #expect(IslandLayout.maxPagedEventRows < IslandLayout.maxEventRows)
+    }
+
+    /// The store's own page content must agree with the cap the view draws
+    /// to, or the island is sized for one agenda and filled with another.
+    @Test
+    func theStoreSizesTheAgendaPageToTheRowsTheViewDraws() {
+        let store = NotchStore()
+        store.calendarEvents = (0 ..< 5).map { index in
+            CalendarEvent(
+                id: "event-\(index)",
+                title: "Event \(index)",
+                start: .now.addingTimeInterval(600 * Double(index + 1)),
+                end: .now.addingTimeInterval(600 * Double(index + 2)),
+                isAllDay: false,
+                color: nil
+            )
+        }
+
+        let content = store.agendaPageContent
+        #expect(content.agendaRows == IslandLayout.maxPagedEventRows)
+        #expect(content.hasAgendaOverflow)
+        #expect(content.hasTimerPresets == false)
+    }
+
+    /// `covering` grows the box and nothing else: the wings and the radii
+    /// stay the activity's, because they are what the island looks like at
+    /// rest and a screen you swiped to must not still be deciding them once
+    /// it has closed.
+    @Test
+    func theBoxKeepsTheActivitysWingsAndRadii() {
+        let player = IslandLayout.nowPlaying(IslandContent())
+        let box = player.covering(IslandLayout.timer)
+
+        #expect(box.compactExtraWidth == player.compactExtraWidth)
+        #expect(box.expandedRadii == player.expandedRadii)
+        #expect(box.compactRadii == player.compactRadii)
     }
 
     /// Onboarding and the palette are resolved before the pages, so a swipe
