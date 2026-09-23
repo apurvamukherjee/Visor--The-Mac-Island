@@ -233,7 +233,42 @@ usage   ↓   the quick look down
 
 Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
 
-**Or turn it into a deck.** *Paging style › Card stack* draws the two adjacent screens as cards peeking below the front one, and the stack then cycles endlessly in both directions rather than stopping at the ends — a card you can see continuing should not dead-end. Swipe up and the card you can see comes forward. The cards are dark gradients in one of four families — Charcoal, Midnight, Ember, Slate — each sitting a shade lighter the further back it is, so two adjacent cards stay distinct instead of merging into the black island above them. Cross-fade remains the default; the deck is there when you want to see that the other screens exist.
+### Or turn it into a deck
+
+*Settings › New Features › Paging style › **Card stack*** stops drawing the three screens as one card that cross-fades and starts drawing them as a deck: the screen you are on stays exactly as it is, and the two others peek out below it as short tinted cards — tiles, each one the edge of a screen you could swipe to.
+
+The point is that the other screens stop being invisible. With the cross-fade, nothing on the island tells you a swipe would do anything; with the deck, the two tiles under the front card are the affordance, and you can see at a glance that there is more island than the part you are looking at.
+
+**How it behaves**
+
+- **Swipe up and the tile you can see comes forward.** The deck cycles endlessly both ways rather than stopping at the ends — a card you can see continuing should not dead-end.
+- **The tiles arrive a beat after the island opens**, so opening shows one clean card and the deck then offers itself. That beat is yours: *Chin reveal delay*, 0–1500 ms, where 0 means the tiles are out from the moment the island opens.
+- **They retract before the island closes.** The island is never smaller than what is drawn on it, so the tiles pull back behind the front card first and the whole thing collapses as one shape — not a notch that closes while two tiles hang around underneath it.
+- **Each tile sits a shade lighter than the card in front**, so two adjacent tiles stay distinct instead of merging into the black island above them.
+- **The notch does not grow.** The deck reserves the few points the tiles peek into; the front card gives exactly that much back, so the card you are reading is the size it always was.
+
+**Colours**
+
+Eight families, picked once in *Card colour*, each page taking its own stop from the one you choose:
+
+| | |
+|---|---|
+| **Charcoal** | Neutral black-grey. The default, and the one that disappears. |
+| **Slate** | Desaturated blue-grey. Charcoal with the chill left in. |
+| **Midnight** | Deep blue. |
+| **Midnight Purple** | Blue-violet, darker and richer than Midnight. |
+| **Burgundy** | Deep wine red. |
+| **Crimson** | Brighter, more saturated red. |
+| **Ember** | Dark amber-orange. |
+| **Forest** | Deep green. |
+
+Plus one that is not a family at all:
+
+**Per page (accent)** gives every screen its own hue rather than its own stop — the player blue, the agenda green, usage amber. The tile then tells you *which* screen is behind the front card, not merely that one is. Same darkness and saturation as every other family: a tile is a card seen further away, never a highlight.
+
+Every family stays dark on purpose. A tile that reads as a bright band is the thing this design removes, not the thing it adds.
+
+Cross-fade remains the default, so an existing install sees none of this until the style is selected.
 
 **The notch does not resize as you turn — or when the music starts.** All three screens share one box, and the player measures it, whether or not anything is playing — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the two quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
 

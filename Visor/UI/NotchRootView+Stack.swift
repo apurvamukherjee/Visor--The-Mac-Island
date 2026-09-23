@@ -12,7 +12,7 @@ extension NotchRootView {
         if store.isCardStacked, store.state == .expanded {
             IslandStack(
                 store: store,
-                size: currentSize,
+                size: cardSize,
                 radii: radii,
                 isRevealed: isStackRevealed && !store.isStackRetracting,
                 gradient: ChinGradient(rawValue: chinGradient) ?? .charcoal
@@ -23,6 +23,15 @@ extension NotchRootView {
             .animation(Motion.resolved(Motion.morph), value: store.isStackRetracting)
             .animation(Motion.resolved(Motion.morph), value: store.islandPage)
             .task(id: store.state) { await revealChins() }
+            .onChange(of: store.isStackRetracting) { _, retracting in
+                // A retraction is the start of a collapse. Drop the reveal
+                // flag with it, so the re-entered collapse — which clears
+                // `isStackRetracting` on its way through — cannot snap the
+                // chins back out under a shrinking frame.
+                if retracting {
+                    isStackRevealed = false
+                }
+            }
         } else {
             islandCard
         }

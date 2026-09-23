@@ -18,6 +18,64 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.8.0] — 2026-09-23 (build 30)
+
+### Fixed
+
+- **The card stack's chins did not peek.** Root cause, and it cancelled the
+  feature out exactly: `chinReveal` is added to the expanded height so the
+  *window* is tall enough to hold the protruding chins, but the front card
+  was framed at that same inflated height. The card therefore grew by
+  precisely the amount the chins were meant to peek out by, and covered
+  every one of them. The deck rendered as one flat slab with a dark band
+  under it whatever the reveal delay was set to. The front card now takes
+  its own height (`NotchRootView.cardSize`), which is the box minus the
+  reveal, and the chins hang into the space that was reserved for them all
+  along. `ChinRevealTests` pins the arithmetic.
+- **The reveal delay appeared not to work.** Same cause, not a second bug:
+  the slider was read and honoured correctly, but with the chins covered
+  there was no motion for any delay to stagger. It is observable now.
+- **The island closed and left its chins behind.** The retraction sets
+  `store.isStackRetracting`, and the re-entered `collapseFromExpanded`
+  clears it on its way through — which re-revealed the chins mid-collapse,
+  so they snapped back out and were then clipped away as the frame shrank.
+  Dropping the reveal flag when a retraction starts keeps the retract →
+  collapse order the 2026-09-19 motion pass established: the frame is never
+  smaller than what is drawn.
+- **`IslandPageTests` read the developer's own defaults.** The assertion
+  compared the whole resolved layout, so with the card stack selected in
+  Settings it carried a `chinReveal` the test was never about and failed on
+  a clean tree. Narrowed to the wings and radii it actually guards — the
+  same leak already recorded for `NotchGeometry.closedRect`.
+
+### Added
+
+- **Four more chin colour families:** Midnight Purple, Burgundy, Crimson and
+  Forest, joining Charcoal, Midnight, Ember and Slate. All dark and
+  saturated on the same ladder — a chin is a card seen further away, never a
+  highlight, which is why the original flat tints were removed.
+- **Per page (accent)**, a variant rather than a family: each screen takes
+  its own hue instead of its own stop from one family — the player blue, the
+  agenda green, usage amber. A chin then says *which* screen is behind the
+  front card rather than only that one is. `ChinGradient.tone(for:)` is the
+  seam, split out because `LinearGradient` is not `Equatable` and a test
+  cannot compare fills.
+
+### Changed
+
+- README's paging section rewritten around the deck: what the tiles are for,
+  how they behave (reveal delay, retract-before-collapse, cycling, the notch
+  not growing), and the full colour table including the accent variant.
+
+### Left out
+
+- **A colour well per page.** Three pages times a free colour is three keys
+  to store, three to restore, and three ways to pick a combination that
+  reads as one blur. `Per page (accent)` gives the same information with one
+  key and no way to choose badly.
+- **Cross-fade is still the default.** None of this is visible until the
+  card stack is selected — §2.1 holds.
+
 ## [2.7.1] — 2026-09-23 (build 29)
 
 ### Fixed

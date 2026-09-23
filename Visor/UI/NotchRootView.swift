@@ -28,6 +28,19 @@ struct NotchRootView: View {
         )
     }
 
+    /// The front card's own height. `chinReveal` is added to the expanded
+    /// size so the *window* is tall enough to hold the protruding chins —
+    /// the front card must give that space back, or it grows by exactly the
+    /// amount the chins were meant to peek out by and covers every one of
+    /// them. That is why the deck looked like a single slab.
+    var cardSize: CGSize {
+        guard store.state == .expanded else { return currentSize }
+        return CGSize(
+            width: currentSize.width,
+            height: max(0, currentSize.height - store.layout.chinReveal)
+        )
+    }
+
     /// The closed state takes no shoulder, whatever the feature asks for:
     /// material outside the physical cutout would make it visible.
     var radii: NotchRadii {
@@ -61,8 +74,11 @@ struct NotchRootView: View {
             // than a black card sitting on coloured ones.
             .overlay {
                 if frontCardTintEnabled, store.isCardStacked, store.state == .expanded {
-                    shape.fill((ChinGradient(rawValue: chinGradient) ?? .charcoal).fill(depth: 0))
-                        .opacity(0.55)
+                    shape.fill(
+                        (ChinGradient(rawValue: chinGradient) ?? .charcoal)
+                            .fill(depth: 0, page: store.islandPage)
+                    )
+                    .opacity(0.55)
                 }
             }
             // Nothing paints outside the silhouette: the ring is the shape's
@@ -111,7 +127,7 @@ struct NotchRootView: View {
     /// so the deck can wrap it without any of it moving.
     var islandCard: some View {
         islandSurface
-            .frame(width: currentSize.width, height: currentSize.height)
+            .frame(width: cardSize.width, height: cardSize.height)
             .overlay(alignment: .top) {
                 if store.state == .expanded {
                     expandedContent

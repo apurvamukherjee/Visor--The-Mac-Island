@@ -34,7 +34,14 @@ struct IslandPageTests {
 
         #expect(store.islandPage == .home)
         #expect(store.currentActivity?.kind == .nowPlaying)
-        #expect(store.layout == IslandLayout.resolved(for: .nowPlaying, content: store.islandContent))
+        // Compared on the wings, not the whole layout: `store.layout` reads
+        // the *user's* paging style out of the real defaults, so with the
+        // card stack selected it carries a `chinReveal` this assertion was
+        // never about. Same leak as `NotchGeometry.closedRect` reading the
+        // developer's own notch trim into the geometry suite.
+        let expected = IslandLayout.resolved(for: .nowPlaying, content: store.islandContent)
+        #expect(store.layout.compactExtraWidth == expected.compactExtraWidth)
+        #expect(store.layout.expandedRadii == expected.expandedRadii)
     }
 
     /// The ends hold. Stepping past either one stays put rather than wrapping

@@ -56,7 +56,7 @@ struct IslandStack<Front: View>: View {
     /// one heavy slab — the reason the feature read as broken on the
     /// player's larger box. Bottom-aligned in the same frame as the front
     /// card, so its lower edge lands `chinOffset` below it per depth.
-    private func chinCard(page _: IslandPage, depth: Int) -> some View {
+    private func chinCard(page: IslandPage, depth: Int) -> some View {
         let step = min(depth, IslandStackMetrics.maxDepth)
         let peek = CGFloat(step) * IslandStackMetrics.chinOffset
         var chinRadii = radii
@@ -71,7 +71,7 @@ struct IslandStack<Front: View>: View {
         let inset = IslandStackMetrics.chinInset(depth: step, width: size.width)
 
         return shape
-            .fill(gradient.fill(depth: step))
+            .fill(gradient.fill(depth: step, page: page))
             .frame(
                 width: max(0, size.width - 2 * inset),
                 height: IslandStackMetrics.chinBodyHeight

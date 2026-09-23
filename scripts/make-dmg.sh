@@ -180,6 +180,21 @@ sync
 hdiutil detach "$DEV" >/dev/null
 trap - EXIT
 
+# One more pass on the *unmounted* read-write image before converting.
+# Everything above fights macOS for a directory it recreates for as long as
+# the volume is mounted — a race the build cannot win, and build 29 shipped
+# past an assertion that had just passed. Re-attaching with `noautofsck` and
+# no Spotlight, deleting, and detaching immediately gives macOS no window to
+# maintain it in: fsevents is seeded on mount, so the shorter the mount, the
+# less there is to lose. The converted-image check below is still what
+# guarantees the result.
+SWEEP="$(hdiutil attach "$RW" -nobrowse -noautoopen | grep -o '/Volumes/.*' | tail -1)"
+if [ -n "$SWEEP" ]; then
+    rm -rf "$SWEEP/.fseventsd" 2>/dev/null || true
+    sync
+    hdiutil detach "$SWEEP" >/dev/null 2>&1 || true
+fi
+
 hdiutil convert "$RW" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null
 rm -f "$RW"
 
