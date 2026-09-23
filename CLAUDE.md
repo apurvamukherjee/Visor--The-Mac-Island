@@ -527,6 +527,14 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   **Still open:** dragging an image straight out of a browser is rejected —
   that vends TIFF/PNG *data*, not a file URL, and the drop target is
   `dropDestination(for: URL.self)`.
+- **Usage page centering fix (2026-09-23):** reported as the island "hugging
+  the top" — really the shared top-alignment every paged screen uses (§2.6b)
+  showing through on the one page whose own content is shorter than the box
+  driving its height. Only visible with just Claude's usage row present;
+  Codex's row closes most of the gap. `.usage` now centers its content
+  (`NotchRootView`); the box sizing and other pages' alignment are untouched.
+  Build, 266 tests, swiftformat, swiftlint (3, 0 serious — unchanged) all
+  pass. Not yet seen on hardware.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

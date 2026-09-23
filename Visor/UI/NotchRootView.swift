@@ -219,11 +219,16 @@ struct NotchRootView: View {
         case .home:
             expandedActivityContent
         case .usage:
+            // The box is sized to cover every page reachable by swipe, so with
+            // only one row (Codex not yet run) it is taller than this screen's
+            // own content. Center rather than let the shared top alignment
+            // pin the rows high with the leftover space stranded below.
             ExpandedUsageView(
                 usage: store.aiUsage,
                 claudeBudget: Preferences.dailyTokenBudget(for: .claude),
                 codexBudget: Preferences.dailyTokenBudget(for: .codex)
             )
+            .frame(maxHeight: .infinity, alignment: .center)
         }
     }
 

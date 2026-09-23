@@ -18,6 +18,19 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.6.2] — 2026-09-23 (build 27)
+
+### Fixed
+
+- **The usage page read as pinned high, with dead space below.** The box
+  every paged screen shares is sized to cover whichever page needs the most
+  height (§2.6b), so a usage screen with only Claude's row (~1 row) was
+  shorter than the box driving its size — and the page's inherited
+  top-alignment stranded it high instead of centering it. Only visible
+  before Codex has also run today, since its row closes most of the gap.
+  `.usage` now centers its content vertically; the shared top-alignment other
+  pages rely on is unchanged.
+
 ## [2.6.1] — 2026-09-23 (build 26)
 
 Paging stops resizing the notch, the shelf stops refusing files, and four

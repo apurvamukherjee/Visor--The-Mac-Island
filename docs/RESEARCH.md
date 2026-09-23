@@ -259,6 +259,17 @@ more. Worth revisiting only if that turns out to be a common day.
 
 Gated on the paging opt-in, so with the switch off nothing moved.
 
+**Corollary bug (2026-09-23): shorter content reads as "pinned high".** The
+usage screen's own alignment is inherited from the shared top-alignment the
+box uses for every page. With only Claude's usage recorded (~1 row), that
+screen's content is shorter than whatever page is actually driving the box
+height (per the table above), so it hugged its intrinsic size at the top and
+stranded empty space below — reading as the card being dragged upward rather
+than centered in the box it shares. With Codex also present the content is
+closer to the box height and the gap barely shows. Fixed by centering only
+`.usage`'s content vertically (`NotchRootView`), not by changing the box or
+the shared alignment other pages rely on.
+
 ---
 
 ## 3. Architecture
