@@ -24,7 +24,7 @@ extension NotchWindowController {
             store.dismissCurrentActivity()
             return
         }
-        turn(to: store.islandPage.stepped(by: -1, in: store.availablePages))
+        turn(to: turned(by: -1))
     }
 
     /// Swipe down: open the usage screen once it is asked for, otherwise
@@ -49,7 +49,15 @@ extension NotchWindowController {
             openIslandForSwipe()
             return
         }
-        turn(to: store.islandPage.stepped(by: 1, in: store.availablePages))
+        turn(to: turned(by: 1))
+    }
+
+    /// Where a swipe of `delta` lands. The stack wraps; the cross-fade
+    /// clamps. One place, so up and down cannot disagree about which.
+    func turned(by delta: Int) -> IslandPage {
+        store.isCardStacked
+            ? store.islandPage.cycled(by: delta, in: store.availablePages)
+            : store.islandPage.stepped(by: delta, in: store.availablePages)
     }
 
     /// Turn to a screen. Paging turns pages; it does not open the island.

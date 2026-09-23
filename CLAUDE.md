@@ -535,6 +535,50 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   (`NotchRootView`); the box sizing and other pages' alignment are untouched.
   Build, 266 tests, swiftformat, swiftlint (3, 0 serious — unchanged) all
   pass. Not yet seen on hardware.
+- **Card stack paging (2026-09-23):** an optional second way to draw the
+  three pages — the front card unchanged, the two adjacent pages peeking
+  below it as tinted chins, cycling endlessly both ways. Design in
+  `docs/superpowers/specs/2026-09-23-island-card-stack-design.md`; detail in
+  RESEARCH §2.6c.
+  — **Cross-fade stays the default.** `PagingStyle` is a `Preferences`
+  string whose `.crossFade` case is what an unwritten *or unrecognised* key
+  resolves to — §2.1's guarantee in a setting that has a value rather than
+  an off position. Deliberately *not* in `NewFeatures`: that enum earns its
+  guarantee from every member being a bool with no default, and one string
+  member would weaken what `NewFeaturesTests` pins. Both new keys went into
+  `ownKeys` in the same edit as their declarations — the `launchGroupsKey`
+  bug the last audit found — and `PreferencesRestoreTests` names them
+  explicitly, since the iteration reads the list and so cannot see a gap.
+  — **Depth is the only animated property.** Each card springs to the
+  offset/inset/radius its distance from the front implies, inside one
+  `withAnimation`; the rise-and-fall falls out rather than being
+  choreographed. Three `NotchShape`s translating between depths, never
+  cross-fading — growing `NotchShape.path(in:)` into stacked lips was
+  rejected because that file is already at swiftlint's limits and one path
+  cannot animate its lips independently of its body.
+  — **Retract before collapse, and the order is load-bearing.** The
+  2026-09-19 motion pass found `setFrame` clipping still-protruding
+  geometry; 18pt of chin below the frame is that failure at larger scale.
+  `collapseFromExpanded` retracts (`Dwell.stackRetract`, 120ms) and
+  re-enters itself, so the frame is never smaller than what is drawn.
+  Cancelled on expand, on `stop()`, and on a screen change — a retraction
+  surviving any of those would fire a collapse it had already lost.
+  — **Front card stays pure black.** Only chins are tinted; full-card tint
+  is its own opt-in (`NewFeatures.islandStackTint`, off), because a non-black
+  surface already failed twice and a tinted front card is the colour the
+  island *closes* in.
+  — **Three files split, not three new lint violations.** The work pushed
+  `NotchRootView` past the type-body limit and `NotchWindowController` past
+  400 lines, so the deck moved to `NotchRootView+Stack.swift` and the
+  collapse sequence — already a marked seam — to
+  `NotchWindowController+Collapse.swift`, the `SystemCommands+Files.swift`
+  precedent. `NotchStore` came back under by tightening this feature's own
+  comments rather than moving anyone else's code; its shelf methods were
+  tried first and put back, because `shelf` is `private(set)` on purpose and
+  an extension in another file cannot write it.
+  Build 0 warnings, 287 tests in 59 suites, swiftformat, swiftlint (3, 0
+  serious — **back to baseline**). **None of it seen on hardware**; the
+  checklist is in the plan's Task 7.
 - **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
   Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
   chip-bar gating, calendar permission-denied path, closed-state

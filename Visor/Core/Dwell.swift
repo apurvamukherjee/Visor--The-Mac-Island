@@ -49,4 +49,12 @@ enum Dwell {
     /// A finished timer, the longest — it is the only one that is asking
     /// for something back.
     static let timerFinishedLinger: Duration = .seconds(8)
+    /// How long after the island settles the chins slide out. The default
+    /// behind `Preferences.stackRevealDelay`, which a slider overrides —
+    /// this is the number that ships, not the one that is read.
+    static let stackReveal: Duration = .milliseconds(600)
+    /// How long the chins take to retract before the island collapses.
+    /// Load-bearing, not styling: the frame must never be smaller than what
+    /// is drawn. See `NotchWindowController.collapseFromExpanded`.
+    static let stackRetract: Duration = .milliseconds(120)
 }

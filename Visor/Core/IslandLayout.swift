@@ -13,6 +13,43 @@ struct NotchRadii: Equatable, Sendable {
     static let expanded = NotchRadii(top: 11, bottom: 28)
 }
 
+/// The deck's constants, in one place because they move together: raise the
+/// offset without the inset and the chins stop reading as *behind* the front
+/// card and start reading as a lip on it.
+enum IslandStackMetrics {
+    /// How far each chin sits below the card in front of it.
+    static let chinOffset: CGFloat = 9
+    /// How far each chin is drawn in at the sides. This is what makes a
+    /// chin read as a card behind rather than a second edge on the same
+    /// shape — an equal-width card peeking under another is one silhouette
+    /// with a lip, not two cards.
+    static let chinInset: CGFloat = 11
+    /// How much rounder each chin is than the card in front, so the stack
+    /// recedes instead of reading as three identical slabs.
+    static let chinRadiusDrop: CGFloat = 3
+    /// Three pages exist, so two chins. A fourth page extends the table
+    /// rather than redesigning it.
+    static let maxDepth = 2
+
+    /// Distance from the front along the swipe axis, per page.
+    ///
+    /// Taken from the cycle, so the page "before" the front sits at the
+    /// *back* rather than at a negative depth — a card at -1 would draw over
+    /// the front one and hide it.
+    static func depths(front: IslandPage, in available: [IslandPage]) -> [IslandPage: Int] {
+        let stack = available.sorted { $0.rawValue < $1.rawValue }
+        guard let start = stack.firstIndex(of: front) else { return [front: 0] }
+        return stack.enumerated().reduce(into: [:]) { depths, entry in
+            depths[entry.element] = (entry.offset - start + stack.count) % stack.count
+        }
+    }
+
+    /// How far the deepest chin protrudes below the front card.
+    static func reveal(forDepths deepest: Int) -> CGFloat {
+        CGFloat(min(deepest, maxDepth)) * chinOffset
+    }
+}
+
 /// What the feature that owns the island actually has to show right now.
 ///
 /// Layouts used to be constants sized for each feature's *fullest* state,
@@ -54,11 +91,20 @@ struct IslandLayout: Equatable, Sendable {
     var expandedExtraHeight: CGFloat
     /// How much wider than the closed notch the compact wings run.
     var compactExtraWidth: CGFloat
+    /// How far the chins protrude below the front card. Zero unless the card
+    /// stack is on *and* more than one page is reachable — a stack of one is
+    /// just the island. Added to the expanded height rather than taken out
+    /// of it: the front card keeps the size it has today, and the deck grows
+    /// downward from it.
+    var chinReveal: CGFloat = 0
     var expandedRadii: NotchRadii = .expanded
     var compactRadii: NotchRadii = .compact
 
     func expandedSize(closed: CGSize) -> CGSize {
-        CGSize(width: closed.width + expandedExtraWidth, height: closed.height + expandedExtraHeight)
+        CGSize(
+            width: closed.width + expandedExtraWidth,
+            height: closed.height + expandedExtraHeight + chinReveal
+        )
     }
 
     func compactSize(closed: CGSize) -> CGSize {

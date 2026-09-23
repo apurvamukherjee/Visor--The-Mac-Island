@@ -114,6 +114,30 @@ enum Preferences {
         UserDefaults.standard.bool(forKey: hidesInFullscreenKey)
     }
 
+    // MARK: - Paging
+
+    /// `PagingStyle.rawValue`. Unset is `.crossFade` — see `PagingStyle`.
+    static let pagingStyleKey = "islandPagingStyle"
+
+    /// How long after the island settles the chins slide out, in
+    /// milliseconds. Like the hover delay this has a real default rather
+    /// than an off position, so it cannot ride `bool(forKey:)`'s false; and
+    /// like it, 0 is a choice (chins out from the start), not an absence.
+    static let stackRevealDelayKey = "islandStackRevealMilliseconds"
+    static let stackRevealDelayDefault = 600.0
+    static let stackRevealDelayRange: ClosedRange<Double> = 0 ... 1500
+
+    static var stackRevealDelay: Duration {
+        .milliseconds(Int(stackRevealDelayMilliseconds(in: .standard)))
+    }
+
+    static func stackRevealDelayMilliseconds(in defaults: UserDefaults) -> Double {
+        guard let stored = defaults.object(forKey: stackRevealDelayKey) as? Double else {
+            return stackRevealDelayDefault
+        }
+        return min(max(stored, stackRevealDelayRange.lowerBound), stackRevealDelayRange.upperBound)
+    }
+
     /// How far the width/height trims may run, matching the reference's own
     /// ranges. Wide enough to correct a cutout macOS measures a point or two
     /// off; narrow enough that the island cannot be dragged off the notch.
@@ -148,6 +172,8 @@ enum Preferences {
         progressTintKey,
         equalizerKey,
         hoverIntentDelayKey,
+        pagingStyleKey,
+        stackRevealDelayKey,
         userNameKey,
         paletteShortcutsKey,
         launchGroupsKey,

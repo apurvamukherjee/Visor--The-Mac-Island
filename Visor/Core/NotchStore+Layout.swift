@@ -21,7 +21,28 @@ extension NotchStore {
         // page cross-fades content inside a shape that does not move. Sizing
         // each page for itself made the notch grow and shrink under a gesture
         // that only ever meant "show me the next thing".
-        return availablePages.reduce(activity) { $0.covering(pageLayout(for: $1)) }
+        let box = availablePages.reduce(activity) { $0.covering(pageLayout(for: $1)) }
+        guard isCardStacked else { return box }
+        var stacked = box
+        stacked.chinReveal = IslandStackMetrics.reveal(
+            forDepths: stackDepths.values.max() ?? 0
+        )
+        return stacked
+    }
+
+    /// Whether the island is drawing its screens as a deck. Paging has to be
+    /// on for it to mean anything — the stack is how pages are *shown*, not
+    /// a second way to reach them.
+    var isCardStacked: Bool {
+        NewFeatures.islandPaging.isEnabled() && pagingStyle == .cardStack
+    }
+
+    /// Each reachable page's distance from the front.
+    ///
+    /// `pagingStyle` itself is declared in `NotchStore.swift` beside
+    /// `islandPage`, not here — this file holds derived geometry only.
+    var stackDepths: [IslandPage: Int] {
+        IslandStackMetrics.depths(front: islandPage, in: availablePages)
     }
 
     /// What one screen would need on its own, before the box is taken.

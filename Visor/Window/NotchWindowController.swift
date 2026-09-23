@@ -14,12 +14,13 @@ final class NotchWindowController {
     let panel: NotchPanel
     let contentView: NotchContentView
     private let canvasSize: CGSize
-    private var generation = 0
+    var generation = 0
     var isHovering = false
     var isDisplayAsleep = false
     var hoverIntentTask: Task<Void, Never>?
     private var closeIntentTask: Task<Void, Never>?
-    private var squashTask: Task<Void, Never>?
+    var squashTask: Task<Void, Never>?
+    var retractTask: Task<Void, Never>?
     private var screenObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
@@ -101,6 +102,7 @@ final class NotchWindowController {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         cancelCloseIntent()
+        cancelChinRetraction()
         squashTask?.cancel()
         squashTask = nil
         if let screenObserver {
@@ -166,6 +168,7 @@ final class NotchWindowController {
         // here rather than at each of the four call sites, because the one
         // that forgot would collapse the island ~180ms after opening it.
         cancelCloseIntent()
+        cancelChinRetraction()
         // Already open: nothing to do, and re-running would buzz a second
         // haptic and restart the open spring mid-flight. Rebuilding the
         // tracking area re-delivers `mouseEntered` under a stationary
@@ -177,6 +180,10 @@ final class NotchWindowController {
         // grows into the right screen rather than arriving on the last one
         // and correcting itself.
         store.islandPage = .home
+        // The style can only be changed from Settings, which means the island
+        // was closed while it happened — re-reading it here is therefore never
+        // stale, and is one read per open rather than an observer.
+        store.pagingStyle = PagingStyle.current()
         generation += 1
         // Widened to expandedCanvasRect (not just expandedRect) so that
         // collapsing back out — which can grow wider before it gets
@@ -195,7 +202,7 @@ final class NotchWindowController {
         }
     }
 
-    private func finishShrink(to target: NotchState) {
+    func finishShrink(to target: NotchState) {
         guard let screen = Self.targetScreen() else { return }
         let rect = target == .compact
             ? NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
@@ -240,6 +247,7 @@ final class NotchWindowController {
         hoverIntentTask?.cancel()
         hoverIntentTask = nil
         cancelCloseIntent()
+        cancelChinRetraction()
         clearSquash()
         generation += 1
         store.state = .closed
@@ -305,81 +313,5 @@ final class NotchWindowController {
         case .main:
             NSScreen.main
         }
-    }
-}
-
-// MARK: - Collapse squash
-
-@MainActor
-extension NotchWindowController {
-    /// Squash, hold a beat, then close. The impulse is additive and rides its
-    /// own spring, so the two axes read as squash-and-stretch rather than a
-    /// uniform scale — SwiftUI folds a scoped `.animation(_:value:)` into the
-    /// ambient transaction, so giving the frame's axes different curves
-    /// directly does not work (measured).
-    func collapseFromExpanded() {
-        // The welcome flow holds the island open until the user finishes it
-        // or replays it from Settings — a mouse-out mid-explanation should
-        // not yank the island shut under an unread sentence. The palette
-        // holds it open for the same reason: it was opened by a keystroke,
-        // so the pointer's whereabouts are not what should close it.
-        guard !store.isOnboardingActive, !store.isPaletteOpen else { return }
-        // The page is deliberately *not* reset here. Clearing it first
-        // re-resolved the layout while the island was still open, so
-        // collapsing from the agent screen morphed out to the player's larger
-        // card and only then closed. It is reset on the way in instead — see
-        // `expand()` — which leaves every screen collapsing from its own size.
-        generation += 1
-        let gen = generation
-        let target: NotchState = store.currentActivity != nil ? .compact : .closed
-        squashTask?.cancel()
-        squashTask = nil
-
-        guard !Motion.reduceMotion else {
-            clearSquash()
-            runCollapse(to: target, generation: gen)
-            return
-        }
-
-        let resting = store.layout.expandedSize(closed: store.closedSize)
-        withAnimation(Motion.squash) {
-            store.squashWidth = -resting.width * Motion.squashWidthFraction
-            store.squashHeight = resting.height * Motion.squashHeightFraction
-        }
-        squashTask = Task { [weak self] in
-            try? await Task.sleep(for: Motion.squashHold)
-            guard !Task.isCancelled, let self, gen == generation else { return }
-            squashTask = nil
-            withAnimation(Motion.squash) {
-                store.squashWidth = 0
-                store.squashHeight = 0
-            }
-            runCollapse(to: target, generation: gen)
-        }
-    }
-
-    /// `.removed`, not `.logicallyComplete`. Measured on this exact spring:
-    /// `logicallyComplete` fires at t=0.355s with the shape still 3.7pt wider
-    /// and 2.6pt taller than its target, which it does not reach until
-    /// t=0.472s. Resizing the panel at the earlier mark clipped the only part
-    /// of the shape still sticking out — the bottom corners — so the island
-    /// snapped to a hard-edged rectangle and then visibly re-rounded.
-    func runCollapse(to target: NotchState, generation gen: Int) {
-        withAnimation(
-            Motion.resolved(Motion.close),
-            completionCriteria: .removed
-        ) {
-            store.state = target
-        } completion: { [weak self] in
-            guard let self, gen == generation else { return }
-            finishShrink(to: target)
-        }
-    }
-
-    func clearSquash() {
-        squashTask?.cancel()
-        squashTask = nil
-        store.squashWidth = 0
-        store.squashHeight = 0
     }
 }

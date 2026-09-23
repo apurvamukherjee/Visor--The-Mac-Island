@@ -1,3 +1,5 @@
+import SwiftUI
+
 /// The three screens the expanded island pages between, top to bottom.
 ///
 /// The raw values are positions on that axis rather than labels, which is
@@ -26,5 +28,46 @@ enum IslandPage: Int, CaseIterable, Sendable {
         let stack = available.sorted { $0.rawValue < $1.rawValue }
         guard let index = stack.firstIndex(of: self) else { return .home }
         return stack[min(max(index + delta, 0), stack.count - 1)]
+    }
+
+    /// One step with no ends — past the last page is the first again.
+    ///
+    /// The deliberate sibling of `stepped`, not a replacement for it. A
+    /// stack you can see the edges of wants to clamp; a stack drawn as a
+    /// deck, where the page behind the last one is visibly the first, wants
+    /// to wrap, and a gesture that dies at an end you can *see* continuing
+    /// reads as broken. Which one a swipe reaches is `PagingStyle`'s call.
+    ///
+    /// Negative-safe: Swift's `%` keeps the sign of the dividend, so a
+    /// backward wrap needs the extra `+ count` before the second modulo.
+    func cycled(by delta: Int, in available: [IslandPage]) -> IslandPage {
+        let stack = available.sorted { $0.rawValue < $1.rawValue }
+        guard !stack.isEmpty else { return self }
+        guard let index = stack.firstIndex(of: self) else { return .home }
+        let count = stack.count
+        return stack[((index + delta) % count + count) % count]
+    }
+
+    /// What the page's chin is tinted, so two lips 9pt tall read as
+    /// different screens rather than as one drop shadow.
+    ///
+    /// Only the chins carry this by default. The front card stays pure
+    /// black unless `NewFeatures.islandStackTint` is on — `NotchRootView`
+    /// records two earlier attempts at a non-black surface that both washed
+    /// out against a bright wallpaper, and a tinted front card becomes the
+    /// colour the island *closes* in.
+    var tint: Color {
+        switch self {
+        case .agenda: .white
+        case .home: .clear
+        case .usage: .orange
+        }
+    }
+
+    /// The agenda's lip is a glass edge rather than a wash of colour — it is
+    /// the page with no accent of its own, and a white tint at chin opacity
+    /// is indistinguishable from the island lightening.
+    var usesMaterialChin: Bool {
+        self == .agenda
     }
 }

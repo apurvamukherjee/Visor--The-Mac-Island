@@ -20,7 +20,7 @@ struct NotchRootView: View {
     /// longer squeezes the island: shrinking it mid-gesture made changing
     /// track look like the notch was being dragged about, when all that is
     /// happening is the next song starting. The island holds still.
-    private var currentSize: CGSize {
+    var currentSize: CGSize {
         let base = restingSize
         return CGSize(
             width: max(0, base.width + store.squashWidth),
@@ -30,7 +30,7 @@ struct NotchRootView: View {
 
     /// The closed state takes no shoulder, whatever the feature asks for:
     /// material outside the physical cutout would make it visible.
-    private var radii: NotchRadii {
+    var radii: NotchRadii {
         switch store.state {
         case .expanded: store.layout.expandedRadii
         case .compact: store.layout.compactRadii
@@ -55,6 +55,15 @@ struct NotchRootView: View {
     private var islandSurface: some View {
         shape
             .fill(.black)
+            // The front card's own colour, off by default and only ever
+            // reached with the deck on. `.home`'s tint is `.clear`, so the
+            // player page stays black even with the switch on — it is the
+            // page with no accent of its own.
+            .overlay {
+                if frontCardTintEnabled, store.isCardStacked, store.state == .expanded {
+                    shape.fill(store.islandPage.tint.opacity(0.18))
+                }
+            }
             // Nothing paints outside the silhouette: the ring is the shape's
             // own outline, clipped back to the shape so only its inner half
             // survives. Not a glow around the island.
@@ -76,6 +85,11 @@ struct NotchRootView: View {
             .animation(Motion.resolved(Motion.strokeVisibility), value: store.isDropTargeted)
     }
 
+    /// Whether the chins have slid out yet. `@State` rather than store state
+    /// because nothing outside this view has any business knowing.
+    @State var isStackRevealed = false
+
+    @AppStorage(NewFeatures.islandStackTint.key) private var frontCardTintEnabled = false
     @AppStorage(NewFeatures.visibleDropZones.key) private var showsDropZones = false
     @AppStorage(NewFeatures.lyrics.key) private var lyricsEnabled = false
     @AppStorage(Preferences.strokeEnabledKey) private var strokeEnabled = false
@@ -90,7 +104,10 @@ struct NotchRootView: View {
         strokeEnabled ? min(max(storedStrokeOpacity, 0), 1) : 0
     }
 
-    var body: some View {
+    /// Today's island, unchanged: the black surface, its content, and the
+    /// clip that keeps anything from painting outside the silhouette. Named
+    /// so the deck can wrap it without any of it moving.
+    var islandCard: some View {
         islandSurface
             .frame(width: currentSize.width, height: currentSize.height)
             .overlay(alignment: .top) {
@@ -137,6 +154,10 @@ struct NotchRootView: View {
                 }
             }
             .clipShape(shape)
+    }
+
+    var body: some View {
+        stackedCard
             .frame(width: canvasSize.width, height: canvasSize.height, alignment: .top)
             // Drop an image on the notch and it becomes the current catch —
             // the same thing a fresh screenshot becomes. Holding Option

@@ -41,6 +41,15 @@ struct PreferencesRestoreTests {
         #expect(defaults.string(forKey: Preferences.lastGreetingDayKey) == "2026-09-20")
     }
 
+    /// Named explicitly, not just covered by the iteration: the iteration
+    /// reads `resettableKeys`, so a key missing from that list is invisible
+    /// to it. This is the assertion that would have caught `launchGroups`.
+    @Test("Paging keys are restorable")
+    func pagingKeysAreRestorable() {
+        #expect(Preferences.resettableKeys.contains(Preferences.pagingStyleKey))
+        #expect(Preferences.resettableKeys.contains(Preferences.stackRevealDelayKey))
+    }
+
     /// The restore button re-assigns `@AppStorage` by hand, so these are the
     /// values it must match. A default changed in one place and not the other
     /// is precisely the drift this catches.

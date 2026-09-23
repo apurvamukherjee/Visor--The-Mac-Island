@@ -270,6 +270,14 @@ final class NotchStore {
     /// operated, so they sit either side of the thing you actually reach for.
     /// Every open starts here, at `.home`.
     var islandPage = IslandPage.home
+    /// Which way paging is drawn. Stored, not read live: the layout is
+    /// recomputed every observation tick and resolving this is a
+    /// `UserDefaults` read — the reason `Motion` caches its flags too.
+    /// Re-read on open, in `NotchWindowController.expand()`.
+    var pagingStyle = PagingStyle.current()
+    /// True while the chins retract ahead of a collapse; only the view reads
+    /// it, to pull them back behind the front card.
+    var isStackRetracting = false
 
     /// Read once when the palette opens rather than per keystroke.
     var paletteShortcuts = PaletteShortcuts.empty

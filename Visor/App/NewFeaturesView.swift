@@ -17,7 +17,14 @@ struct NewFeaturesView: View {
         Form {
             Section {
                 ForEach(NewFeatures.all) { feature in
+                    // Disabled rather than hidden: a row that appears and
+                    // vanishes under the cursor is worse than one that greys
+                    // out.
                     NewFeatureRow(feature: feature)
+                        .disabled(
+                            feature.key == NewFeatures.islandStackTint.key
+                                && pagingStyle != PagingStyle.cardStack.rawValue
+                        )
                 }
             } footer: {
                 Text("Nothing here is on until you turn it on. With every switch off, "
@@ -39,6 +46,30 @@ struct NewFeaturesView: View {
             } footer: {
                 Text("How long the pointer rests on the island before it opens. "
                     + "120 ms is the default.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section {
+                Picker("Paging style", selection: $pagingStyle) {
+                    ForEach(PagingStyle.allCases, id: \.rawValue) { style in
+                        Text(style.title).tag(style.rawValue)
+                    }
+                }
+                LabeledSlider(
+                    "Chin reveal delay",
+                    value: $stackReveal,
+                    range: Preferences.stackRevealDelayRange,
+                    format: { "\(Int($0)) ms" }
+                )
+                .disabled(pagingStyle != PagingStyle.cardStack.rawValue)
+            } header: {
+                Text("Paging")
+            } footer: {
+                Text("How the island moves between its screens, and how long after it "
+                    + "opens the chins slide out. 0 ms shows them straight away. "
+                    + "Needs “Swipe between screens” on.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -67,6 +98,13 @@ struct NewFeaturesView: View {
     /// means today's behaviour" guarantee and carries its own default.
     @AppStorage(Preferences.hoverIntentDelayKey)
     private var hoverDelay = Preferences.hoverIntentDelayDefault
+
+    /// The one *value* setting among the switches, for the same reason as
+    /// the hover delay: a style has no off position, so it carries its own
+    /// default rather than riding `bool(forKey:)`'s false.
+    @AppStorage(Preferences.pagingStyleKey) private var pagingStyle = PagingStyle.crossFade.rawValue
+    @AppStorage(Preferences.stackRevealDelayKey)
+    private var stackReveal = Preferences.stackRevealDelayDefault
 }
 
 /// One tool's target. Empty is the shipped state and means no percentage is

@@ -109,6 +109,21 @@ enum NewFeatures {
         isRecommended: false
     )
 
+    /// The front card's own colour, separate from the chins' because the
+    /// chins are the part that has to be distinguishable and the front card
+    /// is the part with a rule about it. `NotchRootView` records two earlier
+    /// attempts at a non-black surface that both washed out against a bright
+    /// wallpaper; a tinted front card is also the colour the island *closes*
+    /// in. Off, so the full-colour version can be seen on hardware without
+    /// being committed to.
+    static let islandStackTint = NewFeature(
+        key: "newFeature.islandStackTint",
+        title: "Tint the front card",
+        detail: "With the card stack on, the whole island takes the colour of the screen "
+            + "you are on rather than only the chins below it.",
+        isRecommended: false
+    )
+
     static let all: [NewFeature] = [
         closeIntentDelay,
         visibleDropZones,
@@ -116,7 +131,8 @@ enum NewFeatures {
         commandPalette,
         lyrics,
         aiUsageTracker,
-        islandPaging
+        islandPaging,
+        islandStackTint
     ]
 
     static var keys: [String] {

@@ -270,6 +270,81 @@ closer to the box height and the gap barely shows. Fixed by centering only
 `.usage`'s content vertically (`NotchRootView`), not by changing the box or
 the shared alignment other pages rely on.
 
+### 2.6c The card stack (2026-09-23)
+
+An optional second way to draw the same three pages: the front card exactly
+as §2.6b leaves it, and the two adjacent pages peeking below it as tinted
+chins. **Cross-fade stays the default.** `PagingStyle` is a `Preferences`
+string whose `.crossFade` case is what an unwritten *or unrecognised* key
+resolves to — §2.1's guarantee, structurally, in a setting that has a value
+rather than an off position. It is in `Preferences` and not `NewFeatures`
+precisely because `NewFeatures` earns its guarantee from every member being
+a bool with no default; one string member would weaken what
+`NewFeaturesTests` pins.
+
+**Depth is the only animated property.** Each card reads its distance from
+the front (`IslandStackMetrics.depths`) and springs to the offset, inset and
+radius that depth implies. The page change happens inside one
+`withAnimation`, so the outgoing front card travelling to the back and the
+chin below it rising into the front position are not choreographed — they
+fall out of one value changing. Three coordinated transitions would have had
+to agree with each other; one property cannot disagree with itself.
+
+**Three `NotchShape`s, not one path with lips.** CLAUDE.md's rule is that one
+black shape morphs between states and two are never cross-faded. These never
+cross-fade — they translate between depths, and each is the same silhouette
+at a different offset, so there is still one shape vocabulary. Growing
+`NotchShape.path(in:)` into stacked lips was the alternative and was
+rejected: that file is already at swiftlint's size and complexity limits, the
+shape must still morph to `.closed`, and a single path cannot animate its
+lips independently of its body.
+
+Measured constants, in `IslandStackMetrics` because they move together:
+
+| | Value | Why |
+| --- | --- | --- |
+| `chinOffset` | 9 | how far each chin sits below the card in front |
+| `chinInset` | 11 | per side; what makes a chin read as *behind* rather than as a lip on one shape |
+| `chinRadiusDrop` | 3 | each chin is rounder, so the stack recedes instead of reading as three slabs |
+| `maxDepth` | 2 | three pages, so two chins |
+
+Raise the offset without the inset and the chins stop reading as separate
+cards — an equal-width card peeking under another is one silhouette with a
+lip, not two cards.
+
+**The chins retract before the island collapses, and the order is
+load-bearing.** The 2026-09-19 motion pass (§5.1d) found `setFrame` firing
+while geometry was still protruding and clipping the still-moving corners —
+`.logicallyComplete` landing 117ms before the spring did. Chins are that same
+failure at a larger scale: 18pt of card below the frame, cut off in a hard
+horizontal line. `collapseFromExpanded` therefore pulls them back behind the
+front card (`Dwell.stackRetract`, 120ms) and re-enters itself, so the frame
+is never smaller than what is drawn.
+
+**Reveal is delayed, not immediate.** The island opens showing one clean card
+and the deck offers itself a beat later (`Preferences.stackRevealDelay`,
+600ms, a Settings slider). A single `Task` cancelled by `.task(id:)` — the
+same shape as `hoverIntentTask`, no timer.
+
+**The stack wraps; the cross-fade still clamps.** `IslandPage.cycled(by:in:)`
+sits beside `stepped(by:in:)` rather than replacing it, and the style picks
+which a swipe reaches. A deck whose next card is *visibly* the first one
+must not dead-end at an edge the user can see continuing; a box with no
+visible neighbours is right to clamp. With the style unselected `stepped` is
+byte-identical to what shipped.
+
+**The front card stays pure black by default.** Only the chins are tinted.
+Two earlier attempts at a non-black surface both failed (§an
+`NSVisualEffectView` material washed out to grey against a bright wallpaper;
+a blurred bleed painted outside the silhouette), and a tinted front card is
+also the colour the island *closes* in. Full-card tint is its own opt-in
+(`NewFeatures.islandStackTint`, off), so it can be seen on hardware without
+being committed to.
+
+**Unverified on hardware:** whether 9pt of lip is enough to read a tint
+against a bright wallpaper, and whether the retract beat reads as deliberate
+or as lag. Both are single constants.
+
 ---
 
 ## 3. Architecture
