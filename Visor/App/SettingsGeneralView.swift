@@ -34,6 +34,18 @@ struct SettingsGeneralView: View {
     var body: some View {
         Form {
             Section {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("VISOR")
+                        .font(.system(size: 36, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.tint)
+                    Text("built by Apurva")
+                        .font(.headline.weight(.bold))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 6)
+            }
+
+            Section {
                 TextField("Your name", text: $userName, prompt: Text(Preferences.defaultUserName))
 
                 Picker("Animation speed", selection: $motionPreset) {
@@ -91,7 +103,6 @@ struct SettingsGeneralView: View {
 
             Section {
                 LabeledContent("Version", value: version)
-                LabeledContent("By", value: "Apurva")
             }
         }
         .formStyle(.grouped)
