@@ -18,6 +18,55 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.7.0] — 2026-09-23 (build 28)
+
+### Added
+
+- **Card stack paging.** An optional second way to draw the three expanded
+  screens: the front card exactly as it was, and the two adjacent pages
+  peeking below it as tinted chins that cycle endlessly in both directions.
+  Chosen in Settings → New Features → Paging style. **Cross-fade remains
+  the default** — the stack is off until it is selected.
+- **Chin reveal delay**, a slider beside the hover delay (0–1500 ms,
+  default 600). The island opens showing one clean card and the deck slides
+  out a beat later; 0 ms shows the chins straight away.
+- **Tint the front card**, a New Features switch. Off by default: only the
+  chins carry colour, because the front card is also the colour the island
+  *closes* in. On, the whole island takes the current screen's tint (the
+  player stays black — it is the page with no accent of its own).
+
+### Changed
+
+- With the card stack selected, a swipe past the last screen wraps to the
+  first instead of stopping. Cross-fade still clamps at both ends, exactly
+  as before.
+- Closing the island retracts the chins before the frame shrinks. This is
+  correctness, not polish: the window frame must never be smaller than what
+  is drawn, or the bottom edge is cut off in a hard horizontal line
+  mid-close.
+
+### Fixed
+
+- Nothing. This release adds a feature and changes no existing behaviour —
+  with the paging style left on Cross-fade, including the island's height,
+  the app is identical to 2.6.2.
+
+### Deliberately left out
+
+- **Dragging the stack with the pointer.** Scrolling reaches every screen in
+  at most one step, and a drag that follows the finger and rubber-bands is a
+  second gesture system competing with the existing track-change swipe.
+- **Tapping a chin to jump to it.** The panel is non-activating and a chin is
+  9 pt tall.
+- **Per-page tint customisation.** Three tints, each chosen to match what its
+  page already shows.
+
+### Not yet verified on hardware
+
+- Whether 9 pt of visible chin is enough to read a tint against a bright
+  wallpaper, and whether the retract beat before closing reads as deliberate
+  or as lag. Both are single constants and tunable in one place.
+
 ## [2.6.2] — 2026-09-23 (build 27)
 
 ### Fixed
