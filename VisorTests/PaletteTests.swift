@@ -1,3 +1,5 @@
+import AppKit
+import Foundation
 import Testing
 @testable import Visor
 
@@ -73,6 +75,7 @@ struct PaletteTests {
         // A bare machine must not be offered a file command either.
         #expect(!quiet.contains { $0.id == .compressShelfFile })
         #expect(!quiet.contains { $0.id == .switchAudioOutput })
+        #expect(!quiet.contains { $0.id == .stashClipboard })
 
         let everything = PaletteCommand.available(
             PaletteCommand.all,
@@ -85,6 +88,7 @@ struct PaletteTests {
                 hasShelfArchive: true,
                 hasShelfImage: true,
                 forceQuitTargetName: "Safari",
+                hasStashableClipboard: true,
                 configuredLaunchGroups: Set(PaletteCommandID.allCases)
             )
         )
@@ -276,5 +280,93 @@ struct PaletteDispatchTests {
 
         #expect(wired == Set(PaletteCommandID.allCases))
         #expect(wired.count == PaletteCommand.all.count)
+    }
+}
+
+/// The clipboard route onto the shelf. The pasteboard is a scratch one, not
+/// `.general` — a test must not reach into whatever the user has copied.
+@MainActor
+@Suite("Stash clipboard")
+struct StashClipboardTests {
+    private func makeBoard() -> NSPasteboard {
+        NSPasteboard(name: NSPasteboard.Name("visor.tests.\(UUID().uuidString)"))
+    }
+
+    /// An empty clipboard is an absent command, not a command that fails.
+    @Test("Nothing copied means no row")
+    func emptyClipboardOffersNothing() {
+        let board = makeBoard()
+        board.clearContents()
+
+        #expect(SystemCommands.hasStashableClipboard(on: board) == false)
+        #expect(SystemCommands().stashClipboard(on: board) == nil)
+
+        let context = PaletteContext(hasStashableClipboard: false)
+        let offered = PaletteCommand.available(PaletteCommand.all, in: context)
+        #expect(!offered.contains { $0.id == .stashClipboard })
+
+        let ready = PaletteContext(hasStashableClipboard: true)
+        #expect(PaletteCommand.available(PaletteCommand.all, in: ready).contains { $0.id == .stashClipboard })
+    }
+
+    /// A copied *file* is handed over as-is. Duplicating a file that already
+    /// exists somewhere the user chose would leave two of them.
+    @Test("A copied file is stashed where it already lives")
+    func copiedFileIsUsedInPlace() throws {
+        let source = FileManager.default.temporaryDirectory
+            .appendingPathComponent("visor-clipboard-\(UUID().uuidString).txt")
+        try Data("hello".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let board = makeBoard()
+        board.clearContents()
+        board.writeObjects([source as NSURL])
+
+        #expect(SystemCommands.hasStashableClipboard(on: board))
+        #expect(SystemCommands().stashClipboard(on: board) == source)
+    }
+
+    /// Image data copied out of an app that never wrote a file becomes one,
+    /// because the shelf holds URLs: a chip is dragged out *as a file*, and a
+    /// bare image cannot be dropped into Finder.
+    @Test("Copied image data becomes a file the shelf can hold")
+    func copiedImageDataIsWrittenToDisk() throws {
+        let image = NSImage(size: CGSize(width: 2, height: 2))
+        image.lockFocus()
+        NSColor.red.drawSwatch(in: CGRect(x: 0, y: 0, width: 2, height: 2))
+        image.unlockFocus()
+        let tiff = try #require(image.tiffRepresentation)
+
+        let board = makeBoard()
+        board.clearContents()
+        board.setData(tiff, forType: .tiff)
+
+        #expect(SystemCommands.hasStashableClipboard(on: board))
+        let url = try #require(SystemCommands().stashClipboard(on: board))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        #expect(url.pathExtension == "tiff")
+    }
+
+    /// PNG is preferred over TIFF: both are on the board when a screenshot is
+    /// copied, and the TIFF is the enormous one.
+    @Test("PNG wins when both are on the board")
+    func pngIsPreferredOverTiff() throws {
+        let image = NSImage(size: CGSize(width: 2, height: 2))
+        image.lockFocus()
+        NSColor.blue.drawSwatch(in: CGRect(x: 0, y: 0, width: 2, height: 2))
+        image.unlockFocus()
+        let tiff = try #require(image.tiffRepresentation)
+        let png = try #require(NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]))
+
+        let board = makeBoard()
+        board.clearContents()
+        board.setData(tiff, forType: .tiff)
+        board.setData(png, forType: .png)
+
+        let url = try #require(SystemCommands().stashClipboard(on: board))
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(url.pathExtension == "png")
     }
 }

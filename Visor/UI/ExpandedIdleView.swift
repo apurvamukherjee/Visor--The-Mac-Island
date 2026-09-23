@@ -12,6 +12,11 @@ import SwiftUI
 struct ExpandedIdleView: View {
     let events: [CalendarEvent]
     var onStartTimer: ((TimeInterval) -> Void)?
+    /// How many events to draw. The agenda *page* gets one fewer than the
+    /// home screen, because the player measures the box every page shares —
+    /// see `IslandLayout.maxPagedEventRows`. The island is sized from the
+    /// same number, so this must never be read from anywhere else.
+    var rowLimit: Int = IslandLayout.maxEventRows
 
     var body: some View {
         VStack(alignment: .leading, spacing: IslandSpacing.block) {
@@ -48,7 +53,7 @@ struct ExpandedIdleView: View {
     }
 
     private var shown: [CalendarEvent] {
-        CalendarEventMapper.upcoming(events, now: .now, limit: IslandLayout.maxEventRows)
+        CalendarEventMapper.upcoming(events, now: .now, limit: rowLimit)
     }
 
     /// Counted against what is still upcoming, not against the whole day.

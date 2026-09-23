@@ -17,6 +17,83 @@ extension SystemCommands {
         UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) ?? false
     }
 
+    // MARK: - Clipboard
+
+    /// Image types the clipboard is read for, best first. PNG before TIFF
+    /// because every app that copies a picture offers one of the two and TIFF
+    /// is the lossless-but-enormous fallback macOS puts on the board itself —
+    /// a screenshot copied with ⌃⌘⇧4 is ~20x larger as TIFF than as PNG.
+    private static let clipboardImageTypes: [NSPasteboard.PasteboardType] = [
+        .png, .tiff
+    ]
+
+    /// Whether `stashClipboard` would find anything, without writing a file
+    /// to find out. Read when the palette opens, which is why it is separate
+    /// from the command itself.
+    /// `board` is injectable for the same reason `launch`'s `resolve` is: a
+    /// scratch pasteboard lets the branch below be exercised without putting
+    /// anything on the user's real clipboard.
+    static func hasStashableClipboard(on board: NSPasteboard = .general) -> Bool {
+        if board.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) {
+            return true
+        }
+        return board.availableType(from: clipboardImageTypes) != nil
+    }
+
+    /// The clipboard as something the shelf can hold.
+    ///
+    /// A copied *file* is handed over as-is — there is no reason to duplicate
+    /// a file that already exists somewhere the user chose. Image data copied
+    /// out of an app that never wrote a file is written to a temporary one,
+    /// because the shelf holds URLs: a chip is dragged out as a file, and a
+    /// `CGImage` cannot be dropped into Finder.
+    ///
+    /// Returns nil rather than throwing: the caller is a palette row that is
+    /// only offered when `hasStashableClipboard`, so nil here means the board
+    /// changed between the palette opening and the key being pressed, which
+    /// is nothing to report.
+    func stashClipboard(on board: NSPasteboard = .general) -> URL? {
+        let urls = board.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL]
+        if let url = urls?.first {
+            return url
+        }
+        guard
+            let type = board.availableType(from: Self.clipboardImageTypes),
+            let data = board.data(forType: type)
+        else {
+            return nil
+        }
+        return Self.writeClipboardImage(data, type: type)
+    }
+
+    /// Named for when it was copied, so two stashes in a row are two rows on
+    /// the shelf rather than one overwriting the other — and so the name says
+    /// something once it has been dragged into a folder.
+    private static func writeClipboardImage(
+        _ data: Data,
+        type: NSPasteboard.PasteboardType
+    ) -> URL? {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Visor/Clipboard", isDirectory: true)
+        let stamp = Date.now.formatted(
+            .verbatim("yyyy-MM-dd 'at' HH.mm.ss", locale: .current, timeZone: .current, calendar: .current)
+        )
+        let url = directory
+            .appendingPathComponent("Clipboard \(stamp)")
+            .appendingPathExtension(type == .png ? "png" : "tiff")
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try data.write(to: url)
+            return url
+        } catch {
+            Log.app.error("Stashing the clipboard failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     /// A plain Markdown file in Application Support, opened in whatever the
     /// user reads Markdown with. Deliberately **not** `~/Documents`: that
     /// directory is TCC-gated on a modern macOS, and a note-taking command

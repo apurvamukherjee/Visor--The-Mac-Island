@@ -172,7 +172,8 @@ final class PaletteService: NotchService {
             .expandShelfFile: { [self] in withShelfFile(system.expand) },
             .convertShelfImage: { [self] in withShelfFile(system.convertToJPEG) },
             .forceQuitFrontmost: { [self] in system.forceQuitFrontmostApp() },
-            .openActivityMonitor: { [self] in system.openActivityMonitor() }
+            .openActivityMonitor: { [self] in system.openActivityMonitor() },
+            .stashClipboard: { [self] in stashClipboard() }
         ].merging(launchGroupActions()) { _, new in new }
     }
 
@@ -195,6 +196,14 @@ final class PaletteService: NotchService {
     private func withShelfFile(_ action: (URL) -> Void) {
         guard let url = store.shelf.first?.url else { return }
         action(url)
+    }
+
+    /// The clipboard onto the shelf, which is the same place a dropped file
+    /// and a caught screenshot land — so it is taken back out the same way,
+    /// by dragging the chip.
+    private func stashClipboard() {
+        guard let url = system.stashClipboard() else { return }
+        store.screenshotCommands?.adopt(url)
     }
 
     /// "Artist — Title", or just the title when the source app reports no

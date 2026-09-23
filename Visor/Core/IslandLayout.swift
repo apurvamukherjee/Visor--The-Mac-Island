@@ -64,6 +64,24 @@ struct IslandLayout: Equatable, Sendable {
     func compactSize(closed: CGSize) -> CGSize {
         CGSize(width: closed.width + compactExtraWidth, height: closed.height)
     }
+
+    /// Grown to also hold `other`, keeping the receiver's own wings and radii.
+    ///
+    /// Paging changes what is *on* the island, never how big it is: every
+    /// screen the swipe can reach resolves to one box, so a swipe cross-fades
+    /// content inside a shape that does not move. Each screen used to resolve
+    /// its own size, which made the notch grow and shrink under a gesture
+    /// that only ever meant "show me the next thing".
+    ///
+    /// The wings and the radii stay the activity's. They are what the island
+    /// looks like at rest, so a screen you swiped to must not still be
+    /// deciding them once it has closed.
+    func covering(_ other: IslandLayout) -> IslandLayout {
+        var box = self
+        box.expandedExtraWidth = max(expandedExtraWidth, other.expandedExtraWidth)
+        box.expandedExtraHeight = max(expandedExtraHeight, other.expandedExtraHeight)
+        return box
+    }
 }
 
 // MARK: - The blocks layouts are built from
@@ -168,6 +186,17 @@ extension IslandLayout {
     /// One row per agent, and there are two agents.
     static let maxUsageRows = 2
     static let maxEventRows = 3
+    /// How many events the agenda *page* draws, which is one fewer than the
+    /// idle home screen.
+    ///
+    /// Paging holds every screen in one box and the player is what measures
+    /// it, so the agenda has the player's content height to work in: 128pt.
+    /// Three rows and a "+N more" is 146 and would push the box 18pt taller
+    /// than the card it opens on — the island's height would then track how
+    /// many meetings you have. Two rows and the overflow line is 104 and
+    /// fits, and the count is still honest because the overflow line grows
+    /// by the row it lost. Same reasoning as `maxPaletteRows`.
+    static let maxPagedEventRows = 2
     /// Past this the rows stop fitting and the island shows a count instead.
     static let maxDownloadRows = 3
 

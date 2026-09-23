@@ -109,7 +109,9 @@ Take a screenshot anywhere on the system and it slides into the notch and waits.
 </tr>
 </table>
 
-Drag an image *onto* the notch and it opens to take it. Hold <kbd>⌥</kbd> while you drop and it sends the file over AirDrop instead.
+Drag **any file** onto the notch and it opens to take it — an image, a video, a PDF, a zip. Hold <kbd>⌥</kbd> while you drop and it sends the file over AirDrop instead.
+
+Or hand it the clipboard: <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> → **Stash Clipboard**. A copied file is held where it already lives; an image copied out of an app that never wrote a file becomes one, so the chip drags out into Finder like any other.
 
 <br />
 
@@ -148,11 +150,11 @@ No permission prompt, because it listens to CoreAudio's *result* rather than wat
 
 </div>
 
-Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **36 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, force-quitting a frozen app, lock, sleep, and your own launch groups.
+Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **37 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, stashing the clipboard, force-quitting a frozen app, lock, sleep, and your own launch groups.
 
 Then press **one key**. Rows 1–4 are always numbered; letters are yours to bind in *Settings › Shortcuts*. The rule that lets a single key and a search box share one field: **keys fire only while the query is empty**, so `d` runs Dark Mode without costing you the ability to search for "downloads". A row never advertises a key that would not work — the badge reads the same flag the key handler does.
 
-Every command is **gated on context**, so none is offered when it cannot act: no transport row without a track, no Switch Audio Output with one output, no launch group you haven't configured.
+Every command is **gated on context**, so none is offered when it cannot act: no transport row without a track, no Switch Audio Output with one output, no Stash Clipboard with nothing copied, no launch group you haven't configured.
 
 **Force Quit Frontmost App** names the app in the row, so you read what you are about to kill before you press the key. It is absent when there is nothing sensible to quit — Visor itself, or Finder, which macOS relaunches anyway, so the row would be describing something that doesn't happen.
 
@@ -231,7 +233,9 @@ usage   ↓   the quick look down
 
 Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
 
-Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did.
+**The notch does not resize as you turn.** All three screens share one box, and the player measures it — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the two quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
+
+Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did, and nothing about the island's size changes.
 
 <br />
 
@@ -355,13 +359,15 @@ The rules that get it there:
 | Two-finger swipe down | Turn down a screen *(opt-in)*, or bring back what you dismissed |
 | Double-click | Play / pause *(on the island's surface — buttons keep their own clicks)* |
 | Right-click | Settings |
-| Drag a file onto it | The notch opens and takes it |
+| Drag a file onto it | The notch opens and takes it — any kind, not only images |
 | <kbd>⌥</kbd> + drag a file onto it | Send it via AirDrop |
-| Drag the thumbnail out | Drops the screenshot into any app |
+| Drag the thumbnail out | Drops the file into any app |
 | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> | Open the command palette |
 | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then a key | Run that command directly |
 
 Swipes lock to whichever axis you commit to first, so a diagonal flick can change the track *or* dismiss the island — never both.
+
+Only **down** opens a closed island, and only with *Swipe down to open* on. Turning on paging does not quietly grant that: one direction, one switch.
 
 <br />
 

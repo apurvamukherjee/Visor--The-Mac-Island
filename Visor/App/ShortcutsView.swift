@@ -23,47 +23,35 @@ struct ShortcutsView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Open the palette with ⌃⌥K, then press a key to run a command. "
-                    + "Keys work only before you start typing — after the first letter "
-                    + "everything searches, so a key here never costs you a search.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
+        Form {
+            Section {
                 if !paletteEnabled {
                     Text("The command palette is off. Turn it on in New Features.")
                         .font(.footnote)
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-
-                Text("1 – 4 always run the visible rows in order, whatever is set below.")
+            } footer: {
+                Text("Open the palette with \u{2303}\u{2325}K, then press a key to run a command. "
+                    + "Keys work only before you start typing — after the first letter "
+                    + "everything searches, so a key here never costs you a search. "
+                    + "1 – 4 always run the visible rows in order, whatever is set below.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
 
-                Divider()
+            Section("Gestures") {
+                GestureRow(symbol: "cursorarrow.rays", label: "Hover the notch to expand it")
+                GestureRow(symbol: "hand.tap.fill", label: "Double-click to play or pause")
+                GestureRow(symbol: "hand.draw.fill", label: "Two-finger swipe sideways to change track")
+                GestureRow(symbol: "chevron.up.chevron.down", label: "Swipe up and down to turn between screens")
+                GestureRow(symbol: "airplayaudio", label: "Hold Option while dropping to AirDrop instead")
+                GestureRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
+                GestureRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
+            }
 
-                Text("GESTURES")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    GestureRow(symbol: "cursorarrow.rays", label: "Hover the notch to expand it")
-                    GestureRow(symbol: "hand.tap.fill", label: "Double-click to play or pause")
-                    GestureRow(symbol: "hand.draw.fill", label: "Two-finger swipe sideways to change track")
-                    GestureRow(symbol: "chevron.up.chevron.down", label: "Swipe up and down to turn between screens")
-                    GestureRow(symbol: "airplayaudio", label: "Hold Option while dropping to AirDrop instead")
-                    GestureRow(symbol: "square.and.arrow.down.fill", label: "Drag a file onto the island to catch it")
-                    GestureRow(symbol: "gearshape.fill", label: "Right-click the island to open this window")
-                }
-
-                Divider()
-
-                Divider()
-
+            Section("Commands") {
                 ForEach(Self.ordinaryCommands) { command in
                     ShortcutRow(
                         command: command,
@@ -71,17 +59,9 @@ struct ShortcutsView: View {
                         onChange: { assign($0, to: command.id) }
                     )
                 }
+            }
 
-                Divider()
-
-                Text("Launch Groups")
-                    .font(.headline)
-                Text("Name a group and add the apps it should open together — nothing is "
-                    + "preloaded. An empty group never appears in the palette.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
+            Section {
                 ForEach(Self.launchGroupIDs, id: \.self) { id in
                     LaunchGroupRow(
                         group: launchGroups.group(for: id),
@@ -90,18 +70,25 @@ struct ShortcutsView: View {
                         onKeyChange: { assign($0, to: id) }
                     )
                 }
+            } header: {
+                Text("Launch Groups")
+            } footer: {
+                Text("Name a group and add the apps it should open together — nothing is "
+                    + "preloaded. An empty group never appears in the palette.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-                Divider()
-
+            Section {
                 Button("Clear all keys") {
                     shortcuts = .empty
                     shortcuts.save()
                 }
                 .disabled(shortcuts.keys.isEmpty)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
         }
+        .formStyle(.grouped)
     }
 
     /// Assigning steals the key from whatever had it, so the list can never
@@ -125,15 +112,7 @@ private struct ShortcutRow: View {
     @State private var text: String = ""
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: command.symbol)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .frame(width: 16)
-            Text(command.title)
-                .font(.callout)
-                .lineLimit(1)
-            Spacer(minLength: 8)
+        LabeledContent {
             TextField("", text: $text)
                 .textFieldStyle(.roundedBorder)
                 .multilineTextAlignment(.center)
@@ -147,6 +126,9 @@ private struct ShortcutRow: View {
                     }
                     onChange(trimmed)
                 }
+        } label: {
+            Label(command.title, systemImage: command.symbol)
+                .lineLimit(1)
         }
         .onAppear { text = key.map(String.init) ?? "" }
         .onChange(of: key) { _, new in
@@ -284,7 +266,6 @@ private struct GestureRow: View {
                 .frame(width: 24, height: 24)
                 .background(.secondary, in: RoundedRectangle(cornerRadius: 6))
             Text(label)
-                .font(.footnote)
             Spacer(minLength: 0)
         }
     }
