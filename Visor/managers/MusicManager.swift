@@ -473,13 +473,15 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Synced lyrics helpers
+    // Visor: compiled once rather than once per lyric line.
+    // Match [mm:ss.xx] or [m:ss]
+    private static let lrcTimestamp = try? NSRegularExpression(pattern: #"\[(\d{1,2}):(\d{2})(?:\.(\d{1,2}))?\]"#)
+
     private func parseLRC(_ lrc: String) -> [(time: Double, text: String)] {
         var result: [(Double, String)] = []
         lrc.split(separator: "\n").forEach { lineSub in
             let line = String(lineSub)
-            // Match [mm:ss.xx] or [m:ss]
-            let pattern = #"\[(\d{1,2}):(\d{2})(?:\.(\d{1,2}))?\]"#
-            guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
+            guard let regex = Self.lrcTimestamp else { return }
             let nsLine = line as NSString
             if let match = regex.firstMatch(in: line, range: NSRange(location: 0, length: nsLine.length)) {
                 let minStr = nsLine.substring(with: match.range(at: 1))
