@@ -18,6 +18,31 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.9.2] — 2026-09-24 (build 33)
+
+### Fixed
+
+- **The dedicated equaliser floated between the title and the card's edge.**
+  It sat immediately after the title's fixed 214pt frame with the spacer
+  behind it, so it aligned to nothing: a few points off a clip that cuts
+  mid-word, with ~40pt of empty card to its right. The spacer now comes
+  first and the bars pin to the gutter, centred on the artwork row — the
+  card's own right-hand fitting rather than something dropped beside the
+  artist name.
+- **Two sets of the same bars at once.** "Show equaliser" *added* a second
+  equaliser while the album cover kept its badge. The toggle now **moves**
+  it: with the setting on the cover badge is hidden and the bars live at the
+  edge; with it off the badge is exactly what it always was. Vinyl mode is
+  unchanged — it never drew a badge, because a bottom-trailing badge on a
+  round disc sits outside the circle.
+
+### Deliberately left out
+
+- **Suppressing the edge equaliser in vinyl mode.** The disc has no badge to
+  trade away, so the toggle there is purely additive — which is the honest
+  reading of a setting called "Show equaliser". Worth revisiting only if the
+  tonearm and the bars read as saying the same thing twice on hardware.
+
 ## [2.9.1] — 2026-09-24 (build 32)
 
 ### Fixed

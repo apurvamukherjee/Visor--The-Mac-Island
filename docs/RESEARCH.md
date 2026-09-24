@@ -758,10 +758,10 @@ func downsample(_ data: Data, maxPixels: Int) -> CGImage? {
 | Volume changes | CoreAudio property listeners on `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` (`'vmvc'`), **not** `kAudioDevicePropertyVolumeScalar` — the main-element scalar exists only where the hardware owns a master control, so reading it disabled the feature outright on Bluetooth, most USB DACs and HDMI. `'vmvc'` is the volume macOS moves and is present on every output measured; on the built-in speakers it returns the identical value the scalar did. Mute stays on `kAudioDevicePropertyMute`, which is on the main element everywhere | none |
 | Brightness changes | DisplayServices (private) / observed key events | varies |
 | Replace system HUD | `CGEventTap` for media keys | Accessibility |
-| File shelf | SwiftUI `.onDrop` / `.draggable` | none |
-| Timer | pure Swift | none |
-| Launch at login | `SMAppService.mainApp` | user toggle |
-| Global shortcut | **`RegisterEventHotKey` (Carbon)** — no package needed, and no permission. See §6.4 | none |
+| ~~File shelf~~ **shipped** | SwiftUI `.onDrop` / `.draggable`; `IslandPage.shelf` since 2.9.0 | none |
+| ~~Timer~~ **shipped** | pure Swift (`TimerService`) | none |
+| ~~Launch at login~~ **shipped** | `SMAppService.mainApp` (`LaunchAtLogin`, Settings → General) | user toggle |
+| ~~Global shortcut~~ **shipped** | **`RegisterEventHotKey` (Carbon)** — no package needed, and no permission. ⌃⌥K opens the palette; see §6.4 | none |
 
 ### 6.4 Measured for the command palette, 2026-09-23
 

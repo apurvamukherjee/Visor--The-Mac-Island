@@ -658,8 +658,13 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   Build 0 warnings, 299 tests in 61 suites, swiftformat, swiftlint (3, 0
   serious — baseline). Detail: RESEARCH §2.6c, §2.6d. **Not seen on
   hardware.**
-- **Next:** manual hardware checklists — Phase 2 Task 10 (10 items) and
-  Phase 3 Task 11 (16 items, incl. Reduce Transparency/Motion fallbacks,
-  chip-bar gating, calendar permission-denied path, closed-state
-  invisibility regression guard). Both need the user's eyes on real
-  hardware; not automatable.
+- **Next:** `docs/HARDWARE-CHECKLIST.md` — the one manual list, ordered by
+  machine state rather than by phase, superseding Phase 2 Task 10, Phase 3
+  Task 11 and the card stack's Task 7 (all three kept as history, none
+  maintained). Written 2026-09-24 after an audit found five of their items
+  testing UI that no longer exists: the expanded island's clock/battery row,
+  the music card's calendar column and the mood chip bar were all cut, and
+  "Phase 3 Task 11, 16 items" named a list that exists nowhere — the spec has
+  10. Needs the user's eyes on real hardware; not automatable.
+  Audit and the plan behind it:
+  `docs/superpowers/plans/2026-09-24-pending-and-replan.md`.

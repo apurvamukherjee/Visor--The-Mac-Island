@@ -273,6 +273,11 @@ checklist.
 
 Manual checklist (Phase 3's equivalent of Task 10):
 
+> **Superseded 2026-09-24 by `docs/HARDWARE-CHECKLIST.md`.** Kept as written
+> for the record. Three items below test UI that was later cut: the mood chip
+> bar (removed 2026-09-16), the music card's calendar column (removed
+> 2026-09-19) and the chips' hit-testing. Do not run this list.
+
 - [ ] Reduce Transparency on → solid black fill, no material, no bleed, in every state.
 - [ ] Reduce Motion on → no springs anywhere, including chip bar and art swap.
 - [ ] Mood chip bar appears only while playing; exits in reverse on pause.
