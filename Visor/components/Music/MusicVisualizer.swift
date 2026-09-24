@@ -1,6 +1,6 @@
 //
 //  MusicVisualizer.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva   on 02/08/24.
 //

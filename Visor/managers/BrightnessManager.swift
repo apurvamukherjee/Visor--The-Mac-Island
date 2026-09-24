@@ -1,5 +1,5 @@
 //  BrightnessManager.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 08/22/24.
 

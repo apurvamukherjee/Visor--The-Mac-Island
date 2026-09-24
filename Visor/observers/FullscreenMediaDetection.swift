@@ -1,6 +1,6 @@
 //
 //  FullscreenMediaDetection.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 06/09/2024.
 //

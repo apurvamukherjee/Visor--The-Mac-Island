@@ -1,6 +1,6 @@
 //
 //  WhatsNewView.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 09/08/2024.
 //

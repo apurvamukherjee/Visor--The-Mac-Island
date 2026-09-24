@@ -5,7 +5,7 @@ excluded:
   - Visor.xcodeproj
   # Local archive of reference checkouts and 2.x material.
   - backup
-  # Ported verbatim from boring.notch (2026-09-24); reformatting or
+  # Ported verbatim from  (2026-09-24); reformatting or
   # linting it to Visor's style would defeat copying it.
   - Visor
   - VisorXPCHelper

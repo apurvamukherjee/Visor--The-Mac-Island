@@ -1,6 +1,6 @@
 //
 //  generic.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva   on 04/08/24.
 //

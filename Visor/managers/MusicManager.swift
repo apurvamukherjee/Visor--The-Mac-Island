@@ -1,6 +1,6 @@
 //
 //  MusicManager.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva   on 03/08/24.
 //

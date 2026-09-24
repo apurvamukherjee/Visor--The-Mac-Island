@@ -1,6 +1,6 @@
 //
-//  BoringNotchSkyLightWindow.swift
-//  boringNotch
+//  SkyLightWindow.swift
+//  
 //
 //  Created by Apurva on 2025-10-20.
 //
@@ -31,7 +31,7 @@ extension SkyLightOperator {
     }
 }
 
-class BoringNotchSkyLightWindow: NSPanel {
+class SkyLightWindow: NSPanel {
     private var isSkyLightEnabled: Bool = false
     
     override init(

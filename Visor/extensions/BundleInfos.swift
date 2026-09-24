@@ -1,6 +1,6 @@
 //
 //  BundleInfos.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 08/08/2024.
 //

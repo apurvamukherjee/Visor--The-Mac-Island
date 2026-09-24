@@ -65,6 +65,4 @@ bash scripts/make-dmg.sh
 
 ## License
 
-GPL-3.0, see [`LICENSE`](LICENSE). Visor 3 is built on
-[boring.notch](https://github.com/TheBoredTeam/boring.notch) (GPL-3.0);
-its authors' copyright notices are kept in the source files.
+GPL-3.0, see [`LICENSE`](LICENSE).

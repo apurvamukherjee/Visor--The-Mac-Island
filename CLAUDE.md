@@ -6,14 +6,14 @@ Design record: this file. The 2.x design doc (RESEARCH.md) is archived in `backu
 License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code can be ported in — see Progress).
 
 ## Stack
-- **Since 3.0.0 the app is boring.notch, ported file for file** into `Visor/`
-  (source: `backup/boring.notch-upstream/boringNotch`, identical to upstream `main` on
+- **Since 3.0.0 the app is , ported file for file** into `Visor/`
+  (source: `backup/-upstream/`, identical to upstream `main` on
   2026-09-24). Changes to it: branding (Visor / "By Apurva"), the Now
   Playing transport (Visor's MediaRemoteAdapter), removing Sparkle, and
   Visor's own additions. Every added line is marked `// Visor:`, and new
   files live beside upstream's: vinyl mode (`components/Music/VinylDisc.swift`,
   from 2.x) and the lock/unlock padlock (`Live activities/LockLiveActivity.swift`
-  + a `.lock` activity + the lock handlers in `boringNotchApp.swift`).
+  + a `.lock` activity + the lock handlers in `App.swift`).
   Everything else stays byte-for-byte.
 - Swift 5 language mode (the ported code is not Swift 6 clean)
 - macOS 14.0 minimum, Apple silicon
@@ -87,7 +87,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   image still builds, just unstyled.
 
 ## Architecture (3.0.0+)
-- Upstream boring.notch structure: `BoringViewModel` + `BoringViewCoordinator`,
+- Upstream  structure: `BoringViewModel` + `BoringViewCoordinator`,
   singleton managers (`MusicManager`, `BatteryActivityManager`, ...),
   settings in `Defaults` keys (`models/Constants.swift`).
 - Media: `MusicManager` -> `MediaControllerProtocol`. `NowPlayingController`
@@ -112,7 +112,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - No force unwraps, no `try!`, no print(); use os.Logger with a subsystem.
 - No commented-out code, no TODOs without an issue reference, no placeholder "example" code left behind.
 - Comments explain *why*, not *what*.
-- Visor is GPL-3.0 (see `LICENSE`); since 3.0.0 it is a boring.notch derivative, so code copies verbatim and keeps its copyright headers.
+- Visor is GPL-3.0 (see `LICENSE`); since 3.0.0 it is a  derivative, so code copies verbatim and keeps its copyright headers.
 - If something is uncertain (private API behavior, macOS version quirks), say so and verify instead of guessing.
 
 ## Workflow
@@ -133,7 +133,7 @@ The 2.x log (phases 1-6, every pass after them) is archived locally in
 before `8b05dad`.
 
 - **3.0.0 "new island" (2026-09-24):** the app was replaced with
-  boring.notch, copied file for file (user's call: "override everything",
+  , copied file for file (user's call: "override everything",
   keep the name Visor, "By Apurva", and the media integration). The 2.x
   features it lacks were dropped on purpose: lock-screen player, palette,
   launch groups, AI usage badge, timer, card stack, lyrics, and the
@@ -148,7 +148,7 @@ before `8b05dad`.
   whether the notch shows on the lock screen with "Show notch on lock
   screen" off.
 - **Repo cleanup (2026-09-24):** local-only `backup/` (git-ignored) now
-  holds `old-code/`, `boring.notch-upstream/` (was `old-code-v1/`), the 2.x
+  holds `old-code/`, `-upstream/` (was `old-code-v1/`), the 2.x
   docs, `smoothness/`, the 2.x README and this file's old progress log. The
   README was rewritten for 3.0.
 - **Next:** the user tests 3.1.0 on hardware.

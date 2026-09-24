@@ -1,6 +1,6 @@
 //
 //  Image2Color.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 07/08/2024.
 //

@@ -1,6 +1,6 @@
 //
 //  OpenNotchHUD.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2024-11-23.
 //

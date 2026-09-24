@@ -1,6 +1,6 @@
     //
     //  SystemEventIndicatorModifier.swift
-    //  boringNotch
+    //  
     //
     //  Created by Apurva on 12/08/2024.
     //

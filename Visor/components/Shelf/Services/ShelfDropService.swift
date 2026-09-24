@@ -1,6 +1,6 @@
 //
 //  ShelfDropService.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2025-09-26.
 //

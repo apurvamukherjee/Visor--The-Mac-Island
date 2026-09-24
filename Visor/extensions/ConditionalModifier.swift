@@ -1,6 +1,6 @@
 //
 //  ConditionalModifier.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 20/08/2024.
 //

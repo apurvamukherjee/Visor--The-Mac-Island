@@ -1,6 +1,6 @@
 //
 //  SharingStateManager.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2025-10-10.
 //

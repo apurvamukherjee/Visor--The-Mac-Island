@@ -1,6 +1,6 @@
 //
 //  visualizer.metal
-//  boringNotch
+//  
 //
 //  Created by Apurva   on 28/08/24.
 //

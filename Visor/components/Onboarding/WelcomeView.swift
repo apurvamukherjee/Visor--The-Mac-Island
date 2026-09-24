@@ -1,6 +1,6 @@
 //
 //  WelcomeView.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2024. 09. 26..
 //

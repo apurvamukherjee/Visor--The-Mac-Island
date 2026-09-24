@@ -7,7 +7,7 @@ final class XPCHelperClient: NSObject {
     
     private let serviceName = "com.apurvamukherjee.visor.VisorXPCHelper"
     
-    private var remoteService: RemoteXPCService<BoringNotchXPCHelperProtocol>?
+    private var remoteService: RemoteXPCService<XPCHelperProtocol>?
     private var connection: NSXPCConnection?
     private var lastKnownAuthorization: Bool?
     private var monitoringTask: Task<Void, Never>?
@@ -20,7 +20,7 @@ final class XPCHelperClient: NSObject {
     // MARK: - Connection Management (Main Actor Isolated)
     
     @MainActor
-    private func ensureRemoteService() -> RemoteXPCService<BoringNotchXPCHelperProtocol> {
+    private func ensureRemoteService() -> RemoteXPCService<XPCHelperProtocol> {
         if let existing = remoteService {
             return existing
         }
@@ -43,9 +43,9 @@ final class XPCHelperClient: NSObject {
         
         conn.resume()
         
-        let service = RemoteXPCService<BoringNotchXPCHelperProtocol>(
+        let service = RemoteXPCService<XPCHelperProtocol>(
             connection: conn,
-            remoteInterface: BoringNotchXPCHelperProtocol.self
+            remoteInterface: XPCHelperProtocol.self
         )
         
         connection = conn
@@ -54,7 +54,7 @@ final class XPCHelperClient: NSObject {
     }
     
     @MainActor
-    private func getRemoteService() -> RemoteXPCService<BoringNotchXPCHelperProtocol>? {
+    private func getRemoteService() -> RemoteXPCService<XPCHelperProtocol>? {
         remoteService
     }
     

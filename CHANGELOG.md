@@ -59,7 +59,7 @@ history are unchanged.
 
 ## [3.0.0] — 2026-09-24 (build 34)
 
-**MAJOR:** the whole app is new. Visor 3 is built on boring.notch
+**MAJOR:** the whole app is new. Visor 3 is built on 
 (GPL-3.0), ported file for file. It keeps Visor's name, icon, bundle ID,
 "By Apurva" credit and GitHub link, and Visor's media integration.
 

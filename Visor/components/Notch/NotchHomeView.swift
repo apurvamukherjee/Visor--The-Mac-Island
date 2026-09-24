@@ -1,9 +1,8 @@
 //
 //  NotchHomeView.swift
-//  boringNotch
+//  
 //
-//  Created by Hugo Persson on 2024-08-18.
-//  Modified by Apurva & Apurva & Mustafa Ramadan
+//  Modified by Apurva & Apurva 
 //
 
 import Combine

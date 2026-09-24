@@ -1,6 +1,6 @@
     //
     //  ProgressIndicator.swift
-    //  boringNotch
+    //  
     //
     //  Created by Apurva   on 11/08/24.
     //

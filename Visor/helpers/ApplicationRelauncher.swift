@@ -1,6 +1,6 @@
 //
 //  ApplicationRelauncher.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 03/10/2025.
 //

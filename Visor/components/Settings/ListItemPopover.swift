@@ -1,6 +1,6 @@
 //
 //  ListItemPopover.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 15/09/2024.
 //

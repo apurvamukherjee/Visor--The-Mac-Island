@@ -1,6 +1,6 @@
 //
 //  OnboardingFinishView.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2025-06-23.
 //

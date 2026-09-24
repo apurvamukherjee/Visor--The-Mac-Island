@@ -1,6 +1,6 @@
 //
-//  BoringNotchXPCHelperProtocol.swift
-//  BoringNotchXPCHelper
+//  XPCHelperProtocol.swift
+//  XPCHelper
 //
 //  Created by Apurva on 2025-11-16.
 //
@@ -8,7 +8,7 @@
 import Foundation
 
 /// The protocol that this service will vend as its API. This protocol will also need to be visible to the process hosting the service.
-@objc protocol BoringNotchXPCHelperProtocol {
+@objc protocol XPCHelperProtocol {
     func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void)
     func requestAccessibilityAuthorization()
     func ensureAccessibilityAuthorization(_ promptIfNeeded: Bool, with reply: @escaping (Bool) -> Void)

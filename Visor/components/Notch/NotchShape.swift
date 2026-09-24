@@ -1,6 +1,6 @@
 //
 //  NotchShape.swift
-//  boringNotch
+//  
 // Modified by Apurva on 2025-05-18.
 
 import SwiftUI

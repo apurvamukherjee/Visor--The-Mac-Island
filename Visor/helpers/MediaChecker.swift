@@ -1,6 +1,6 @@
 //
 //  MediaChecker.swift
-//  boringNotch
+//  
 //
 //  Created by Apurva on 2025-07-26.
 //
