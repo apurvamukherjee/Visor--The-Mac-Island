@@ -206,7 +206,9 @@ struct MusicControlsView: View {
     }
 
     private var musicSlider: some View {
-        TimelineView(.animation(minimumInterval: musicManager.playbackRate > 0 ? 0.1 : nil)) { timeline in
+        // Visor: `nil` means every display frame, so the paused slider used to
+        // redraw at 60-120 Hz. Once a second still catches a seek made elsewhere.
+        TimelineView(.animation(minimumInterval: musicManager.isPlaying ? 0.1 : 1)) { timeline in
             MusicSliderView(
                 sliderValue: $sliderValue,
                 duration: $musicManager.songDuration,
