@@ -32,9 +32,6 @@ struct ContentView: View {
     // Shared interactive spring for movement/resizing to avoid conflicting animations
     private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
 
-    private let extendedHoverPadding: CGFloat = 30
-    private let zeroHeightHoverPadding: CGFloat = 10
-
     private var topCornerRadius: CGFloat {
        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
                 ? cornerRadiusInsets.opened.top

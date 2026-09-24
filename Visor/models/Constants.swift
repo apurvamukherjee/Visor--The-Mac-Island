@@ -8,12 +8,7 @@
 import SwiftUI
 import Defaults
 
-private let availableDirectories = FileManager
-    .default
-    .urls(for: .documentDirectory, in: .userDomainMask)
-let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 let bundleIdentifier = Bundle.main.bundleIdentifier!
-let appVersion = "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""))"
 
 let temporaryDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
 let spacing: CGFloat = 16
@@ -72,7 +67,6 @@ extension Defaults.Keys {
     static let minimumHoverDuration = Key<TimeInterval>("minimumHoverDuration", default: 0.3)
     static let enableHaptics = Key<Bool>("enableHaptics", default: true)
     static let openNotchOnHover = Key<Bool>("openNotchOnHover", default: true)
-    static let extendHoverArea = Key<Bool>("extendHoverArea", default: false)
     static let notchHeightMode = Key<WindowHeightMode>(
         "notchHeightMode",
         default: WindowHeightMode.matchRealNotchSize
@@ -89,7 +83,6 @@ extension Defaults.Keys {
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
     
     // MARK: Appearance
-    static let showEmojis = Key<Bool>("showEmojis", default: false)
     static let showMirror = Key<Bool>("showMirror", default: false)
     static let mirrorShape = Key<MirrorShapeEnum>("mirrorShape", default: MirrorShapeEnum.rectangle)
     static let settingsIconInNotch = Key<Bool>("settingsIconInNotch", default: true)
@@ -100,7 +93,6 @@ extension Defaults.Keys {
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
 
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
-    static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
     static let showCalendar = Key<Bool>("showCalendar", default: false)
     static let hideCompletedReminders = Key<Bool>("hideCompletedReminders", default: true)
     static let sliderColor = Key<SliderColorEnum>(
@@ -119,7 +111,6 @@ extension Defaults.Keys {
     static let enableSneakPeek = Key<Bool>("enableSneakPeek", default: false)
     static let sneakPeekStyles = Key<SneakPeekStyle>("sneakPeekStyles", default: .standard)
     static let waitInterval = Key<Double>("waitInterval", default: 3)
-    static let showShuffleAndRepeat = Key<Bool>("showShuffleAndRepeat", default: false)
     static let enableLyrics = Key<Bool>("enableLyrics", default: false)
     static let musicControlSlots = Key<[MusicControlButton]>(
         "musicControlSlots",
@@ -151,7 +142,6 @@ extension Defaults.Keys {
     // MARK: Shelf
     static let visorShelf = Key<Bool>("visorShelf", default: true)
     static let openShelfByDefault = Key<Bool>("openShelfByDefault", default: true)
-    static let shelfTapToOpen = Key<Bool>("shelfTapToOpen", default: true)
     static let quickShareProvider = Key<String>("quickShareProvider", default: QuickShareProvider.defaultProvider.id)
     static let copyOnDrag = Key<Bool>("copyOnDrag", default: false)
     static let autoRemoveShelfItems = Key<Bool>("autoRemoveShelfItems", default: false)
@@ -174,6 +164,4 @@ extension Defaults.Keys {
     static let customAccentColorData = Key<Data?>("customAccentColorData", default: nil)
     // Show or hide the title bar
     static let hideTitleBar = Key<Bool>("hideTitleBar", default: true)
-    
-    static let didClearLegacyURLCacheV1 = Key<Bool>("didClearLegacyURLCache_v1", default: false)
 }

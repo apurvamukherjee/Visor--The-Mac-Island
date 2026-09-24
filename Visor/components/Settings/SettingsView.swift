@@ -1094,9 +1094,6 @@ struct Advanced: View {
             }
             
             Section {
-                Defaults.Toggle(key: .extendHoverArea) {
-                    Text("Extend hover area")
-                }
                 Defaults.Toggle(key: .hideTitleBar) {
                     Text("Hide title bar")
                 }
