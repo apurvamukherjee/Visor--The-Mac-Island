@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a1a1aa"/><stop offset="1" stop-color="#3f3f46"/></linearGradient></defs>
+<rect width="64" height="64" rx="15" fill="url(#g)"/>
+<g stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M25 12 V17 M32 12 V17 M39 12 V17 M25 47 V52 M32 47 V52 M39 47 V52 M12 25 H17 M12 32 H17 M12 39 H17 M47 25 H52 M47 32 H52 M47 39 H52"/></g>
+<rect x="17" y="17" width="30" height="30" rx="6" fill="none" stroke="#fff" stroke-width="3.5"/>
+<rect x="25" y="25" width="14" height="14" rx="3" fill="#fff"><animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/></rect>
+</svg>

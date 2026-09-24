@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fb7185"/><stop offset="1" stop-color="#e11d48"/></linearGradient></defs>
+<rect width="64" height="64" rx="15" fill="url(#g)"/>
+<g fill="#fff"><animateTransform attributeName="transform" type="translate" values="0 1;0 -2;0 1" dur="1.4s" repeatCount="indefinite"/>
+<rect x="25" y="20" width="4" height="25"/><rect x="45" y="15" width="4" height="25"/>
+<path d="M25 19 L49 13 V20 L25 26 Z"/>
+<ellipse cx="21" cy="45" rx="7" ry="5.5" transform="rotate(-20 21 45)"/><ellipse cx="41" cy="40" rx="7" ry="5.5" transform="rotate(-20 41 40)"/></g>
+</svg>

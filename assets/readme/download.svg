@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="64" viewBox="0 0 300 64" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Download for macOS</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fb7185"/>
+      <stop offset="0.5" stop-color="#e11d48"/>
+      <stop offset="1" stop-color="#be123c"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="c"><rect width="300" height="64" rx="32"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="300" height="64" fill="url(#g)"/>
+    <rect x="-80" width="60" height="64" fill="url(#shine)" transform="skewX(-20)">
+      <animate attributeName="x" values="-80;-80;400" keyTimes="0;0.45;1" dur="4s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <circle cx="40" cy="32" r="19" fill="#fff" fill-opacity="0.18"/>
+  <g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 -2;0 2;0 -2" dur="1.6s" repeatCount="indefinite"/>
+      <path d="M40 22 V36 M34 31 L40 37 L46 31"/>
+    </g>
+    <path d="M31 42 H49"/>
+  </g>
+  <text x="70" y="30" fill="#fff" font-size="19" font-weight="800">Download for macOS</text>
+  <text x="70" y="47" fill="#fff" fill-opacity="0.8" font-size="12.5" font-weight="600" letter-spacing="0.4">Free · macOS 14+ · Apple silicon</text>
+</svg>
