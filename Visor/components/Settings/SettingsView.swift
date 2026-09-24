@@ -110,11 +110,8 @@ struct GeneralSettings: View {
         guard let uuid = screen.displayUUID else { return nil }
         return (uuid, screen.localizedName)
     }
-    @EnvironmentObject var vm: VisorViewModel
     @ObservedObject var coordinator = VisorViewCoordinator.shared
 
-    @Default(.mirrorShape) var mirrorShape
-    @Default(.showEmojis) var showEmojis
     @Default(.gestureSensitivity) var gestureSensitivity
     @Default(.minimumHoverDuration) var minimumHoverDuration
     @Default(.nonNotchHeight) var nonNotchHeight
@@ -361,12 +358,10 @@ struct Charge: View {
 }
 
 struct HUD: View {
-    @EnvironmentObject var vm: VisorViewModel
     @Default(.inlineHUD) var inlineHUD
     @Default(.enableGradient) var enableGradient
     @Default(.optionKeyAction) var optionKeyAction
     @Default(.hudReplacement) var hudReplacement
-    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @State private var accessibilityAuthorized = false
     
     var body: some View {
@@ -497,7 +492,6 @@ struct Media: View {
     @Default(.enableSneakPeek) private var enableSneakPeek
     @Default(.sneakPeekStyles) var sneakPeekStyles
 
-    @Default(.enableLyrics) var enableLyrics
 
     var body: some View {
         Form {
@@ -585,9 +579,6 @@ struct Media: View {
 struct CalendarSettings: View {
     @ObservedObject private var calendarManager = CalendarManager.shared
     @Default(.showCalendar) var showCalendar: Bool
-    @Default(.hideCompletedReminders) var hideCompletedReminders
-    @Default(.hideAllDayEvents) var hideAllDayEvents
-    @Default(.autoScrollToNextEvent) var autoScrollToNextEvent
 
     var body: some View {
         Form {
@@ -775,7 +766,6 @@ struct About: View {
 
 struct Shelf: View {
     
-    @Default(.shelfTapToOpen) var shelfTapToOpen: Bool
     @Default(.quickShareProvider) var quickShareProvider
     @Default(.expandedDragDetection) var expandedDragDetection: Bool
     @StateObject private var quickShareService = QuickShareService.shared
@@ -957,10 +947,6 @@ struct Appearance: View {
 
 struct Advanced: View {
     @Default(.useCustomAccentColor) var useCustomAccentColor
-    @Default(.customAccentColorData) var customAccentColorData
-    @Default(.extendHoverArea) var extendHoverArea
-    @Default(.showOnLockScreen) var showOnLockScreen
-    @Default(.hideFromScreenRecording) var hideFromScreenRecording
     
     @State private var customAccentColor: Color = .accentColor
     @State private var selectedPresetColor: PresetAccentColor? = nil
@@ -1037,8 +1023,7 @@ struct Advanced: View {
                                 ForEach(PresetAccentColor.allCases) { preset in
                                     AccentCircleButton(
                                         isSelected: selectedPresetColor == preset,
-                                        color: preset.color,
-                                        isMulticolor: false
+                                        color: preset.color
                                     ) {
                                         selectedPresetColor = preset
                                         customAccentColor = preset.color
@@ -1239,7 +1224,6 @@ struct AccentCircleButton: View {
     let isSelected: Bool
     let color: Color
     var isSystemDefault: Bool = false
-    var isMulticolor: Bool = false
     let action: () -> Void
     
     var body: some View {
@@ -1295,27 +1279,6 @@ struct Shortcuts: View {
     }
 }
 
-func proFeatureBadge() -> some View {
-    Text("Upgrade to Pro")
-        .foregroundStyle(Color(red: 0.545, green: 0.196, blue: 0.98))
-        .font(.footnote.bold())
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 4).stroke(
-                Color(red: 0.545, green: 0.196, blue: 0.98), lineWidth: 1))
-}
-
-func comingSoonTag() -> some View {
-    Text("Coming soon")
-        .foregroundStyle(.secondary)
-        .font(.footnote.bold())
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
-        .background(Color(nsColor: .secondarySystemFill))
-        .clipShape(.capsule)
-}
-
 func customBadge(text: String) -> some View {
     Text(text)
         .foregroundStyle(.secondary)
@@ -1324,23 +1287,6 @@ func customBadge(text: String) -> some View {
         .padding(.horizontal, 6)
         .background(Color(nsColor: .secondarySystemFill))
         .clipShape(.capsule)
-}
-
-func warningBadge(_ text: String, _ description: String) -> some View {
-    Section {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(.yellow)
-            VStack(alignment: .leading) {
-                Text(text)
-                    .font(.headline)
-                Text(description)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-    }
 }
 
 #Preview {
