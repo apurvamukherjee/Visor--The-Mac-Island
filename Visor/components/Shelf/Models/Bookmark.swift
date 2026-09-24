@@ -62,12 +62,6 @@ struct Bookmark: Sendable, Equatable, Codable {
         return resolve().refreshedData
     }
     
-    static func update(in items: inout [ShelfItem], for item: ShelfItem, newBookmark: Data) {
-        guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
-        guard case .file = items[idx].kind else { return }
-        items[idx].kind = ShelfItemKind.file(bookmark: newBookmark)
-    }
-
     func validate() async -> Bool {
         let (url, _) = resolve()
         guard let url = url else { return false }
@@ -76,19 +70,4 @@ struct Bookmark: Sendable, Equatable, Codable {
         }
     }
 
-    func withAccess<T: Sendable>(_ block: @Sendable (URL) async throws -> T) async rethrows -> T? {
-        let url = resolveURL()
-        guard let url = url else { return nil }
-        return try await url.accessSecurityScopedResource { url in
-            try await block(url)
-        }
-    }
-
-    func withAccess<T>(_ block: (URL) throws -> T) rethrows -> T? {
-        let url = resolveURL()
-        guard let url = url else { return nil }
-        return try url.accessSecurityScopedResource { url in
-            try block(url)
-        }
-    }
 }
