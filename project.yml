@@ -8,6 +8,8 @@ settings:
     # The app is ported verbatim and written for Swift 5; strict Swift 6
     # concurrency would mean editing dozens of copied files.
     SWIFT_VERSION: "5.0"
+    # Apple silicon only, so an x86_64 slice is dead weight.
+    ARCHS: arm64
 # Pinned to the exact versions the ported code was built against.
 packages:
   MediaRemoteAdapter:
