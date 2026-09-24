@@ -24,8 +24,8 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   SkyLightWindow, each pinned exactly. No others without
   approval. **Sparkle is excluded**: its feed was TheBoredTeam's appcast.
 - App Sandbox off (spawns the media adapter); LSUIElement = YES
-- project.yml excludes the five files upstream's own project never compiles
-  (incl. the unused `visualizer.metal`).
+- Unused code is deleted, not excluded: the five never-compiled upstream
+  files were removed after 3.1.1, so `project.yml` has no excludes.
 
 ## Commands
 - Generate: `xcodegen generate`

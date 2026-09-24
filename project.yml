@@ -57,15 +57,6 @@ targets:
       - package: SkyLightWindow
     sources:
       - path: Visor
-        # Upstream's own Xcode project never compiles these five (they are on
-        # disk but in no target), so neither does Visor. The shader is also
-        # loaded by nothing and would need the separate Metal toolchain.
-        excludes:
-          - "metal/visualizer.metal"
-          - "menu/StatusBarMenu.swift"
-          - "utils/Logger.swift"
-          - "helpers/Clipboard+Content.swift"
-          - "components/BottomRoundedRectangle.swift"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.visor
