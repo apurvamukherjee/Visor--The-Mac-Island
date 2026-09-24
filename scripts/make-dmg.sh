@@ -166,16 +166,11 @@ if [ "$ACTUAL" != "$EXPECTED" ]; then
     exit 1
 fi
 
-# One last sweep immediately before detaching. The delete above happens while
-# the volume is still live, and macOS recreates .fseventsd during the detach
-# itself — measured on build 29, which shipped one past an assertion that had
-# just passed. Unmounting with `diskutil` rather than `hdiutil detach` lets the
-# filesystem settle first, and the post-convert check below is what actually
-# guarantees it: the live mount cannot be trusted to stay clean.
-# `.fseventsd` is recreated during the detach itself — measured on build 29,
-# which shipped one past an assertion that had just passed. Dropping a
-# `no_log` file in it is what actually stops macOS maintaining the directory;
-# deleting it alone only wins the race until the unmount.
+# One last sweep immediately before detaching. `.fseventsd` is recreated during
+# the detach itself — measured on build 29, which shipped one past an assertion
+# that had just passed. Dropping a `no_log` file in it is what actually stops
+# macOS maintaining the directory; deleting it alone only wins the race until
+# the unmount. The post-convert check below is what guarantees the result.
 rm -rf "$MOUNTPT/.fseventsd" 2>/dev/null || true
 mkdir -p "$MOUNTPT/.fseventsd" 2>/dev/null || true
 touch "$MOUNTPT/.fseventsd/no_log" 2>/dev/null || true
