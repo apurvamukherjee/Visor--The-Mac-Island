@@ -32,7 +32,7 @@ class SettingsWindowController: NSWindowController {
     private func setupWindow() {
         guard let window = window else { return }
         
-        window.title = "Boring Notch Settings"
+        window.title = "Visor Settings"
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible
         window.toolbarStyle = .unified
@@ -47,7 +47,7 @@ class SettingsWindowController: NSWindowController {
         
         // Configure window to be a standard document-style window
         window.isRestorable = true
-        window.identifier = NSUserInterfaceItemIdentifier("BoringNotchSettingsWindow")
+        window.identifier = NSUserInterfaceItemIdentifier("VisorSettingsWindow")
         
         // Create the SwiftUI content
         let settingsView = SettingsView()
