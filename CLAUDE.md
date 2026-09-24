@@ -114,7 +114,10 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 ## Workflow
 - Plan before coding; wait for approval on plans. Don't code until ~98% confident — ask, don't guess.
 - Work one phase at a time (see docs/RESEARCH.md §8). Don't start features from later phases.
-- Never commit or push — that's the user's call, always.
+- Commit after every task, authored as the user (`Apurva Mukherjee
+  <apurvan.337@gmail.com>`, GitHub `apurvamukherjee`) from their terminal's
+  git config, with a descriptive conventional message and no co-author
+  trailer. Never push. (Changed 2026-09-24 at the user's request.)
 - Keep MD files lean (this file <200 lines): decisions/architecture/stack/conventions/guidelines/progress only, no verbose prose. Full README treatment only on explicit "update read me".
 - Run only necessary shell commands — avoid exploratory bloat.
 - When done, report: what changed, how you verified it, what I should test by hand, and any open questions.

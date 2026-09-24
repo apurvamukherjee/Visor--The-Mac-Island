@@ -11,4 +11,5 @@ dist/
 # GPL-3.0 reference checkouts, kept locally to port from — not Visor's source,
 # and 16M of someone else's tree does not belong in this history.
 /old-code/
+/old-code-v1/
 /DynamicNotch/
