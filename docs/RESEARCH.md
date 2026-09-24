@@ -1,5 +1,7 @@
 # Visor — Research & Technical Design
 
+> **Superseded for the app's code by 3.0.0 (2026-09-24):** Visor is now a file-for-file port of boring.notch (see CLAUDE.md → Architecture). This document describes the 2.x design and remains the record of its measurements.
+
 > A native, Dynamic Island–style notch app for macOS. Goals, in order: **feels like iOS**, **near-zero idle cost**, **clean codebase**.
 >
 > Research date: 15 Sep 2026. Target dev machine: MacBook Air M4 15" (notched), macOS 26.6.2.

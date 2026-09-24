@@ -18,6 +18,49 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [3.0.0] — 2026-09-24 (build 34)
+
+**MAJOR:** the whole app is new. Visor 3 is built on boring.notch
+(GPL-3.0), ported file for file. It keeps Visor's name, icon, bundle ID,
+"By Apurva" credit and GitHub link, and Visor's media integration.
+
+### Added
+
+- The new island UI, settings window, onboarding tour with a step-by-step
+  permission flow, animations, file shelf, volume/brightness HUDs,
+  calendar and reminders, webcam mirror, battery and download live
+  activities, and Apple Music / Spotify / YouTube Music controllers.
+
+### Changed
+
+- The Now Playing source runs on Visor's MediaRemoteAdapter package instead
+  of a bundled perl script.
+- Swift 5 language mode. Seven third-party packages added, each pinned to
+  the exact version the ported code was built with.
+
+### Fixed
+
+- **YouTube Music in the browser never showed.** The ported Now Playing
+  controller launched a script and framework that were never bundled, so it
+  got no updates. It now uses the adapter Visor 2.x shipped, which sees
+  every MediaRemoteAdapter source, browsers included.
+
+### Removed
+
+- Every 2.x feature the new app doesn't have: lock-screen player, ⌃⌥K
+  palette, launch groups, AI usage badge, timer, card-stack paging, lyrics,
+  Bluetooth/VPN/Focus alerts. Also VisorTests, which covered that code.
+
+### Deliberately left out
+
+- **Sparkle auto-updates.** The feed pointed at TheBoredTeam's appcast, so
+  it would have offered their builds as Visor updates.
+- **The XPC helper target**, for now. Until `VisorXPCHelper` is added,
+  Accessibility checks report "not granted", so the media-key and
+  brightness HUDs stay off.
+- Five files upstream never compiles (including an unused Metal shader)
+  are excluded from the build the same way upstream excludes them.
+
 ## [2.9.2] — 2026-09-24 (build 33)
 
 ### Fixed

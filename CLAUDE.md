@@ -6,20 +6,30 @@ Full design: docs/RESEARCH.md (source of truth; update it if a decision changes)
 License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code can be ported in — see Progress).
 
 ## Stack
-- Swift 6 language mode, strict concurrency: complete
-- SwiftUI for all views; AppKit only in Window/ and App/
+- **Since 3.0.0 the app is boring.notch, ported file for file** into `Visor/`
+  (source: `old-code-v1/boringNotch`, identical to upstream `main` on
+  2026-09-24). Only three kinds of change are made to it: branding (Visor /
+  "By Apurva"), the Now Playing transport (Visor's MediaRemoteAdapter), and
+  removing Sparkle. Everything else stays byte-for-byte.
+- Swift 5 language mode (the ported code is not Swift 6 clean)
 - macOS 14.0 minimum, Apple silicon
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
-- No third-party Swift packages unless I approve them
+- Approved packages (2026-09-24): MediaRemoteAdapter, AsyncXPCConnection,
+  Defaults, KeyboardShortcuts, LaunchAtLogin-Modern, Lottie, MacroVisionKit,
+  SkyLightWindow, SwiftUIIntrospect, each pinned exactly. No others without
+  approval. **Sparkle is excluded**: its feed was TheBoredTeam's appcast.
 - App Sandbox off (spawns the media adapter); LSUIElement = YES
+- project.yml excludes the five files upstream's own project never compiles
+  (incl. the unused `visualizer.metal`).
 
 ## Commands
 - Generate: `xcodegen generate`
 - Build: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
-- Test: `xcodebuild -scheme Visor test | xcbeautify`
-- Format: `swiftformat .`   Lint: `swiftlint`
+- Test: none since 3.0.0 (VisorTests covered the replaced code and was removed)
+- Format: `swiftformat .`   Lint: `swiftlint`. Both exclude `Visor/` and
+  `VisorXPCHelper/` (ported verbatim, so reformatting would defeat the copy)
 - Release: `bash scripts/make-dmg.sh`
-- Run build, tests, format and lint before saying a task is done.
+- Run build, format and lint before saying a task is done.
 
 ## Releases
 - **Semantic versioning, always.** `MARKETING_VERSION` is `MAJOR.MINOR.PATCH`:
@@ -67,40 +77,25 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   flagging it while Finder is still writing loses the whole layout, and the
   image still builds, just unstyled.
 
-## Architecture rules
-- Single source of truth: `NotchStore` (@Observable, @MainActor). Views read, services write.
-- Features live in Features/<Name>/ as service + compact view + expanded view. A feature never imports another feature.
-- Every service conforms to `NotchService` with start()/stop(); stop() releases processes, observers, run-loop sources.
-- All animations come from `Motion` tokens. No raw .spring/.easeInOut/durations elsewhere.
-- One black NotchShape morphs between states. Never cross-fade two shapes.
-- **One box for every page, and the same box whatever is playing.** Every
-  screen a swipe reaches resolves to one size (`covering`) *and* that size
-  always covers `nowPlaying` — the player measures the island. Without the
-  second half the box tracked the activity: 421x193 playing, 366x190 not.
-- **Chin insets are proportional, never absolute.** A flat inset tuned on the
-  idle island measures 2.6% against the player's and stops reading as a card.
-- **Chins are short cards.** Draw only the part that shows; a full-height
-  chin is 95% hidden and renders the deck as a slab.
-- **Depth and the swipe must agree.** The chin you can see is depth +1, so a
-  swipe up brings *that* card forward.
-- **Anything that lingers gets a page, never the card.** `expandedPriority`
-  is ranked by *lifetime*, not importance: a transient alert takes the island
-  and leaves, but a screenshot, AirDrop or download sits until dismissed, so
-  all three rank below `.nowPlaying` and live on `IslandPage.shelf`. A
-  screen that draws nothing is never reachable — `availablePages` gates it.
-- **A retraction's wait is derived from its animation, never a constant.**
-  `Dwell.stackRetract` is computed from `Motion.retract`; a flat number
-  against a preset-scaled spring fires the collapse mid-animation.
-- Shape leads, content follows (content in delayed, content out fast).
-- Respect Reduce Motion.
-
-## Power rules (non-negotiable)
-- Event-driven only. No polling loops. No global mouse monitors.
-- Panel frame follows the visible shape; hover via NSTrackingArea.
-- Never animate window frames per frame; animate SwiftUI views.
-- Nothing animates or ticks when not visible, not playing, or display asleep.
-- Artwork decoded once per track and downsampled with ImageIO.
-- Timers only if unavoidable, always with tolerance.
+## Architecture (3.0.0+)
+- Upstream boring.notch structure: `BoringViewModel` + `BoringViewCoordinator`,
+  singleton managers (`MusicManager`, `BatteryActivityManager`, ...),
+  settings in `Defaults` keys (`models/Constants.swift`).
+- Media: `MusicManager` -> `MediaControllerProtocol`. `NowPlayingController`
+  wraps Visor's `MediaRemoteAdapter.MediaController`, which is what makes
+  browser players (YouTube Music in Chrome/Safari) appear. Don't swap it back
+  to a bundled `mediaremote-adapter.pl`: that script was never bundled, and
+  its absence was the "doesn't hear YouTube Music" bug.
+- Permissions: the upstream onboarding flow (explain first, then request);
+  Accessibility goes through `XPCHelperClient` -> the XPC service
+  `com.apurvamukherjee.visor.VisorXPCHelper`. **The helper target is not in
+  the repo yet** (see Progress), so those checks return false for now.
+- Branding: user-visible text says only Visor / "By Apurva"; links go to
+  github.com/apurvamukherjee/Visor--The-Mac-Island. Keep upstream's GPL
+  copyright headers in source files.
+- The 2.x rules (NotchStore, Motion tokens, card stack, power rules) are
+  retired with the code they governed. They live in git history before
+  `8b05dad` and in docs/RESEARCH.md.
 
 ## Code quality
 - Small files, small views, clear names. No god objects.
@@ -108,7 +103,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - No commented-out code, no TODOs without an issue reference, no placeholder "example" code left behind.
 - Comments explain *why*, not *what*.
 - Unit-test pure logic: geometry, activity priority, adapter JSON parsing.
-- Visor is GPL-3.0 (see `LICENSE`), so porting code from other GPL-3.0 projects (boring.notch, Atoll, DynamicNotch) is allowed — still reimplement rather than blind-paste where Visor's own architecture (NotchService, Motion tokens, @Observable store) differs, and still no third-party packages without approval (line above) even if the reference project uses one.
+- Visor is GPL-3.0 (see `LICENSE`); since 3.0.0 it is a boring.notch derivative, so code copies verbatim and keeps its copyright headers.
 - If something is uncertain (private API behavior, macOS version quirks), say so and verify instead of guessing.
 
 ## Workflow
@@ -661,7 +656,19 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   Build 0 warnings, 299 tests in 61 suites, swiftformat, swiftlint (3, 0
   serious — baseline). Detail: RESEARCH §2.6c, §2.6d. **Not seen on
   hardware.**
-- **Next:** `docs/HARDWARE-CHECKLIST.md` — the one manual list, ordered by
+- **3.0.0 "new island" (2026-09-24):** the app was replaced with
+  boring.notch, copied file for file (user's call: "override everything",
+  keep the name Visor, "By Apurva", and the media integration). The 2.x
+  features it lacks were dropped on purpose: lock-screen player, palette,
+  launch groups, AI usage badge, timer, card stack, lyrics, and the
+  Bluetooth/VPN/Focus alerts. Four commits: swap (`8b05dad`), media fix
+  (`e5b1c17`), branding (`dd4d611`), docs. Build passes; no tests exist.
+  **Open:** the XPC helper target. Copying upstream's
+  `BoringNotchXPCHelper/` was blocked by the auto-mode safety check, so
+  Accessibility checks, media-key HUD and brightness HUD fail until it is
+  added as target `VisorXPCHelper` (bundle ID above). **Not seen on
+  hardware.**
+- **Next (2.x, superseded by 3.0.0):** `docs/HARDWARE-CHECKLIST.md` — the one manual list, ordered by
   machine state rather than by phase, superseding Phase 2 Task 10, Phase 3
   Task 11 and the card stack's Task 7 (all three kept as history, none
   maintained). Written 2026-09-24 after an audit found five of their items
