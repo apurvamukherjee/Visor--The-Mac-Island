@@ -23,6 +23,11 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     // Visor: every adapter event repeats the whole cover as base64, usually unchanged.
     private var lastArtworkBase64: String?
     private var lastArtwork: Data?
+    // Visor: browsers report a new track before its cover has loaded, and
+    // MediaRemote does not always post another change once it has, so the
+    // app icon stayed up for the whole track.
+    private var artworkRetryTask: Task<Void, Never>?
+    private static let artworkRetryDelays: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2), .seconds(4)]
 
     var playbackStatePublisher: AnyPublisher<PlaybackState, Never> {
         $playbackState.eraseToAnyPublisher()
@@ -77,6 +82,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
 
     deinit {
+        artworkRetryTask?.cancel()
         mediaController.stopListening()
     }
 
@@ -196,6 +202,34 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             && playbackState.isFavorite
 
         self.playbackState = newPlaybackState
+
+        if newPlaybackState.artwork == nil && !newPlaybackState.title.isEmpty {
+            retryMissingArtwork(for: newPlaybackState.title)
+        } else {
+            artworkRetryTask?.cancel()
+        }
+    }
+
+    // Visor: `get` reads MediaRemote afresh, so it sees a cover that arrived
+    // without a change notification. Bounded, and only while one is missing.
+    private func retryMissingArtwork(for title: String) {
+        artworkRetryTask?.cancel()
+        artworkRetryTask = Task { @MainActor [weak self] in
+            for delay in Self.artworkRetryDelays {
+                try? await Task.sleep(for: delay)
+                guard !Task.isCancelled, let self else { return }
+                self.mediaController.getTrackInfo { [weak self] trackInfo in
+                    guard let self,
+                          let payload = trackInfo?.payload,
+                          payload.title == title,
+                          payload.artworkDataBase64 != nil,
+                          self.playbackState.title == title,
+                          self.playbackState.artwork == nil
+                    else { return }
+                    self.handleTrackInfo(trackInfo)
+                }
+            }
+        }
     }
 
     private static func adapterRepeatMode(_ mode: RepeatMode) -> TrackInfo.RepeatMode {
