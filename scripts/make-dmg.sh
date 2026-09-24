@@ -200,7 +200,7 @@ if [ -n "$SWEEP" ]; then
     hdiutil detach "$SWEEP" >/dev/null 2>&1 || true
 fi
 
-hdiutil convert "$RW" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null
+hdiutil convert "$RW" -format ULMO -o "$DMG" >/dev/null
 rm -f "$RW"
 
 # Assert on the image that actually ships, not on the read-write volume that
