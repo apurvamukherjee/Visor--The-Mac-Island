@@ -20,9 +20,10 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - macOS 14.0 minimum, Apple silicon
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
 - Approved packages (2026-09-25): MediaRemoteAdapter, Defaults,
-  KeyboardShortcuts, MacroVisionKit, SkyLightWindow, each pinned exactly.
-  No others without approval. Lottie, AsyncXPCConnection and
-  LaunchAtLogin-Modern were removed in 3.1.2. **Sparkle is excluded**: its
+  KeyboardShortcuts, MacroVisionKit, each pinned exactly. No others without
+  approval. Lottie, AsyncXPCConnection and LaunchAtLogin-Modern were removed
+  in 3.1.2; SkyLightWindow's one used class is vendored (MIT) as
+  `private/SkyLightOperator.swift`. It lifts the notch above the lock screen. **Sparkle is excluded**: its
   feed was TheBoredTeam's appcast.
 - App Sandbox off (spawns the media adapter); LSUIElement = YES
 - Unused code is deleted, not excluded: the five never-compiled upstream
@@ -161,6 +162,8 @@ before `8b05dad`.
   Lottie/AsyncXPCConnection/LaunchAtLogin dropped), the HUD-drag fix and the
   browser album-cover fix (re-fetch while the cover is missing or stale).
   Smoke-tested: launches, XPC helper connects, no errors logged.
+- **After 3.1.2:** SkyLightWindow vendored (symbols verified on macOS 26.7;
+  lock screen not yet seen on hardware).
 - **Next:** the user tests 3.1.2 on hardware. After the release, Claude
   rewrites history to drop the old Co-Authored-By trailers (plan in
   memory) and the user force-pushes.

@@ -30,9 +30,6 @@ packages:
   MacroVisionKit:
     url: https://github.com/TheBoredTeam/MacroVisionKit
     exactVersion: 0.2.0
-  SkyLightWindow:
-    url: https://github.com/Lakr233/SkyLightWindow
-    exactVersion: 1.0.0
 targets:
   Visor:
     type: application
@@ -46,7 +43,6 @@ targets:
       - package: Defaults
       - package: KeyboardShortcuts
       - package: MacroVisionKit
-      - package: SkyLightWindow
     sources:
       - path: Visor
       # One protocol file, compiled into both the app and the helper.

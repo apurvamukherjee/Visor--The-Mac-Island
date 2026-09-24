@@ -18,6 +18,16 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [Unreleased]
+
+### Changed
+
+- The SkyLightWindow package is gone. Visor used one class from it, the
+  one that lifts the notch above the lock screen for "Show notch on lock
+  screen" and the lock animation. That class now lives in Visor (MIT,
+  credited), with the same system calls. If macOS ever drops one of them,
+  the notch stays below the lock screen instead of crashing the app.
+
 ## [3.1.2] — 2026-09-25 (build 37)
 
 A cleanup release: two fixes you can see, and a much smaller codebase
