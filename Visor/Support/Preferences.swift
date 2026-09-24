@@ -56,7 +56,8 @@ enum Preferences {
     static let screenChoiceKey = "notchScreen"
     /// Tint style for the Now Playing progress bar.
     static let progressTintKey = "nowPlayingProgressTint"
-    /// Show the (decorative) equaliser beside the artwork.
+    /// Move the (decorative) equaliser off the album cover and out to the
+    /// player card's right edge. Never both: the badge hides when this is on.
     static let equalizerKey = "nowPlayingEqualizer"
 
     // MARK: - Hover

@@ -26,7 +26,9 @@ struct SettingsNowPlayingView: View {
                 Text("Player")
             } footer: {
                 Text("Vinyl mode turns a record instead of showing the album cover. The "
-                    + "equaliser is decorative — macOS gives no app the system's audio levels.")
+                    + "equaliser moves to the card's right edge instead of sitting on the "
+                    + "cover; it is decorative either way — macOS gives no app the system's "
+                    + "audio levels.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

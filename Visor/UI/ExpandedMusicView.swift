@@ -112,21 +112,20 @@ struct ExpandedMusicView: View {
                 .frame(height: 32, alignment: .leading)
                 .clipped()
 
+                // Pinned to the card's trailing edge, not left floating a
+                // few points off the title's clip. The title and artist are a
+                // fixed 214pt frame that cuts mid-word, so bars anywhere near
+                // that edge read as the artist name running into them; at the
+                // gutter they read as the card's own right-hand fitting. The
+                // spacer keeps 8pt even on the narrowest card.
+                Spacer(minLength: 8)
                 if showEqualizer {
                     // The same bars the artwork badge draws. There used to be
                     // a second, sine-driven implementation here; it ran a
                     // `TimelineView(.animation)` every frame on the main
                     // thread to do what these hand to the render server once.
                     PlaybackBars(isPlaying: info.isPlaying, height: 16, tint: tint)
-                        // Pushed *away* from the text, not towards it. The
-                        // title and artist are a fixed 214pt frame that clips
-                        // mid-word, so bars sitting tight against that edge
-                        // read as the artist name running into them. There is
-                        // ~40pt of slack before the gutter; 8pt of it buys the
-                        // clip a margin to happen in.
-                        .padding(.leading, 8)
                 }
-                Spacer(minLength: 0)
             }
             // Hidden outright when the source app reports no duration,
             // rather than drawing a bar with nothing to show.
@@ -234,8 +233,12 @@ struct ExpandedMusicView: View {
             // Not in vinyl mode: a bottom-trailing badge on a round disc sits
             // outside the circle, and the tonearm already says whether the
             // record is playing.
+            // Not while the dedicated equaliser is on either: two sets of the
+            // same bars a few points apart is one too many, and the badge is
+            // the one that costs the artwork. The toggle *moves* the
+            // equaliser out to the edge rather than adding a second.
             .overlay(alignment: .bottomTrailing) {
-                if !vinylMode {
+                if !vinylMode, !showEqualizer {
                     PlaybackBars(isPlaying: info.isPlaying, height: 13, tint: tint)
                         .padding(5)
                         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 7))
