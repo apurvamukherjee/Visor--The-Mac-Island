@@ -35,17 +35,14 @@ struct MinimalFaceFeatures: View {
             }
         }
         .frame(width: self.width, height: self.height) // Maximum size of face
-        .onAppear {
-            startBlinking()
-        }
-    }
-    
-    func startBlinking() {
-        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
-            withAnimation(.spring(duration: 0.2)) {
-                isBlinking = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // Visor: `.task` is cancelled when the face disappears. The Timer it
+        // replaces was never invalidated, so every appearance added one more.
+        .task {
+            while (try? await Task.sleep(for: .seconds(3), tolerance: .milliseconds(300))) != nil {
+                withAnimation(.spring(duration: 0.2)) {
+                    isBlinking = true
+                }
+                guard (try? await Task.sleep(for: .milliseconds(100))) != nil else { return }
                 withAnimation(.spring(duration: 0.2)) {
                     isBlinking = false
                 }
