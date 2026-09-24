@@ -22,8 +22,6 @@
 	<string>1</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
-	<key>LSBackgroundOnly</key>
-	<false/>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -35,15 +33,11 @@
 	<string>Visor uses AppleEvents to control music.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Visor uses the calendar to display your calendar events.</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Visor uses the calendar to display your calendar events.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Visor uses the camera to display a live camera view.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Apurva Mukherjee</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Visor uses Reminders to display your scheduled reminders in the calendar.</string>
-	<key>NSRemindersUsageDescription</key>
 	<string>Visor uses Reminders to display your scheduled reminders in the calendar.</string>
 </dict>
 </plist>

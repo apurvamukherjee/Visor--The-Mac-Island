@@ -94,13 +94,10 @@ targets:
       properties:
         CFBundleDisplayName: Visor
         LSUIElement: true
-        LSBackgroundOnly: false
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: "Copyright © 2026 Apurva Mukherjee"
         NSAppleEventsUsageDescription: "Visor uses AppleEvents to control music."
-        NSCalendarsUsageDescription: "Visor uses the calendar to display your calendar events."
         NSCalendarsFullAccessUsageDescription: "Visor uses the calendar to display your calendar events."
-        NSRemindersUsageDescription: "Visor uses Reminders to display your scheduled reminders in the calendar."
         NSRemindersFullAccessUsageDescription: "Visor uses Reminders to display your scheduled reminders in the calendar."
         NSCameraUsageDescription: "Visor uses the camera to display a live camera view."
         # The YouTube Music controller talks to a local HTTP server.
