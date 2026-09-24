@@ -33,9 +33,6 @@ packages:
   LaunchAtLogin:
     url: https://github.com/sindresorhus/LaunchAtLogin-Modern
     exactVersion: 1.1.0
-  Lottie:
-    url: https://github.com/airbnb/lottie-spm.git
-    exactVersion: 4.5.2
   MacroVisionKit:
     url: https://github.com/TheBoredTeam/MacroVisionKit
     exactVersion: 0.2.0
@@ -56,7 +53,6 @@ targets:
       - package: Defaults
       - package: KeyboardShortcuts
       - package: LaunchAtLogin
-      - package: Lottie
       - package: MacroVisionKit
       - package: SkyLightWindow
     sources:
