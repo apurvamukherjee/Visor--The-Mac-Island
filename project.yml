@@ -57,6 +57,8 @@ targets:
       - package: SkyLightWindow
     sources:
       - path: Visor
+      # One protocol file, compiled into both the app and the helper.
+      - path: VisorXPCHelper/XPCHelperProtocol.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.visor
