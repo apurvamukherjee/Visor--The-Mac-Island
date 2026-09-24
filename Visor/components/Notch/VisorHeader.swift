@@ -1,5 +1,5 @@
 //
-//  BoringHeader.swift
+//  VisorHeader.swift
 //  
 //
 //  Created by Apurva   on 04/08/24.
@@ -8,15 +8,15 @@
 import Defaults
 import SwiftUI
 
-struct BoringHeader: View {
-    @EnvironmentObject var vm: BoringViewModel
+struct VisorHeader: View {
+    @EnvironmentObject var vm: VisorViewModel
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @StateObject var tvm = ShelfStateViewModel.shared
     var body: some View {
         HStack(spacing: 0) {
             HStack {
-                if (!tvm.isEmpty || coordinator.alwaysShowTabs) && Defaults[.boringShelf] {
+                if (!tvm.isEmpty || coordinator.alwaysShowTabs) && Defaults[.visorShelf] {
                     TabSelectionView()
                 } else if vm.notchState == .open {
                     EmptyView()
@@ -78,7 +78,7 @@ struct BoringHeader: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                         if Defaults[.showBatteryIndicator] {
-                            BoringBatteryView(
+                            VisorBatteryView(
                                 batteryWidth: 30,
                                 isCharging: batteryModel.isCharging,
                                 isInLowPowerMode: batteryModel.isInLowPowerMode,
@@ -113,5 +113,5 @@ struct BoringHeader: View {
 }
 
 #Preview {
-    BoringHeader().environmentObject(BoringViewModel())
+    VisorHeader().environmentObject(VisorViewModel())
 }

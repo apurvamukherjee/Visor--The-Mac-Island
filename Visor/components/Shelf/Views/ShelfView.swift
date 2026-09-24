@@ -9,7 +9,7 @@ import SwiftUI
 import AppKit
 
 struct ShelfView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: VisorViewModel
     @StateObject var tvm = ShelfStateViewModel.shared
     @StateObject var selection = ShelfSelectionModel.shared
     @StateObject private var quickLookService = QuickLookService()

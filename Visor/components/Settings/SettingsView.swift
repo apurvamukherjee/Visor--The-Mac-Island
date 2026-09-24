@@ -117,8 +117,8 @@ struct GeneralSettings: View {
         guard let uuid = screen.displayUUID else { return nil }
         return (uuid, screen.localizedName)
     }
-    @EnvironmentObject var vm: BoringViewModel
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @EnvironmentObject var vm: VisorViewModel
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
 
     @Default(.mirrorShape) var mirrorShape
     @Default(.showEmojis) var showEmojis
@@ -448,12 +448,12 @@ struct Charge: View {
 //}
 
 struct HUD: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: VisorViewModel
     @Default(.inlineHUD) var inlineHUD
     @Default(.enableGradient) var enableGradient
     @Default(.optionKeyAction) var optionKeyAction
     @Default(.hudReplacement) var hudReplacement
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @State private var accessibilityAuthorized = false
     
     var body: some View {
@@ -579,7 +579,7 @@ struct HUD: View {
 struct Media: View {
     @Default(.waitInterval) var waitInterval
     @Default(.mediaController) var mediaController
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @Default(.hideNotchOption) var hideNotchOption
     @Default(.enableSneakPeek) private var enableSneakPeek
     @Default(.sneakPeekStyles) var sneakPeekStyles
@@ -908,7 +908,7 @@ struct Shelf: View {
     var body: some View {
         Form {
             Section {
-                Defaults.Toggle(key: .boringShelf) {
+                Defaults.Toggle(key: .visorShelf) {
                     Text("Enable shelf")
                 }
                 Defaults.Toggle(key: .openShelfByDefault) {
@@ -1139,7 +1139,7 @@ struct Shelf: View {
 //}
 
 struct Appearance: View {
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @Default(.mirrorShape) var mirrorShape
     @Default(.sliderColor) var sliderColor
     @Default(.useMusicVisualizer) var useMusicVisualizer

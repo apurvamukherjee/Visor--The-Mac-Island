@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 
-public class BoringAnimations {
+public class VisorAnimations {
     @Published var notchStyle: Style = .notch
     
     init() {

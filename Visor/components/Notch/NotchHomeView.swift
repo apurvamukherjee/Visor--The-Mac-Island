@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - Music Player Components
 
 struct MusicPlayerView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: VisorViewModel
     let albumArtNamespace: Namespace.ID
 
     var body: some View {
@@ -25,7 +25,7 @@ struct MusicPlayerView: View {
 
 struct AlbumArtView: View {
     @ObservedObject var musicManager = MusicManager.shared
-    @ObservedObject var vm: BoringViewModel
+    @ObservedObject var vm: VisorViewModel
     let albumArtNamespace: Namespace.ID
     @Default(.vinylMode) private var vinylMode
 
@@ -127,7 +127,7 @@ struct AlbumArtView: View {
 
 struct MusicControlsView: View {
     @ObservedObject var musicManager = MusicManager.shared
-        @EnvironmentObject var vm: BoringViewModel
+        @EnvironmentObject var vm: VisorViewModel
         @ObservedObject var webcamManager = WebcamManager.shared
     @State private var sliderValue: Double = 0
     @State private var dragging: Bool = false
@@ -435,10 +435,10 @@ struct VolumeControlView: View {
 // MARK: - Main View
 
 struct NotchHomeView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: VisorViewModel
     @ObservedObject var webcamManager = WebcamManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     let albumArtNamespace: Namespace.ID
 
     var body: some View {

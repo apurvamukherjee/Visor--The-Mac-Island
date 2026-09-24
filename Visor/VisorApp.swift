@@ -5,7 +5,7 @@ import KeyboardShortcuts
 import SwiftUI
 
 @main
-struct DynamicNotchApp: App {
+struct VisorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Default(.menubarIcon) var showMenuBarIcon
     @Environment(\.openWindow) var openWindow
@@ -36,10 +36,10 @@ struct DynamicNotchApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var windows: [String: NSWindow] = [:] // UUID -> NSWindow
-    var viewModels: [String: BoringViewModel] = [:] // UUID -> BoringViewModel
+    var viewModels: [String: VisorViewModel] = [:] // UUID -> VisorViewModel
     var window: NSWindow?
-    let vm: BoringViewModel = .init()
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    let vm: VisorViewModel = .init()
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     var quickShareService = QuickShareService.shared
     var whatsNewWindow: NSWindow?
     var timer: Timer?
@@ -119,7 +119,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Defaults[.showOnAllDisplays] ? Array(windows.values) : [window].compactMap { $0 }
     }
 
-    private var viewModelsForLockAnimation: [BoringViewModel] {
+    private var viewModelsForLockAnimation: [VisorViewModel] {
         Defaults[.showOnAllDisplays] ? Array(viewModels.values) : [vm]
     }
     
@@ -246,7 +246,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func createWindow(for screen: NSScreen, with viewModel: BoringViewModel) -> NSWindow {
+    private func createWindow(for screen: NSScreen, with viewModel: VisorViewModel) -> NSWindow {
         let rect = NSRect(x: 0, y: 0, width: windowSize.width, height: windowSize.height)
         let styleMask: NSWindow.StyleMask = [.borderless, .nonactivatingPanel, .utilityWindow, .hudWindow]
         
@@ -455,7 +455,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func playWelcomeSound() {
         let audioPlayer = AudioPlayer()
-        audioPlayer.play(fileName: "boring", fileExtension: "m4a")
+        audioPlayer.play(fileName: "visor", fileExtension: "m4a")
     }
 
     func deviceHasNotch() -> Bool {
@@ -508,7 +508,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let uuid = screen.displayUUID else { continue }
                 
                 if windows[uuid] == nil {
-                    let viewModel = BoringViewModel(screenUUID: uuid)
+                    let viewModel = VisorViewModel(screenUUID: uuid)
                     let window = createWindow(for: screen, with: viewModel)
 
                     windows[uuid] = window

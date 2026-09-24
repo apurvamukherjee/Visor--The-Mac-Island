@@ -9,10 +9,10 @@ import SwiftUIIntrospect
 
 @MainActor
 struct ContentView: View {
-    @EnvironmentObject var vm: BoringViewModel
+    @EnvironmentObject var vm: VisorViewModel
     @ObservedObject var webcamManager = WebcamManager.shared
 
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
@@ -282,7 +282,7 @@ struct ContentView: View {
                                 .frame(width: vm.closedNotchSize.width + 10)
 
                             HStack {
-                                BoringBatteryView(
+                                VisorBatteryView(
                                     batteryWidth: 30,
                                     isCharging: batteryModel.isCharging,
                                     isInLowPowerMode: batteryModel.isInLowPowerMode,
@@ -301,9 +301,9 @@ struct ContentView: View {
                           MusicLiveActivity()
                               .frame(alignment: .center)
                       } else if !coordinator.expandingView.show && vm.notchState == .closed && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace] && !vm.hideOnClosed  {
-                          BoringFaceAnimation()
+                          VisorFaceAnimation()
                        } else if vm.notchState == .open {
-                           BoringHeader()
+                           VisorHeader()
                                .frame(height: max(24, vm.effectiveClosedNotchHeight))
                                .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
                        } else {
@@ -375,7 +375,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    func BoringFaceAnimation() -> some View {
+    func VisorFaceAnimation() -> some View {
         HStack {
             HStack {
                 Rectangle()
@@ -498,7 +498,7 @@ struct ContentView: View {
 
     @ViewBuilder
     var dragDetector: some View {
-        if Defaults[.boringShelf] && vm.notchState == .closed {
+        if Defaults[.visorShelf] && vm.notchState == .closed {
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
@@ -662,7 +662,7 @@ struct GeneralDropTargetDelegate: DropDelegate {
 }
 
 #Preview {
-    let vm = BoringViewModel()
+    let vm = VisorViewModel()
     vm.open()
     return ContentView()
         .environmentObject(vm)

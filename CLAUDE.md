@@ -14,7 +14,8 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   files live beside upstream's: vinyl mode (`components/Music/VinylDisc.swift`,
   from 2.x) and the lock/unlock padlock (`Live activities/LockLiveActivity.swift`
   + a `.lock` activity + the lock handlers in `App.swift`).
-  Everything else stays byte-for-byte.
+  Every `Boring*` name (files, types, `.boringShelf`, `boring.m4a`) is renamed
+  to `Visor*`, unmarked; everything else stays byte-for-byte.
 - Swift 5 language mode (the ported code is not Swift 6 clean)
 - macOS 14.0 minimum, Apple silicon
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
@@ -87,7 +88,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   image still builds, just unstyled.
 
 ## Architecture (3.0.0+)
-- Upstream  structure: `BoringViewModel` + `BoringViewCoordinator`,
+- Upstream  structure: `VisorViewModel` + `VisorViewCoordinator`,
   singleton managers (`MusicManager`, `BatteryActivityManager`, ...),
   settings in `Defaults` keys (`models/Constants.swift`).
 - Media: `MusicManager` -> `MediaControllerProtocol`. `NowPlayingController`

@@ -1,5 +1,5 @@
 //
-//  BoringViewModel.swift
+//  VisorViewModel.swift
 //  
 //
 //  Created by Apurva   on 04/08/24.
@@ -9,11 +9,11 @@ import Combine
 import Defaults
 import SwiftUI
 
-class BoringViewModel: NSObject, ObservableObject {
-    @ObservedObject var coordinator = BoringViewCoordinator.shared
+class VisorViewModel: NSObject, ObservableObject {
+    @ObservedObject var coordinator = VisorViewCoordinator.shared
     @ObservedObject var detector = FullscreenMediaDetector.shared
 
-    let animationLibrary: BoringAnimations = .init()
+    let animationLibrary: VisorAnimations = .init()
     let animation: Animation?
 
     @Published var contentType: ContentType = .normal
