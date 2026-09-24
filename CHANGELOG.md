@@ -18,6 +18,37 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [2.9.1] — 2026-09-24 (build 32)
+
+### Fixed
+
+- **A short screen hugged the top of the island and stranded the rest.**
+  Reported on the volume bar: a 32pt row sat at the top of the player's
+  128pt column with 96pt of black under it. The box is sized to cover every
+  page a swipe can reach and the player measures it, so *any* screen with
+  less in it than the page driving the height had this — the volume bar, the
+  alerts, the timer, the shelf, a short agenda. `.usage` had it fixed for
+  itself in 2.7.1; it was never `.usage`'s bug. Expanded content is now
+  centred **once**, in `NotchRootView`'s single overlay, and the `.usage`
+  special case is gone. Laid out against the *resting* card height, never
+  `currentSize`, or content would re-centre on every frame of the collapse
+  squash and drift upward as the island shut.
+- **The volume glyph and percentage were sized for a pill they no longer
+  sit in.** 14pt and 12pt against a 421x193 card read as small print. Now
+  22pt and 16pt, in 44pt and 50pt columns.
+
+### Deliberately left out
+
+- **A volume bar sized from the card.** Tried first, as a fraction of the
+  height it was offered (0.62, 0.72 under a drag) so it would fill whatever
+  box paging handed it. Rejected on sight: at 79pt the capsule reads as a
+  bulge rather than a control. The bar keeps its 26pt/32pt constants — the
+  card's extra height is answered by centring the row in it, not by
+  fattening the track.
+- **Any change to the box.** The one-box-per-page rule is what stops a swipe
+  resizing the island; the blank space was an alignment fault, not a sizing
+  one.
+
 ## [2.9.0] — 2026-09-24 (build 31)
 
 ### Added
