@@ -11,6 +11,10 @@ import Defaults
 
 class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
+    // Visor: the window is only ordered out on close, so SwiftUI may not send
+    // the HUD tab its onDisappear/onAppear. Stop its 3 s accessibility poll on
+    // close ourselves, and restart it on reopen only if it was running.
+    private var resumeAccessibilityMonitoring = false
     
     private init() {
         let window = NSWindow(
@@ -70,6 +74,11 @@ class SettingsWindowController: NSWindowController {
             return
         }
         
+        if resumeAccessibilityMonitoring {
+            resumeAccessibilityMonitoring = false
+            XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
+        }
+
         // Show the window with proper ordering
         window?.orderFrontRegardless()
         window?.makeKeyAndOrderFront(nil)
@@ -99,6 +108,8 @@ class SettingsWindowController: NSWindowController {
 
 extension SettingsWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
+        resumeAccessibilityMonitoring = XPCHelperClient.shared.isMonitoring
+        XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
         relinquishFocus()
     }
     
