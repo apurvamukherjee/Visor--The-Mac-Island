@@ -28,6 +28,7 @@ struct AlbumArtView: View {
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var vm: BoringViewModel
     let albumArtNamespace: Namespace.ID
+    @Default(.vinylMode) private var vinylMode
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -61,8 +62,12 @@ struct AlbumArtView: View {
                 musicManager.openMusicApp()
             } label: {
                 ZStack(alignment:.bottomTrailing) {
-                    albumArtImage
-                    appIconOverlay
+                    if vinylMode {
+                        vinylDisc
+                    } else {
+                        albumArtImage
+                        appIconOverlay
+                    }
                 }
             }
             .buttonStyle(PlainButtonStyle())
@@ -93,6 +98,18 @@ struct AlbumArtView: View {
                         ? MusicPlayerImageSizes.cornerRadiusInset.opened
                         : MusicPlayerImageSizes.cornerRadiusInset.closed)
             )
+    }
+
+    // The source-app badge is left off in vinyl mode: pinned bottom-trailing,
+    // it would sit outside the round disc, and the tonearm already shows
+    // whether the record is playing.
+    private var vinylDisc: some View {
+        VinylDisc(
+            isSpinning: musicManager.isPlaying,
+            tint: Color(nsColor: musicManager.avgColor),
+            artwork: musicManager.albumArt.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        )
+        .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
     }
 
     @ViewBuilder
