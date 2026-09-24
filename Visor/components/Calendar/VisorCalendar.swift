@@ -230,7 +230,10 @@ struct CalendarView: View {
                 await calendarManager.updateCurrentDate(selectedDate)
             }
         }
-        .onChange(of: vm.notchState) { _, _ in
+        .onChange(of: vm.notchState) { _, newState in
+            // Visor: reset to today when the notch opens. Doing it on close too
+            // fetched every event and reminder again for a view being hidden.
+            guard newState == .open else { return }
             Task {
                 await calendarManager.updateCurrentDate(Date.now)
                 selectedDate = Date.now
