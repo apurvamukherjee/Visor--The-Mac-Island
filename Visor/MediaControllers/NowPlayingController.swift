@@ -20,6 +20,10 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         bundleIdentifier: "com.apple.Music"
     )
 
+    // Visor: every adapter event repeats the whole cover as base64, usually unchanged.
+    private var lastArtworkBase64: String?
+    private var lastArtwork: Data?
+
     var playbackStatePublisher: AnyPublisher<PlaybackState, Never> {
         $playbackState.eraseToAnyPublisher()
     }
@@ -175,9 +179,13 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         case .one: .one
         case .all: .all
         }
-        newPlaybackState.artwork = payload.artworkDataBase64.flatMap {
-            Data(base64Encoded: $0.trimmingCharacters(in: .whitespacesAndNewlines))
+        if payload.artworkDataBase64 != lastArtworkBase64 {
+            lastArtworkBase64 = payload.artworkDataBase64
+            lastArtwork = payload.artworkDataBase64.flatMap {
+                Data(base64Encoded: $0.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
         }
+        newPlaybackState.artwork = lastArtwork
         newPlaybackState.lastUpdated = payload.timestampEpochMicros
             .map { Date(timeIntervalSince1970: $0 / 1_000_000) } ?? Date()
         newPlaybackState.isPlaying = payload.isPlaying ?? false
