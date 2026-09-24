@@ -9,7 +9,6 @@ import Defaults
 import SwiftUI
 
 struct Config: Equatable {
-    //    var count: Int = 10  // 3 days past + today + 7 days future
     var past: Int = 7
     var future: Int = 14
     var steps: Int = 1  // Each step is one day

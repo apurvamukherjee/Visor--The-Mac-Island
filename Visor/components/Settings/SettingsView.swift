@@ -732,7 +732,6 @@ func lighterColor(from nsColor: NSColor, amount: CGFloat = 0.14) -> Color {
 
 struct About: View {
     @State private var showBuildNumber: Bool = false
-    @Environment(\.openWindow) var openWindow
     var body: some View {
         VStack {
             Form {
@@ -792,12 +791,6 @@ struct About: View {
                     .padding(.horizontal, 10)
             }
             .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .toolbar {
-            //            Button("Welcome window") {
-            //                openWindow(id: "onboarding")
-            //            }
-            //            .controlSize(.extraLarge)
         }
         .navigationTitle("About")
     }

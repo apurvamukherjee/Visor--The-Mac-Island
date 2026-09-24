@@ -591,7 +591,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     step: step,
                     onFinish: {
                         window.orderOut(nil)
-//                        NSApp.setActivationPolicy(.accessory)
                         window.close()
                         NSApp.deactivate()
                     },
@@ -606,7 +605,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onboardingWindowController = NSWindowController(window: window)
         }
 
-//        NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         onboardingWindowController?.window?.makeKeyAndOrderFront(nil)
         onboardingWindowController?.window?.orderFrontRegardless()

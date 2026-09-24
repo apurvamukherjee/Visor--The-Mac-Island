@@ -54,8 +54,6 @@ struct MusicControllerSelectionView: View {
             //Disable scroll if there are 4 or fewer to avoid unnecessary scroll behavior
             .scrollDisabled(availableMediaControllers.count <= 4)
 
-//            Spacer()
-
             Button("Continue", action: {
                 self.mediaController = self.selectedMediaController
                 NotificationCenter.default.post(

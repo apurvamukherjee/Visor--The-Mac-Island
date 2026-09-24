@@ -208,7 +208,6 @@ class VisorViewCoordinator: ObservableObject {
     ) {
         sneakPeekDuration = duration
         if type != .music {
-            // close()
             if !Defaults[.hudReplacement] {
                 return
             }
