@@ -11,7 +11,6 @@ enum SneakContentType {
     case backlight
     case music
     case battery
-    case download
     // Visor: the lock/unlock padlock. `ExpandedItem.value` is 1 while locked.
     case lock
 }
@@ -233,10 +232,9 @@ class VisorViewCoordinator: ObservableObject {
         didSet {
             if expandingView.show {
                 expandingViewTask?.cancel()
-                let duration: TimeInterval = (expandingView.type == .download ? 2 : 3)
                 let currentType = expandingView.type
                 expandingViewTask = Task { [weak self] in
-                    try? await Task.sleep(for: .seconds(duration))
+                    try? await Task.sleep(for: .seconds(3))
                     guard let self = self, !Task.isCancelled else { return }
                     self.toggleExpandingView(status: false, type: currentType)
                 }
