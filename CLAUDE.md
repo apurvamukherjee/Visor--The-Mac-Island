@@ -53,6 +53,11 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   is `HEAD` *at build time*, so commit first.
 - Record every release in `CHANGELOG.md`: Added / Changed / Fixed, plus
   anything deliberately left out and why.
+- **GitHub release** (from 3.1.0): annotated tag `vX.Y.Z` on the commit the
+  DMG was built from (the hash in its name), pushed through `gh`'s
+  credential; `gh release create --verify-tag --latest` with the DMG under
+  its full build name. Notes: what's new, plus the `xattr -dr
+  com.apple.quarantine` step, since builds are ad-hoc signed.
 - **Every `.dmg` ships the styled install window** — background art with the
   drag arrow, both icons placed, no toolbar or status bar. `make-dmg.sh`
   builds read-write, decorates via Finder/AppleScript, then converts to
