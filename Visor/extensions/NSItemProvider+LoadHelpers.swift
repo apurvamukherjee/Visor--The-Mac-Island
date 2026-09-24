@@ -36,11 +36,13 @@ extension NSItemProvider {
                     cont.resume(returning: nil)
                     return
                 }
+                // Visor: checked before reading, so dropping a large ordinary file
+                // no longer loads all of it into memory only to return nil.
+                if let url = item as? URL, !url.absoluteString.contains("com.apple.SwiftUI.filePromises") {
+                    cont.resume(returning: nil)
+                    return
+                }
                 if let url = item as? URL, let data = try? Data(contentsOf: url) {
-                    if !url.absoluteString.contains("com.apple.SwiftUI.filePromises") {
-                        cont.resume(returning: nil)
-                        return
-                    }
                     self.suggestedName = self.suggestedName ?? url.lastPathComponent
                     
                     let fileManager = FileManager.default
