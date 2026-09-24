@@ -27,9 +27,6 @@ packages:
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
     exactVersion: 2.4.0
-  LaunchAtLogin:
-    url: https://github.com/sindresorhus/LaunchAtLogin-Modern
-    exactVersion: 1.1.0
   MacroVisionKit:
     url: https://github.com/TheBoredTeam/MacroVisionKit
     exactVersion: 0.2.0
@@ -48,7 +45,6 @@ targets:
       - target: VisorXPCHelper
       - package: Defaults
       - package: KeyboardShortcuts
-      - package: LaunchAtLogin
       - package: MacroVisionKit
       - package: SkyLightWindow
     sources:

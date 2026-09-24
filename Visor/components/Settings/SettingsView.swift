@@ -9,7 +9,6 @@ import AVFoundation
 import Defaults
 import EventKit
 import KeyboardShortcuts
-import LaunchAtLogin
 import SwiftUI
 
 struct SettingsView: View {
@@ -134,7 +133,7 @@ struct GeneralSettings: View {
                     Text("Show menu bar icon")
                 }
                 .tint(.effectiveAccent)
-                LaunchAtLogin.Toggle("Launch at login")
+                LaunchAtLoginToggle()
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")
                 }
