@@ -10,6 +10,7 @@ settings:
     SWIFT_VERSION: "5.0"
     # Apple silicon only, so an x86_64 slice is dead weight.
     ARCHS: arm64
+    DEAD_CODE_STRIPPING: YES
   configs:
     # `xcodebuild build` skips STRIP_INSTALLED_PRODUCT unless this is on, so
     # Release shipped its full symbol table.
