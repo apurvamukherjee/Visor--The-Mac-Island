@@ -27,6 +27,8 @@ history are unchanged.
   screen" and the lock animation. That class now lives in Visor (MIT,
   credited), with the same system calls. If macOS ever drops one of them,
   the notch stays below the lock screen instead of crashing the app.
+- The notch's right-click menu no longer shows ⌘, beside Settings, the
+  same change 3.1.0 made to the menu bar menu.
 
 ## [3.1.2] — 2026-09-25 (build 37)
 

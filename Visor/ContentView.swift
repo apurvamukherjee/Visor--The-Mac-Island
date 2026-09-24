@@ -181,7 +181,6 @@ struct ContentView: View {
                                 SettingsWindowController.shared.showWindow()
                             }
                         }
-                        .keyboardShortcut(KeyEquivalent(","), modifiers: .command)
                     }
                 if vm.chinHeight > 0 {
                     Rectangle()
