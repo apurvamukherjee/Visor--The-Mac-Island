@@ -136,7 +136,7 @@ before `8b05dad`.
   branding (`dd4d611`), XPC helper target (`2e4014d`; the user copied it in
   after the auto-mode check blocked Claude from doing so). Released as
   `Visor-3.0.0-build34-…-2e4014d.dmg`. **Not seen on hardware.**
-- **After 3.0.0 (2026-09-24), unreleased, next is 3.1.0:** vinyl mode
+- **3.1.0 (2026-09-24, build 35):** vinyl mode
   (`5197ab1`), lock/unlock padlock (`76b603e`), menu bar icon changed to
   `opticaldisc.fill` with the menu reading Settings / By Apurva / Restart /
   Quit (`f6a6d3f`, `1b2cf96`). Builds; **not seen on hardware**. Riskiest:
@@ -146,4 +146,4 @@ before `8b05dad`.
   holds `old-code/`, `boring.notch-upstream/` (was `old-code-v1/`), the 2.x
   docs, `smoothness/`, the 2.x README and this file's old progress log. The
   README was rewritten for 3.0.
-- **Next:** the user tests the 3.1.0 changes on hardware, then releases 3.1.0.
+- **Next:** the user tests 3.1.0 on hardware.

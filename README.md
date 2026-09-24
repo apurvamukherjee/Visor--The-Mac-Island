@@ -7,7 +7,7 @@
 ### The MacBook notch, turned into a Dynamic Island.
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?style=flat-square)](https://www.apple.com/macos/)
-[![Release](https://img.shields.io/badge/release-3.0.0-blue?style=flat-square)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-3.1.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
 </div>

@@ -18,6 +18,45 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [3.1.0] — 2026-09-24 (build 35)
+
+### Added
+
+- **Vinyl mode:** Settings → Media → "Vinyl mode", off by default. In the
+  open player, a spinning record with the cover on its label replaces the
+  album art, and a tonearm swings down on play and back on pause. It
+  returns from Visor 2.x, fitted to the new player so nothing around it
+  moves. The source-app badge is hidden in this mode.
+- **Lock and unlock animation:** Settings → Window Behavior → "Lock and
+  unlock animation", on by default. On each lock and unlock, the closed
+  notch shows a padlock for three seconds that morphs closed or open, then
+  blurs back to the album cover, or to the bare notch when nothing plays.
+- "By Apurva" credit line in the menu bar menu, below Settings.
+
+### Changed
+
+- Menu bar icon: a vinyl record (`opticaldisc.fill`) replaces the sparkle,
+  which read as Gemini's mark.
+- Settings in the menu bar menu drops its ⌘, shortcut. As an accessory app
+  Visor is almost never frontmost, so it rarely fired.
+- With the lock animation on and "Show notch on lock screen" off, the
+  closed notch now stays on the lock screen (display-only, no clicks)
+  instead of disappearing, so the padlock and cover can show there.
+
+### Fixed
+
+- `make-dmg.sh` wrote the 3.0.0 release with newlines in its file name. It
+  grepped the version from `project.yml`, which since the XPC helper target
+  holds two. It now reads version and build from the built app. The 3.0.0
+  file was renamed before it was ever committed.
+
+### Deliberately left out
+
+- **Album glow from 2.x:** dropped by choice. The new player's own "blur
+  effect behind album art" stays.
+- **2.x lock-screen player card:** not restored. The lock animation is the
+  only lock-screen addition.
+
 ## [3.0.0] — 2026-09-24 (build 34)
 
 **MAJOR:** the whole app is new. Visor 3 is built on boring.notch
