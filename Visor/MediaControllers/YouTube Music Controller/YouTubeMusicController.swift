@@ -17,6 +17,8 @@ final class YouTubeMusicController: MediaControllerProtocol {
     )
 
     private var artworkFetchTask: Task<Void, Never>?
+    // Visor: see updatePlaybackState.
+    private var lastArtworkURL: String?
     
     var playbackStatePublisher: AnyPublisher<PlaybackState, Never> {
         $playbackState.eraseToAnyPublisher()
@@ -434,9 +436,14 @@ final class YouTubeMusicController: MediaControllerProtocol {
             newState.volume = volume / 100.0
         }
 
+        // Visor: lastUpdated is always new, so this branch runs on every poll
+        // and websocket update; refetch the cover only when it changed (or
+        // never arrived), not every 2 s, cancelling a slow download each time.
         if newState != playbackState {
             playbackState = newState
 
+            guard response.imageSrc != lastArtworkURL || playbackState.artwork == nil else { return }
+            lastArtworkURL = response.imageSrc
             artworkFetchTask?.cancel()
             artworkFetchTask = nil
 
