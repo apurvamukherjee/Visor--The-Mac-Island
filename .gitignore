@@ -8,8 +8,6 @@ xcuserdata/
 build/
 dist/
 
-# GPL-3.0 reference checkouts, kept locally to port from — not Visor's source,
-# and 16M of someone else's tree does not belong in this history.
-/old-code/
-/old-code-v1/
-/DynamicNotch/
+# Local-only archive: the reference checkouts Visor was ported from and the
+# 2.x docs, kept on disk for lookup. Git history holds the docs too.
+/backup/

@@ -6,522 +6,65 @@
 
 ### The MacBook notch, turned into a Dynamic Island.
 
-**Built in 26 hours.**
-
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?style=flat-square)](https://www.apple.com/macos/)
-[![Swift](https://img.shields.io/badge/Swift%206-strict%20concurrency-orange?style=flat-square)](https://swift.org)
-[![CPU](https://img.shields.io/badge/idle%20CPU-0.0%25-brightgreen?style=flat-square)](#power)
-[![Commands](https://img.shields.io/badge/palette-36%20commands-black?style=flat-square)](#command-palette)
-[![Dependencies](https://img.shields.io/badge/dependencies-1-blue?style=flat-square)](#tech-stack)
-[![Tests](https://img.shields.io/badge/tests-259%20passing-brightgreen?style=flat-square)](#build)
-[![Release](https://img.shields.io/badge/release-2.7.1-blue?style=flat-square)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-3.0.0-blue?style=flat-square)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0-lightgrey?style=flat-square)](LICENSE)
 
-<br />
-
-*The black bar above your screen stops being dead space.*
-
-Hover it and it grows into your music and your day. Move away and it disappears back into the hardware cutout — invisible, and costing nothing.
-
-<br />
-
-<img src="docs/screenshots/notch/player-live.png" width="88%" alt="Visor expanded into a music player: album art with a colour halo, track title, artist, a scrubbable progress bar with elapsed and total time, and transport controls" />
-
 </div>
-
-<br />
-
----
-
-<br />
-
-<div align="center">
-
-## It lives in the notch
-
-</div>
-
-Not hovering? It sits *inside* the cutout itself — album art, live playback bars, battery. The real notch and the drawn shape are the same black, so there is no seam to find.
-
-<div align="center">
-<img src="docs/screenshots/notch/compact-music.png" width="88%" alt="Visor compact: album art and animated playback bars on the left wing, battery percentage on the right, both flush inside the notch" />
-</div>
-
-<br />
-
-<table>
-<tr>
-<td width="52%" valign="top">
-
-### Your day, at a glance
-
-Nothing playing? The island becomes your agenda. Events are colour-matched to the calendar they came from and sorted soonest-first, with the timer presets on the row beneath.
-
-An event stays listed until it has actually *ended* — something in progress right now doesn't vanish on you halfway through.
-
-</td>
-<td width="48%" valign="top">
-
-<img src="docs/screenshots/notch/idle-agenda.png" width="100%" alt="Visor idle: a large TUE 22 date block beside two colour-coded calendar events, with 1m / 5m / 10m / 25m timer presets below" />
-
-</td>
-</tr>
-</table>
-
-<br />
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-<img src="docs/screenshots/vinyl.png" width="100%" alt="Visor in vinyl mode: a turning record with grooves and the album art as its centre label, a tonearm lowered onto it, beside the track title and artist, with a progress bar tinted to the album colour and transport controls below" />
-
-</td>
-<td width="50%" valign="top">
-
-### Vinyl mode
-
-A record that actually turns, with the album art as its centre label. The tonearm is built the way a real one is — a counterweight behind the pivot, an S-curved tube, and a headshell canted at the 22° offset angle that puts a cartridge tangent to the groove.
-
-It lowers into the lead-in groove when you press play and lifts to its rest when you pause. That's the whole play/pause tell: a still frame of a record can't say whether it's spinning.
-
-A toggle in Settings, off by default — the cover is the honest representation of what's playing.
-
-</td>
-</tr>
-</table>
-
-<br />
-
-<div align="center">
-
-## Catch a screenshot
-
-Take a screenshot anywhere on the system and it slides into the notch and waits. Up to four stack side by side — drag one straight into Slack or Figma, click to open it, or clear the shelf with **All**.
-
-**It never costs you the player.** A caught file lives on its own screen, one swipe up past the agenda, so music playing stays on the island while the shelf waits behind it. The catch still announces itself in the wings when it arrives — it just does not take the card over and keep it.
-
-</div>
-
-<table>
-<tr>
-<td width="33%"><img src="docs/screenshots/notch/shelf-1.png" width="100%" alt="Screenshot shelf holding one thumbnail" /></td>
-<td width="33%"><img src="docs/screenshots/notch/shelf-2.png" width="100%" alt="Screenshot shelf holding two thumbnails side by side" /></td>
-<td width="33%"><img src="docs/screenshots/notch/shelf-3.png" width="100%" alt="Screenshot shelf holding three thumbnails side by side" /></td>
-</tr>
-</table>
-
-Drag **any file** onto the notch and it opens to take it — an image, a video, a PDF, a zip. Hold <kbd>⌥</kbd> while you drop and it sends the file over AirDrop instead.
-
-Or hand it the clipboard: <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> → **Stash Clipboard**. A copied file is held where it already lives; an image copied out of an app that never wrote a file becomes one, so the chip drags out into Finder like any other.
-
-<br />
-
-<div align="center">
-
-## The system HUD, where the system is
-
-</div>
-
-Change the volume and it peeks from the notch instead of the middle of your screen — a compact readout while the island is closed, a draggable bar when it's open.
-
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/notch/compact-volume.png" width="100%" alt="Compact volume readout in the notch wing: speaker glyph with 94 percent, battery on the right" /></td>
-<td width="50%"><img src="docs/screenshots/notch/volume-hud.png" width="100%" alt="Expanded volume HUD: a speaker glyph beside a wide draggable level bar showing 55 percent" /></td>
-</tr>
-</table>
-
-No permission prompt, because it listens to CoreAudio's *result* rather than watching your keys — and it reads the volume macOS itself moves, so it works on Bluetooth speakers, USB DACs and HDMI, not only the built-in output.
-
-<br />
-
----
-
-<br />
-
-<div align="center">
-
-## Command palette
-
-</div>
-
-<div align="center">
-
-<img src="docs/screenshots/notch/palette-live.png" width="72%" alt="The command palette open in the notch: a Run a command field above Play or Pause, Next Track, Previous Track and Mute or Unmute, each with a single-key badge" />
-
-</div>
-
-Press <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> and the island becomes a search field. **37 commands** — transport, audio output, dark mode, microphone, screenshots, timers, quick notes, stashing the clipboard, force-quitting a frozen app, lock, sleep, and your own launch groups.
-
-Then press **one key**. Rows 1–4 are always numbered; letters are yours to bind in *Settings › Shortcuts*. The rule that lets a single key and a search box share one field: **keys fire only while the query is empty**, so `d` runs Dark Mode without costing you the ability to search for "downloads". A row never advertises a key that would not work — the badge reads the same flag the key handler does.
-
-Every command is **gated on context**, so none is offered when it cannot act: no transport row without a track, no Switch Audio Output with one output, no Stash Clipboard with nothing copied, no launch group you haven't configured.
-
-**Force Quit Frontmost App** names the app in the row, so you read what you are about to kill before you press the key. It is absent when there is nothing sensible to quit — Visor itself, or Finder, which macOS relaunches anyway, so the row would be describing something that doesn't happen.
-
-**It needs no Accessibility permission.** The shortcut is a Carbon `RegisterEventHotKey` registration — one combination, handed to Visor by the window server — not a `CGEventTap`, which would see every keystroke on the machine and demand the permission to match.
-
-<table>
-<tr>
-<td width="50%">
-
-**Launch groups**
-
-Name a set of apps and open them together — "Office" might be your VPN, a remote client and a browser. Entirely yours; nothing ships preloaded. Bundle identifiers are stored rather than paths, so moving an app inside `/Applications` doesn't break the group, and an app that no longer resolves is skipped rather than aborting the rest.
-
-</td>
-<td width="50%">
-
-**Shelf file commands**
-
-Compress, expand, or convert an image to JPEG — acting on whatever the island is already holding. That's what makes them mean something from a palette with no file picker.
-
-</td>
-</tr>
-</table>
-
-<br />
-
----
-
-<br />
-
-<div align="center">
-
-## AI usage, beside the notch
-
-</div>
-
-Today's Claude Code and Codex token use, in its own badge. Off until you ask for it, in *Settings › New Features*.
-
-It reads **your own local files** — Claude Code's session transcripts and Codex's SQLite state, the latter opened strictly read-only. Nothing leaves the machine; there is no account to connect.
-
-- **Cache reads are excluded, and that was measured.** A real day's gross total was 98.6M tokens, of which 95.2M — **96.5%** — were cache reads, a function of context length and turn count rather than work done. Counting them made the badge read ~99M by mid-afternoon whatever the day held. The headline is input + output + cache creation; that same day reads 3.4M, which moves with the work.
-- **The percentage is against a budget you set**, because no real plan-limit figure exists locally — both vendors enforce limits server-side. No budget means no percentage rather than a fabricated denominator.
-- **It gets its own window, not a slot in the island.** The island's sizes are tight deltas from the measured cutout, so a permanent extra element in the wings would mean moving numbers that are already tuned. It hides while music owns the island, and returns when the island is expanded.
-
-**Swipe down for the whole picture.** The usage screen opens inside the island: the vendor mark, tool, model, today's tokens, and a bar showing how full the context window actually is — 200K, or 1M where the model has it. A model it doesn't recognise draws **no bar at all** rather than a bar against a guess.
-
-<div align="center">
-
-<img src="docs/screenshots/notch/usage-live.png" width="66%" alt="The usage screen in the island: the Claude Code mark and name, the model opus-5 on the right, a full-width orange context bar, then context 214k of 200k at 107 percent, and today 4.7M tokens" />
-
-</div>
-
-The two figures are deliberate mirrors of each other, and both are right because they answer different questions. Cache reads count *toward the context window* — it holds them — and *not toward the day's work*. Output tokens are the reverse: produced, but never seen by the model.
-
-<br />
-
----
-
-<br />
-
-<div align="center">
-
-## Screens, one island
-
-</div>
-
-Turn the expanded island between screens with a two-finger swipe:
-
-```
-shelf   ↑↑  what you have caught — only when you have caught something
-agenda  ↑   the quick look up
-player  ●   home — the only screen with controls
-usage   ↓   the quick look down
-```
-
-**The player sits in the middle on purpose.** It is the only one you actually operate — the others are quick looks — so the thing with buttons on it is the resting position, and the common case needs no swipe at all. The island always opens there.
-
-**The shelf only exists when it has something on it.** An empty screen is a swipe that lands on nothing, so it joins the stack when you catch a file and leaves when the last one goes.
-
-Swiping past either end holds rather than wrapping, so a run of swipes settles instead of cycling. Nothing is ever thrown away: paging only changes which screen is showing.
-
-### Or turn it into a deck
-
-*Settings › New Features › Paging style › **Card stack*** stops drawing the screens as one card that cross-fades and starts drawing them as a deck: the screen you are on stays exactly as it is, and the others peek out below it as short tinted cards — tiles, each one the edge of a screen you could swipe to.
-
-The point is that the other screens stop being invisible. With the cross-fade, nothing on the island tells you a swipe would do anything; with the deck, the two tiles under the front card are the affordance, and you can see at a glance that there is more island than the part you are looking at.
-
-**How it behaves**
-
-- **Swipe up and the tile you can see comes forward.** The deck cycles endlessly both ways rather than stopping at the ends — a card you can see continuing should not dead-end.
-- **The tiles arrive a beat after the island opens**, so opening shows one clean card and the deck then offers itself. That beat is yours: *Chin reveal delay*, 0–1500 ms, where 0 means the tiles are out from the moment the island opens.
-- **They retract before the island closes.** The island is never smaller than what is drawn on it, so the tiles pull back behind the front card first and the whole thing collapses as one shape — not a notch that closes while two tiles hang around underneath it.
-- **Each tile sits a shade lighter than the card in front**, so two adjacent tiles stay distinct instead of merging into the black island above them.
-- **The notch does not grow.** The deck reserves the few points the tiles peek into; the front card gives exactly that much back, so the card you are reading is the size it always was.
-
-**Colours**
-
-Eight families, picked once in *Card colour*, each page taking its own stop from the one you choose:
-
-| | |
-|---|---|
-| **Charcoal** | Neutral black-grey. The default, and the one that disappears. |
-| **Slate** | Desaturated blue-grey. Charcoal with the chill left in. |
-| **Midnight** | Deep blue. |
-| **Midnight Purple** | Blue-violet, darker and richer than Midnight. |
-| **Burgundy** | Deep wine red. |
-| **Crimson** | Brighter, more saturated red. |
-| **Ember** | Dark amber-orange. |
-| **Forest** | Deep green. |
-
-Plus one that is not a family at all:
-
-**Per page (accent)** gives every screen its own hue rather than its own stop — the player blue, the agenda green, usage amber. The tile then tells you *which* screen is behind the front card, not merely that one is. Same darkness and saturation as every other family: a tile is a card seen further away, never a highlight.
-
-Every family stays dark on purpose. A tile that reads as a bright band is the thing this design removes, not the thing it adds.
-
-Cross-fade remains the default, so an existing install sees none of this until the style is selected.
-
-**The notch does not resize as you turn — or when the music starts.** Every screen shares one box, and the player measures it, whether or not anything is playing — so the outline holds perfectly still and only the content cross-fades, through the same blur the island opens and closes with. The cost is paid by the quick looks rather than the player: the agenda *page* shows two events and no timer presets, against the three events and presets on the idle home screen. Three rows and a "+N more" is 18pt taller than the player's card, and an island whose height tracked how many meetings you have is exactly what this rule exists to prevent. The row it gives up is counted by the "+N more" line rather than lost.
-
-Opt-in, in *Settings › New Features*. With it off, a swipe dismisses and restores exactly as it always did, and nothing about the island's size changes.
-
-<br />
-
----
-
-<br />
 
 ## What it does
 
-### On the island
+Hover the notch and it opens into a music player, your calendar, a file
+shelf and more. Move away and it closes back into the camera housing.
 
-|  | |
-| --- | --- |
-| **Now Playing** | With a track loaded — playing *or paused* — the island is the player: artwork, title, artist, transport and scrub bar — plus an opt-in lyrics panel that fetches only while it is open, so music playing with it shut never reaches the network. The cover flips like a card when the track changes. Pause it and the island collapses after five seconds; the track stays loaded, so opening it by hand still finds a play button. |
-| **Your day** | With nothing loaded, the island is your agenda instead: the next events from your calendars, colour-matched to their source. The two never share the island. |
-| **Screenshot shelf** | Every screenshot lands in the notch — up to four at once, each draggable straight into another app. |
-| **Downloads** | Files arriving in `~/Downloads` show a row each with real progress, read from the same attribute Safari writes. No progress reported means an honest indeterminate bar, never a guessed number. |
-| **AirDrop** | Hold <kbd>⌥</kbd> while dropping files on the island to send them. |
-| **Screen recording** | A red dot and a running clock whenever the screen is being recorded or shared. |
-| **Timer** | Presets on the idle island, deadline-based so nothing ticks behind a closed notch. |
-| **Volume** | The system HUD, in the notch, with a draggable bar — and no permission prompt, because it listens to CoreAudio's result rather than watching your keys. Works on whatever you are actually listening through: built-in speakers, Bluetooth, USB, HDMI. |
-| **Battery** | Percentage in the wing, a bolt that bounces the moment you plug in, and Low / Full alerts with a drawn indicator sized to the real charge. |
-| **Accessory battery** | AirPods and friends announce their charge when they connect, with the right glyph for headphones, speakers and the rest. |
-| **Bluetooth** | A peek when a device connects or drops. |
-| **Network** | An offline alert, and a VPN indicator gated on the connection actually being up — not merely on a `utun` interface existing, which macOS creates for Handoff on a machine with no VPN at all. |
-| **Focus** | A peek when Focus turns on or off. |
-| **Greeting** | One "Good morning" a day, on the first idle after you log in. |
-| **Onboarding** | A three-step welcome that lives *inside* the panel, so the first thing you ever see the island do is the island doing it. |
-| **Command palette** | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then one key. 36 commands, each gated on whether it can actually act. No Accessibility permission. |
-| **Drop zones** | Drag a file over the island and it splits in two: stash it on the shelf, or AirDrop it. |
-| **AI usage badge** | Today's Claude Code and Codex tokens, read from your own local files, in a window beside the notch. |
-| **Usage screen** | One screen down from the player: tool, model, today's tokens and a live context bar showing how full the window is. |
-
-### On the lock screen
-
-Lock the Mac and the island wears a padlock. If a track is loaded, a full player card appears on the lock screen — artwork, scrubbable progress, transport. Tap the artwork and it blows up to full screen with the clock above it and the cover drifting behind.
-
-It shows up **only when there's something playing**. No track, no panel — there's no half-empty widget waiting for you.
-
-The panel runs in its own window above the lock shield. The island's own panel stays pinned *below* it, where it has always been — an island that could paint over a locked screen is a security hole, not a feature.
-
-### Everywhere
-
-| | |
-| --- | --- |
-| **Capsule mode** | On a screen with no cutout, the same shape resolves symmetric corners and floats as a capsule. One shape morphing, never two cross-fading. |
-| **Customisation** | Optional outline, ±16pt width and ±4pt height trims with live feedback, hide-in-fullscreen, display selection, progress tint styles, an optional equaliser, and five animation speeds. |
-| **Swipe between screens** | Turn between the agenda, the player and today's agent usage with a two-finger swipe. The player is the middle screen and the island always opens on it. Opt-in; with it off, swipe still dismisses and restores as it always did. |
-| **Restore defaults** | *Settings › General* clears every stored preference back to how it shipped. |
-| **New Features** | Every behavioural change ships **off**, listed in its own Settings tab with what it does and whether it's recommended. Updating Visor never changes how your island behaves until you ask it to. |
-
-<br />
-
-## How it feels
-
-One black shape morphs between closed, compact and expanded. Never a cross-fade between two views — the shape leads, and the content follows it in.
-
-Every animation comes from one small set of motion tokens, so nothing in the app can invent its own timing. Reduce Motion is honoured everywhere, including mid-track: the card flip becomes a crossfade, the record stops turning, the bars go still.
-
-The island is welded to the notch. Swipe between desktops and the desktops slide *underneath* it, the way the menu bar does — it doesn't ride along with the wallpaper.
-
-<br />
-
-### Nothing changes by default
-
-Every behavioural change Visor adds arrives **off**, in a *New Features* tab that says what it does and whether it's recommended. Install an update and your island behaves exactly as it did yesterday until you turn something on.
-
-That guarantee is structural rather than remembered: a feature flag has no `default` field and is read with `bool(forKey:)`, so an unwritten key *is* today's behaviour, and the list of resettable keys is built from the feature registry rather than typed out by hand. Tests pin each toggle's default, so one cannot drift silently in a later release.
-
-<br />
-
-### Settings, in five panes
-
-Right-click the island. Settings opens as a sidebar window rather than one long scrolling column, so a setting is one click away instead of four scroll-lengths.
-
-| Pane | Holds |
-| --- | --- |
-| **General** | Your name for the greeting, animation speed, launch at login, replay the tour, restore defaults |
-| **Appearance** | Display, hide in full screen, outline and its width and opacity, the width and height trims |
-| **Now Playing** | Vinyl mode, progress tint, the optional equaliser, the lock-screen padlock and its style |
-| **New Features** | Every opt-in behaviour, each with what it does and whether it's recommended |
-| **Shortcuts** | The gesture sheet, a key per palette command, and your launch groups |
-
-Each pane is a native grouped `Form`, so labels align and explanatory text sits in section footers where macOS puts it. **Restore defaults** clears the stored keys and rebuilds the pane, so the fields on screen show the shipped values rather than the ones you just cleared.
-
-<br />
-
-## Power
-
-<div align="center">
-
-### 0.0% CPU while playing
-
-**Not a target — a measurement**, taken with `sample` against a real track.
-
-</div>
-
-<br />
-
-The rules that get it there:
-
-- **Event-driven only.** No polling loops, no global mouse monitors.
-- **Nothing animates or ticks** when it isn't visible, isn't playing, or the display is asleep.
-- **Never animate a layout property in a loop.** The playback bars are `CALayer` + `CABasicAnimation`, handed to the render server once and costing the main thread nothing. The SwiftUI version of the same four bars cost 5% CPU, because animating `frame(height:)` re-ran the view graph every frame.
-- **No endless animations.** A pulse repeats a bounded number of times; `.repeatForever` keeps the view graph running for as long as the view exists.
-- **Observe, don't re-check.** A loop that sleeps to ask "has it changed yet" is a poll no matter how long the sleep.
-- **Accessibility settings are cached, not queried.** Reading Reduce Motion is a round-trip to the accessibility server, so it never happens from a view body.
-- **Artwork is decoded once per track** and downsampled with ImageIO.
-- **The store compares before it writes,** so the adapter's constant position updates re-render nothing. Playback position is an *anchor* written on real events only; everything else reads it live through `TimelineView`.
-- **Cursor parallax only re-renders** when the album card is actually on screen, and only once the cursor has moved far enough to see it.
-
-<br />
-
-## Gestures
-
-| Gesture | Does |
-| --- | --- |
-| Hover the notch | Expand |
-| Two-finger swipe sideways | Previous / next track |
-| Two-finger swipe up | Turn up a screen *(opt-in)*, or dismiss what's showing |
-| Two-finger swipe down | Turn down a screen *(opt-in)*, or bring back what you dismissed |
-| Double-click | Play / pause *(on the island's surface — buttons keep their own clicks)* |
-| Right-click | Settings |
-| Drag a file onto it | The notch opens and takes it — any kind, not only images |
-| <kbd>⌥</kbd> + drag a file onto it | Send it via AirDrop |
-| Drag the thumbnail out | Drops the file into any app |
-| <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd> | Open the command palette |
-| <kbd>⌃</kbd><kbd>⌥</kbd><kbd>K</kbd>, then a key | Run that command directly |
-
-Swipes lock to whichever axis you commit to first, so a diagonal flick can change the track *or* dismiss the island — never both.
-
-Only **down** opens a closed island, and only with *Swipe down to open* on. Turning on paging does not quietly grant that: one direction, one switch.
-
-<br />
+- **Now playing** from any app that reports to macOS, including YouTube Music
+  in Chrome or Safari, as well as Apple Music and Spotify. Artwork, scrubbing,
+  shuffle and repeat.
+- **Vinyl mode:** a spinning record in place of the cover, with a tonearm
+  that drops on play.
+- **Lock and unlock:** a padlock in the notch for a few seconds each time,
+  then back to the album cover.
+- **HUDs** for volume, brightness and keyboard backlight.
+- **Live activities** for charging and downloads.
+- **Shelf:** drop files on the notch to keep them close; share them from there.
+- **Calendar and reminders**, and a **mirror** from the camera.
+- A **welcome tour** that explains each permission before asking for it.
 
 ## Requirements
 
 - Apple silicon, macOS 14 or later
-- A MacBook with a notch — or any other screen, where the island becomes a floating capsule
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) — `brew install xcodegen`
-
-<br />
+- A MacBook with a notch (other screens get a floating island)
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
 
 ## Download
 
-Built disk images live in [`new-releases/`](new-releases), named `Visor-<version>-build<n>-<date>-<time>-<commit>.dmg`. Versions follow [semantic versioning](https://semver.org); the **build number** is what orders them, since `1.5.1` sorts after `1.6.0` alphabetically but came before it. Grab the highest build and open it: the disk image opens onto a window with Visor on the left, an Applications shortcut on the right, and an arrow between them — drag one onto the other.
+Disk images live in [`new-releases/`](new-releases), named
+`Visor-<version>-build<n>-<date>-<time>-<commit>.dmg`. Take the highest
+build, open it, and drag Visor onto Applications. Old builds are never
+deleted; [`CHANGELOG.md`](CHANGELOG.md) says what changed in each.
 
-Old builds are never deleted — see [`CHANGELOG.md`](CHANGELOG.md) for what landed in each.
-
-Builds are ad-hoc signed, so macOS quarantines a downloaded image. After copying it across:
+Builds are ad-hoc signed, so on a Mac other than the one that built it, run
+this once after installing:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Visor.app
 ```
-
-<br />
 
 ## Build
 
 ```bash
 xcodegen generate
 xcodebuild -scheme Visor -configuration Debug build
-xcodebuild -scheme Visor test
 ```
 
-Or package a local `.dmg`:
+Package a `.dmg`:
 
 ```bash
-./scripts/make-dmg.sh
+bash scripts/make-dmg.sh
 ```
-
-Drag it to `/Applications` and launch. Visor lives entirely in the notch — no Dock icon, no menu bar item, nothing to close.
-
-> [!NOTE]
-> Calendar permissions are bound to the app's code signature. Add an Apple ID in **Xcode → Settings → Accounts** (the free tier is enough) and set `DEVELOPMENT_TEAM` in `project.yml`, or macOS will forget the grant on every rebuild.
-
-<br />
-
-## Permissions
-
-Visor asks for **one** permission: Calendar, and only so the agenda has something to show. Say no and everything else still works.
-
-Nothing else here needs a prompt, and that is a design constraint rather than a happy accident. Several features were cut or rebuilt to keep it:
-
-- **Volume** listens to CoreAudio's *result*, not your keypresses. A media-key HUD would need a global event tap and Accessibility access.
-- **Bluetooth** reads the connect/disconnect notification's own payload. Enumerating paired devices is privacy-gated and would prompt — for a name macOS is already handing over.
-- **Focus** reports on and off only. Naming the active mode means Full Disk Access and parsing an undocumented database.
-- **Downloads** reads a public extended attribute. It does not open your browser's history.
-- **Notifications are not mirrored** at all, for the same reason.
-- **The command palette's hotkey** is a Carbon registration for one combination, not a global event tap. Measured before it was built: no prompt, and `AXIsProcessTrusted` still false.
-- **The AI usage badge** reads files already on your disk. No account, no network, and Codex's database is opened read-only.
-
-Where a feature could not be built honestly without a permission it didn't deserve, it was left out rather than shipped as something that guesses. The full reasoning is in [`docs/RESEARCH.md`](docs/RESEARCH.md).
-
-<br />
-
-## Tech stack
-
-| | |
-| --- | --- |
-| **Language** | Swift 6, language mode 6, strict concurrency `complete` |
-| **UI** | SwiftUI for every view; AppKit confined to `Window/` and `App/` |
-| **State** | One `@Observable @MainActor` store. Views read, services write. Combine appears only *inside* services that merge several system signals, never in the view layer. |
-| **Platform** | macOS 14+, Apple silicon. App Sandbox off (it spawns the media adapter), `LSUIElement` |
-| **System frameworks** | EventKit, CoreAudio, IOKit, Network, SystemConfiguration, FSEvents, ImageIO, Core Animation, Carbon (one hotkey registration), SQLite3 |
-| **Private frameworks** | SkyLight, for pinning the island above the desktop and the lock overlay above the shield. Every symbol is resolved at runtime — a macOS that renames one degrades the feature instead of crashing the app. |
-| **Project** | XcodeGen (`project.yml` is the source of truth; the `.pbxproj` is generated) |
-| **Tests** | Swift Testing — 255 across 55 suites, covering geometry, notch trims, layout maths, activity priority, adapter parsing, gesture axis locking, pause collapse, lock-screen mode, palette shortcut resolution, launch groups, AI usage parsing and alert edge detection |
-| **Tooling** | SwiftFormat, SwiftLint |
-| **Dependencies** | One: [`mediaremote-adapter`](https://github.com/ejbills/mediaremote-adapter), for Now Playing metadata. |
-
-<br />
-
-## Architecture
-
-One store, one shape, and a service per feature — a feature never imports another feature.
-
-```
-Visor/
-├── Core/          NotchStore, Activity ladder, IslandLayout, Motion tokens
-├── Window/        NotchPanel, NotchShape, geometry, SkyLight pinning
-├── Features/      One folder per feature: service + models + views
-├── UI/            The expanded and compact views the island fills itself with
-└── App/           AppDelegate, Settings
-```
-
-Every service conforms to `NotchService` with `start()` / `stop()`, and `stop()` must release every process, observer and run-loop source. Every animation comes from `Motion`, so no feature can invent its own timing. Every size is a *delta from the measured cutout*, so the same layout lands correctly on any notch.
-
-The full design record, including every decision that was tried and reversed, lives in [`docs/RESEARCH.md`](docs/RESEARCH.md). Release history is in [`CHANGELOG.md`](CHANGELOG.md).
-
-<br />
 
 ## License
 
-[GPL-3.0](LICENSE). Copyright © 2026 Apurva Mukherjee.
-
-Visor is GPL-3.0 specifically so code from GPL-3.0 reference projects can be ported into it rather than only read for ideas. Any redistribution of the source must stay GPL-3.0-compatible.
-
-<br />
-
----
-
-<div align="center">
-
-[![by Apurva](https://img.shields.io/badge/by-APURVA-e11d48?style=for-the-badge&labelColor=1a1a1a)](https://github.com/apurvamukherjee)
-
-</div>
+GPL-3.0, see [`LICENSE`](LICENSE). Visor 3 is built on
+[boring.notch](https://github.com/TheBoredTeam/boring.notch) (GPL-3.0);
+its authors' copyright notices are kept in the source files.

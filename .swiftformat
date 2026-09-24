@@ -4,4 +4,4 @@
 --self remove
 --importgrouping testable-bottom
 --commas inline
---exclude build,dist,old-code,old-code-v1,DynamicNotch,Visor,VisorXPCHelper
+--exclude build,dist,backup,Visor,VisorXPCHelper

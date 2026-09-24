@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Local-only .dmg. Ad-hoc signed, so macOS quarantines it on any other Mac —
-# see docs/RESEARCH.md §0 Distribution. Not for sharing, not for the store.
+# see the 2.x RESEARCH.md §0 Distribution (backup/docs/, or git history).
+# Not for sharing, not for the store.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
