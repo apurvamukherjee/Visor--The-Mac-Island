@@ -8,9 +8,13 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 ## Stack
 - **Since 3.0.0 the app is boring.notch, ported file for file** into `Visor/`
   (source: `old-code-v1/boringNotch`, identical to upstream `main` on
-  2026-09-24). Only three kinds of change are made to it: branding (Visor /
-  "By Apurva"), the Now Playing transport (Visor's MediaRemoteAdapter), and
-  removing Sparkle. Everything else stays byte-for-byte.
+  2026-09-24). Changes to it: branding (Visor / "By Apurva"), the Now
+  Playing transport (Visor's MediaRemoteAdapter), removing Sparkle, and
+  Visor's own additions. Every added line is marked `// Visor:`, and new
+  files live beside upstream's: vinyl mode (`components/Music/VinylDisc.swift`,
+  from 2.x) and the lock/unlock padlock (`Live activities/LockLiveActivity.swift`
+  + a `.lock` activity + the lock handlers in `boringNotchApp.swift`).
+  Everything else stays byte-for-byte.
 - Swift 5 language mode (the ported code is not Swift 6 clean)
 - macOS 14.0 minimum, Apple silicon
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
