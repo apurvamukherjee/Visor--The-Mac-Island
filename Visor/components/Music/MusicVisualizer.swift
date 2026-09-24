@@ -59,8 +59,22 @@ class AudioSpectrum: NSView {
         animationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
             self?.updateBars()
         }
+        // Visor: lets the system coalesce the wakeup with others.
+        animationTimer?.tolerance = 0.03
     }
-    
+
+    // Visor: the run loop, not this view, retains a scheduled timer, so without
+    // this every closed-notch player torn down while playing left one firing
+    // 3x a second for the life of the app.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil {
+            stopAnimating()
+        } else if isPlaying {
+            startAnimating()
+        }
+    }
+
     private func stopAnimating() {
         animationTimer?.invalidate()
         animationTimer = nil
