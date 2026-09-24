@@ -444,12 +444,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.showOnboardingWindow()
             }
             playWelcomeSound()
-        } else if MusicManager.shared.isNowPlayingDeprecated
-            && Defaults[.mediaController] == .nowPlaying
-        {
-            DispatchQueue.main.async {
-                self.showOnboardingWindow(step: .musicPermission)
-            }
         }
 
         previousScreens = NSScreen.screens

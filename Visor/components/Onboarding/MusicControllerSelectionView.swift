@@ -14,14 +14,6 @@ struct MusicControllerSelectionView: View {
 
     @Default(.mediaController) var mediaController
     
-    private var availableMediaControllers: [MediaControllerType] {
-        if MusicManager.shared.isNowPlayingDeprecated {
-            return MediaControllerType.allCases.filter { $0 != .nowPlaying }
-        } else {
-            return MediaControllerType.allCases
-        }
-    }
-    
     @State private var selectedMediaController: MediaControllerType = Defaults[.mediaController]
     
     var body: some View {
@@ -39,7 +31,7 @@ struct MusicControllerSelectionView: View {
 
             ScrollView {
                 VStack(spacing: 12) {
-                    ForEach(availableMediaControllers) { controller in
+                    ForEach(MediaControllerType.allCases) { controller in
                         ControllerOptionView(
                             controller: controller,
                             isSelected: self.selectedMediaController == controller
@@ -52,7 +44,7 @@ struct MusicControllerSelectionView: View {
                 .padding()
             }
             //Disable scroll if there are 4 or fewer to avoid unnecessary scroll behavior
-            .scrollDisabled(availableMediaControllers.count <= 4)
+            .scrollDisabled(MediaControllerType.allCases.count <= 4)
 
             Button("Continue", action: {
                 self.mediaController = self.selectedMediaController
