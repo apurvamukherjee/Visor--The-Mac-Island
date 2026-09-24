@@ -259,16 +259,25 @@ more. Worth revisiting only if that turns out to be a common day.
 
 Gated on the paging opt-in, so with the switch off nothing moved.
 
-**Corollary bug (2026-09-23): shorter content reads as "pinned high".** The
-usage screen's own alignment is inherited from the shared top-alignment the
-box uses for every page. With only Claude's usage recorded (~1 row), that
-screen's content is shorter than whatever page is actually driving the box
-height (per the table above), so it hugged its intrinsic size at the top and
-stranded empty space below — reading as the card being dragged upward rather
-than centered in the box it shares. With Codex also present the content is
-closer to the box height and the gap barely shows. Fixed by centering only
-`.usage`'s content vertically (`NotchRootView`), not by changing the box or
-the shared alignment other pages rely on.
+**Corollary bug (2026-09-23, generalised 2026-09-24): shorter content reads
+as "pinned high".** Every page inherited a shared *top* alignment, so any
+screen with less in it than whatever page is driving the box height (per the
+table above) hugged its intrinsic size at the top and stranded the remainder
+below — reading as the card being dragged upward rather than centred in the
+box it shares. First seen on `.usage` with only Claude's row recorded and
+fixed there alone; reported again on the volume screen, whose 32pt bar sat in
+the player's 128pt column with 96pt of black under it. It is every short
+screen's bug, so expanded content is now centred **once**, in `NotchRootView`'s
+one overlay, and the `.usage` special case is gone. The box is unchanged.
+Content still lays out against the *resting* height, never `currentSize`, or
+it would re-centre on every frame of the collapse squash.
+
+**Centring is the whole fix; the volume bar stays slim.** Sizing the bar as a
+fraction of the card (0.62 of the 128pt column) was tried and rejected on
+sight — a 79pt capsule reads as a bulge, not a control. The bar keeps its
+26pt/32pt constants and the card's extra height is answered by centring the
+row in it. The glyph (22pt) and the percentage (16pt) did grow, and those
+stayed: it is the *track* that must not fatten.
 
 ### 2.6c The card stack (2026-09-23)
 

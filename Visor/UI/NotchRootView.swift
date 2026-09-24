@@ -144,7 +144,17 @@ struct NotchRootView: View {
                         // The cutout hides the island's top-centre 185x33pt,
                         // so per-column clearance just moved the bug around.
                         .padding(.top, store.closedSize.height + IslandSpacing.cameraClearance)
-                        .frame(width: restingSize.width)
+                        // Centred, not pinned to the top. The box covers
+                        // every page the swipe can reach, so any screen with
+                        // less in it than the page driving the height hugged
+                        // the top and stranded the remainder below, which
+                        // reads as the island being dragged upward. `.usage`
+                        // had this fixed for itself; it is every short
+                        // screen's bug, so it is fixed once, here. Against the
+                        // *resting* card, never `currentSize` — content that
+                        // re-centred on every frame of the collapse squash
+                        // would drift as the island shut.
+                        .frame(width: restingSize.width, height: max(0, restingSize.height - store.layout.chinReveal))
                         .transition(.island)
                 } else if store.state == .compact, store.currentActivity != nil {
                     CompactActivityView(store: store)
@@ -272,16 +282,11 @@ struct NotchRootView: View {
         case .home:
             expandedActivityContent
         case .usage:
-            // The box is sized to cover every page reachable by swipe, so with
-            // only one row (Codex not yet run) it is taller than this screen's
-            // own content. Center rather than let the shared top alignment
-            // pin the rows high with the leftover space stranded below.
             ExpandedUsageView(
                 usage: store.aiUsage,
                 claudeBudget: Preferences.dailyTokenBudget(for: .claude),
                 codexBudget: Preferences.dailyTokenBudget(for: .codex)
             )
-            .frame(maxHeight: .infinity, alignment: .center)
         }
     }
 

@@ -10,27 +10,35 @@ struct ExpandedVolumeView: View {
 
     @State private var isDragging = false
 
+    /// Slim, whatever height the card has. Sizing the bar from the box was
+    /// tried and looked wrong: paging hands the volume screen the player's
+    /// 128pt column, and a bar that filled it read as a bulge rather than a
+    /// control. The card's extra height is answered by centring the row in
+    /// it, not by fattening the bar.
     private static let barHeight: CGFloat = 26
     private static let draggingBarHeight: CGFloat = 32
+
+    private static let glyphColumn: CGFloat = 44
+    private static let percentColumn: CGFloat = 50
 
     var body: some View {
         HStack(spacing: IslandSpacing.column) {
             Button(action: onToggleMute) {
                 Image(systemName: VolumeGlyph.symbolName(level: volume.level, isMuted: volume.isMuted))
-                    .font(.system(size: 14))
+                    .font(.system(size: 22))
                     .foregroundStyle(.white)
                     .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 32, height: 32)
+                    .frame(width: Self.glyphColumn, height: Self.glyphColumn)
             }
             .buttonStyle(.plain)
 
             bar
 
             Text("\(volume.percentage)%")
-                .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                .font(.system(size: 16, weight: .medium, design: .rounded).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.55))
                 .contentTransition(.numericText(value: Double(volume.percentage)))
-                .frame(width: 40, alignment: .trailing)
+                .frame(width: Self.percentColumn, alignment: .trailing)
         }
         .foregroundStyle(.white)
         .animation(Motion.resolved(Motion.textSwap), value: volume.percentage)
