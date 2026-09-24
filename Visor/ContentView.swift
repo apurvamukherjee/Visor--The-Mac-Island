@@ -61,7 +61,11 @@ struct ContentView: View {
     private var computedChinWidth: CGFloat {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
-        if coordinator.expandingView.type == .battery && coordinator.expandingView.show
+        if coordinator.expandingView.type == .lock && coordinator.expandingView.show
+            && vm.notchState == .closed
+        {
+            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
+        } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
             chinWidth = 640
@@ -257,7 +261,19 @@ struct ContentView: View {
                     .padding(.top, 40)
                     Spacer()
                 } else {
-                    if coordinator.expandingView.type == .battery && coordinator.expandingView.show
+                    if coordinator.expandingView.type == .lock && coordinator.expandingView.show
+                        && vm.notchState == .closed
+                    {
+                        LockLiveActivity(
+                            isLocked: coordinator.expandingView.value == 1,
+                            side: max(0, vm.effectiveClosedNotchHeight - 12),
+                            centerWidth: vm.closedNotchSize.width + -cornerRadiusInsets.closed.top
+                        )
+                        .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
+                        // Blurs out as the album cover comes back in, rather
+                        // than cutting to it.
+                        .transition(.blurReplace)
+                    } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
                         && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
                     {
                         HStack(spacing: 0) {

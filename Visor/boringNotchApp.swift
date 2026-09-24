@@ -53,6 +53,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var screenLockedObserver: Any?
     private var screenUnlockedObserver: Any?
     private var isScreenLocked: Bool = false
+    // Visor: true while the windows were kept above the lock shield only for
+    // the lock animation (not because "Show notch on lock screen" is on).
+    private var keptWindowsForLockAnimation = false
     private var windowScreenDidChangeObserver: Any?
     private var dragDetectors: [String: DragDetector] = [:] // UUID -> DragDetector
 
@@ -79,21 +82,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     func onScreenLocked(_ notification: Notification) {
         isScreenLocked = true
-        if !Defaults[.showOnLockScreen] {
-            cleanupWindows()
-        } else {
+        if Defaults[.showOnLockScreen] {
             enableSkyLightOnAllWindows()
+        } else if Defaults[.lockScreenAnimation] {
+            // Visor: the closed notch stays above the lock shield so the
+            // padlock (and the cover after it) can show there. It is
+            // display-only while locked: nothing on a locked screen should
+            // open a panel or take a click.
+            keptWindowsForLockAnimation = true
+            viewModelsForLockAnimation.forEach { $0.close() }
+            notchWindowsForLockAnimation.forEach { $0.ignoresMouseEvents = true }
+            enableSkyLightOnAllWindows()
+        } else {
+            cleanupWindows()
+        }
+        if Defaults[.lockScreenAnimation] {
+            coordinator.toggleExpandingView(status: true, type: .lock, value: 1)
         }
     }
 
     @MainActor
     func onScreenUnlocked(_ notification: Notification) {
         isScreenLocked = false
-        if !Defaults[.showOnLockScreen] {
-            adjustWindowPosition(changeAlpha: true)
-        } else {
+        if Defaults[.showOnLockScreen] {
             disableSkyLightOnAllWindows()
+        } else if keptWindowsForLockAnimation {
+            keptWindowsForLockAnimation = false
+            notchWindowsForLockAnimation.forEach { $0.ignoresMouseEvents = false }
+            disableSkyLightOnAllWindows()
+        } else {
+            adjustWindowPosition(changeAlpha: true)
         }
+        if Defaults[.lockScreenAnimation] {
+            coordinator.toggleExpandingView(status: true, type: .lock, value: 0)
+        }
+    }
+
+    /// Visor: the notch windows and their models, whichever display mode is on.
+    private var notchWindowsForLockAnimation: [NSWindow] {
+        Defaults[.showOnAllDisplays] ? Array(windows.values) : [window].compactMap { $0 }
+    }
+
+    private var viewModelsForLockAnimation: [BoringViewModel] {
+        Defaults[.showOnAllDisplays] ? Array(viewModels.values) : [vm]
     }
     
     @MainActor

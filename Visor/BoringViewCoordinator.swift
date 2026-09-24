@@ -18,6 +18,8 @@ enum SneakContentType {
     case mic
     case battery
     case download
+    // Visor: the lock/unlock padlock. `ExpandedItem.value` is 1 while locked.
+    case lock
 }
 
 struct sneakPeek {
