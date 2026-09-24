@@ -171,10 +171,16 @@ struct WheelPicker: View {
         return Int(ceil(Double(range) / Double(step))) + 1
     }
 
-    private func dateToString(for date: Date) -> String {
+    // Visor: one formatter, instead of a new one per day cell per render.
+    private static let weekdayFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
         formatter.dateFormat = "E"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private func dateToString(for date: Date) -> String {
+        Self.weekdayFormatter.string(from: date)
     }
 }
 
