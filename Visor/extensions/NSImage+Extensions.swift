@@ -25,8 +25,10 @@ extension NSImage {
                 return
             }
             
-            let width = cgImage.width
-            let height = cgImage.height
+            // Visor: an average survives downscaling, so a 64 px copy gives the
+            // same colour as walking every pixel of 3000 px artwork (36 MB).
+            let width = min(cgImage.width, 64)
+            let height = min(cgImage.height, 64)
             let totalPixels = width * height
             
             guard let context = CGContext(data: nil,
