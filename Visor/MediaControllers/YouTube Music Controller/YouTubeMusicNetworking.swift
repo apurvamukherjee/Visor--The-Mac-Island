@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - HTTP Client
-final class YouTubeMusicHTTPClient: ObservableObject {
+final class YouTubeMusicHTTPClient {
     private let session: URLSession
     private let baseURL: String
     private static let decoder = JSONDecoder()
@@ -65,10 +65,6 @@ final class YouTubeMusicHTTPClient: ObservableObject {
 
     func toggleLike(token: String) async throws -> Data {
         return try await sendCommand(endpoint: "/like", method: "POST", token: token)
-    }
-
-    func toggleDislike(token: String) async throws -> Data {
-        return try await sendCommand(endpoint: "/dislike", method: "POST", token: token)
     }
     
     // MARK: - Commands
@@ -137,8 +133,6 @@ actor YouTubeMusicWebSocketClient {
     private let onMessage: @Sendable (Data) async -> Void
     private let onDisconnect: @Sendable () async -> Void
     
-    var isConnected: Bool { task != nil }
-    
     init(
         onMessage: @escaping @Sendable (Data) async -> Void,
         onDisconnect: @escaping @Sendable () async -> Void,
@@ -194,51 +188,10 @@ actor YouTubeMusicWebSocketClient {
     }
 }
 
-// MARK: - WebSocket URL Helper
-struct WebSocketURLBuilder {
-    static func buildURL(from baseURL: String) -> URL? {
-        guard var components = URLComponents(string: baseURL) else { return nil }
-
-        switch components.scheme {
-        case "http":
-            components.scheme = "ws"
-        case "https":
-            components.scheme = "wss"
-        default:
-            break
-        }
-
-        components.path = "/api/v1/ws"
-        return components.url
-    }
-}
-
 // MARK: - Errors
-enum YouTubeMusicError: Error, LocalizedError, Sendable {
+enum YouTubeMusicError: Error, Sendable {
     case invalidURL
     case invalidResponse
     case httpError(Int)
     case authenticationRequired
-    case webSocketNotConnected
-    case encodingFailed
-    case decodingFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return "Invalid URL"
-        case .invalidResponse:
-            return "Invalid response"
-        case .httpError(let code):
-            return "HTTP error: \(code)"
-        case .authenticationRequired:
-            return "Authentication required"
-        case .webSocketNotConnected:
-            return "WebSocket not connected"
-        case .encodingFailed:
-            return "Failed to encode data"
-        case .decodingFailed:
-            return "Failed to decode data"
-        }
-    }
 }

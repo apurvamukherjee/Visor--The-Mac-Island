@@ -33,9 +33,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
     func setFavorite(_ favorite: Bool) async {
         do {
             let token = try await authManager.authenticate()
-            if favorite && !playbackState.isFavorite {
-                _ = try await httpClient.toggleLike(token: token)
-            } else if !favorite && playbackState.isFavorite {
+            if favorite != playbackState.isFavorite {
                 _ = try await httpClient.toggleLike(token: token)
             }
             try? await Task.sleep(for: .milliseconds(150))
@@ -118,21 +116,8 @@ final class YouTubeMusicController: MediaControllerProtocol {
             // Fetch like state if supported
             do {
                 let likeResp = try await httpClient.getLikeState(token: token)
-                var newState = playbackState
-                    if let state = likeResp.state {
-                        switch state.uppercased() {
-                        case "LIKE":
-                            newState.isFavorite = true
-                        case "DISLIKE":
-                            // We don't have a separate dislike UI yet, treat as not favorited
-                            newState.isFavorite = false
-                        default:
-                            newState.isFavorite = false
-                        }
-                    } else {
-                        newState.isFavorite = false
-                    }
-                playbackState = newState
+                // DISLIKE has no UI of its own, so it reads as not favourited.
+                playbackState.isFavorite = likeResp.state?.uppercased() == "LIKE"
             } catch {
                 // Don't treat it as an error if the like endpoint doesn't exist — just skip
             }
@@ -213,7 +198,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
     }
     
     private func setupWebSocketIfPossible(token: String) async {
-        guard let wsURL = WebSocketURLBuilder.buildURL(from: configuration.baseURL) else {
+        guard let wsURL = configuration.webSocketURL else {
             print("[YouTubeMusicController] Failed to build WebSocket URL")
             return
         }
@@ -247,13 +232,12 @@ final class YouTubeMusicController: MediaControllerProtocol {
         }
         switch message.type {
         case .playerInfo, .videoChanged, .playerStateChanged:
-            if let data = message.extractData(),
-               let response = PlaybackResponse.from(websocketData: data) {
+            if let response = PlaybackResponse.from(websocketData: message.payload) {
                 await updatePlaybackState(with: response)
             }
 
         case .positionChanged:
-            guard let data = message.extractData() else { return }
+            let data = message.payload
 
             var position: Double? = nil
             if let pos = data["position"] as? Double {
@@ -269,22 +253,15 @@ final class YouTubeMusicController: MediaControllerProtocol {
             if copied != playbackState { playbackState = copied }
 
         case .repeatChanged:
-            guard let data = message.extractData() else { return }
             var copy = playbackState
-
-            if let repeatStr = data["repeat"] as? String {
-                switch repeatStr.uppercased() {
-                case "NONE": copy.repeatMode = .off
-                case "ALL": copy.repeatMode = .all
-                case "ONE": copy.repeatMode = .one
-                default: break
-                }
+            if let name = message.payload["repeat"] as? String, let mode = RepeatMode(youTubeMusicName: name) {
+                copy.repeatMode = mode
             }
             copy.lastUpdated = Date()
             if copy != playbackState { playbackState = copy }
 
         case .shuffleChanged:
-            guard let data = message.extractData() else { return }
+            let data = message.payload
             var copy = playbackState
             if let shuffle = data["shuffle"] as? Bool { copy.isShuffled = shuffle }
             else if let shuffle = data["isShuffled"] as? Bool { copy.isShuffled = shuffle }
@@ -292,12 +269,9 @@ final class YouTubeMusicController: MediaControllerProtocol {
             if copy != playbackState { playbackState = copy }
 
         case .volumeChanged:
-            guard let data = message.extractData() else { return }
             var copy = playbackState
-            if let volume = data["volume"] as? Double {
-                copy.volume = volume / 100.0
-            } else if let volume = data["volume"] as? Int {
-                copy.volume = Double(volume) / 100.0
+            if let volume = message.payload["volume"] as? NSNumber {
+                copy.volume = volume.doubleValue / 100.0
             }
             copy.lastUpdated = Date()
             if copy != playbackState { playbackState = copy }
@@ -423,13 +397,8 @@ final class YouTubeMusicController: MediaControllerProtocol {
             newState.isShuffled = shuffled
         }
         
-        if let mode = response.repeatMode {
-            switch mode {
-            case 0: newState.repeatMode = .off
-            case 1: newState.repeatMode = .all
-            case 2: newState.repeatMode = .one
-            default: break
-            }
+        if let index = response.repeatMode, let mode = RepeatMode(youTubeMusicIndex: index) {
+            newState.repeatMode = mode
         }
 
         if let volume = response.volume {
@@ -476,15 +445,10 @@ final class YouTubeMusicController: MediaControllerProtocol {
         NSWorkspace.shared.open(url)
     }
 
-     private func updateRepeatMode(_ mode: String) {
-        var target: RepeatMode? = nil
-        switch mode {
-            case "NONE": target = .off
-            case "ALL": target = .all
-            case "ONE": target = .one
-            default: break
+    private func updateRepeatMode(_ name: String) {
+        if let target = RepeatMode(youTubeMusicName: name), target != playbackState.repeatMode {
+            playbackState.repeatMode = target
         }
-        if let target, target != playbackState.repeatMode { playbackState.repeatMode = target }
     }
     
 }

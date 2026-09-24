@@ -20,6 +20,31 @@ struct YouTubeMusicConfiguration: Sendable {
         reconnectDelay: 1...60,
         updateInterval: 2.0
     )
+
+    // Visor: the ws:// twin of baseURL (https would become wss).
+    var webSocketURL: URL? {
+        URL(string: baseURL.replacingOccurrences(of: "http", with: "ws", options: .anchored) + "/api/v1/ws")
+    }
+}
+
+// Visor: the API names repeat modes NONE/ALL/ONE, and numbers them 0/1/2.
+extension RepeatMode {
+    private static let youTubeMusicOrder: [RepeatMode] = [.off, .all, .one]
+    private static let youTubeMusicNames = ["NONE", "ALL", "ONE"]
+
+    init?(youTubeMusicIndex index: Int) {
+        guard Self.youTubeMusicOrder.indices.contains(index) else { return nil }
+        self = Self.youTubeMusicOrder[index]
+    }
+
+    init?(youTubeMusicName name: String) {
+        guard let index = Self.youTubeMusicIndex(of: name) else { return nil }
+        self = Self.youTubeMusicOrder[index]
+    }
+
+    static func youTubeMusicIndex(of name: String) -> Int? {
+        youTubeMusicNames.firstIndex(of: name.uppercased())
+    }
 }
 
 // MARK: - API Models
@@ -53,23 +78,17 @@ enum WebSocketMessageType: String, Sendable {
 
 struct WebSocketMessage {
     let type: WebSocketMessageType
-    let rawData: Data
-    private let parsedJSON: [String: Any]?
+    let payload: [String: Any]
 
     init?(from data: Data) {
-        let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
-        guard let typeString = json?["type"] as? String,
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let typeString = json["type"] as? String,
               let messageType = WebSocketMessageType(rawValue: typeString) else {
             return nil
         }
 
         self.type = messageType
-        self.rawData = data
-        self.parsedJSON = json
-    }
-
-    func extractData() -> [String: Any]? {
-        parsedJSON
+        self.payload = json
     }
 }
 
@@ -102,22 +121,8 @@ extension PlaybackResponse {
         let imageSrc = (songData?["imageSrc"] as? String) ?? (websocketData["imageSrc"] as? String)
         let isShuffled = (websocketData["shuffle"] as? Bool) ?? (songData?["isShuffled"] as? Bool)
 
-        var repeatModeInt: Int? = nil
-        if let repeatVal = websocketData["repeat"] as? String {
-            switch repeatVal.uppercased() {
-            case "NONE": repeatModeInt = 0
-            case "ALL": repeatModeInt = 1
-            case "ONE": repeatModeInt = 2
-            default: break
-            }
-        } else if let repeatStr = songData?["repeat"] as? String {
-            switch repeatStr.uppercased() {
-            case "NONE": repeatModeInt = 0
-            case "ALL": repeatModeInt = 1
-            case "ONE": repeatModeInt = 2
-            default: break
-            }
-        }
+        let repeatName = (websocketData["repeat"] as? String) ?? (songData?["repeat"] as? String)
+        let repeatModeInt = repeatName.flatMap(RepeatMode.youTubeMusicIndex(of:))
         
         let volume = extractDouble(from: websocketData, key: "volume") ?? extractDouble(from: songData, key: "volume")
 
@@ -134,29 +139,8 @@ extension PlaybackResponse {
             volume: volume
         )
     }
-    
-    func with(elapsedSeconds: Double) -> PlaybackResponse {
-        PlaybackResponse(
-            isPaused: isPaused,
-            title: title,
-            artist: artist,
-            album: album,
-            elapsedSeconds: elapsedSeconds,
-            songDuration: songDuration,
-            imageSrc: imageSrc,
-            repeatMode: repeatMode,
-            isShuffled: isShuffled,
-            volume: volume
-        )
-    }
 }
 
 private func extractDouble(from dict: [String: Any]?, key: String) -> Double? {
-    guard let dict = dict else { return nil }
-    if let value = dict[key] as? Double {
-        return value
-    } else if let value = dict[key] as? Int {
-        return Double(value)
-    }
-    return nil
+    (dict?[key] as? NSNumber)?.doubleValue
 }
