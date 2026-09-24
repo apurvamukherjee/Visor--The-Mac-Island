@@ -1,13 +1,13 @@
 import Foundation
 import Cocoa
-import AsyncXPCConnection
+import os
 
 final class XPCHelperClient: NSObject {
     nonisolated static let shared = XPCHelperClient()
     
     private let serviceName = "com.apurvamukherjee.visor.VisorXPCHelper"
+    private static let logger = Logger(subsystem: "com.apurvamukherjee.visor", category: "XPCHelperClient")
     
-    private var remoteService: RemoteXPCService<XPCHelperProtocol>?
     private var connection: NSXPCConnection?
     private var lastKnownAuthorization: Bool?
     private var monitoringTask: Task<Void, Never>?
@@ -20,42 +20,47 @@ final class XPCHelperClient: NSObject {
     // MARK: - Connection Management (Main Actor Isolated)
     
     @MainActor
-    private func ensureRemoteService() -> RemoteXPCService<XPCHelperProtocol> {
-        if let existing = remoteService {
+    private func ensureConnection() -> NSXPCConnection {
+        if let existing = connection {
             return existing
         }
         
         let conn = NSXPCConnection(serviceName: serviceName)
+        conn.remoteObjectInterface = NSXPCInterface(with: XPCHelperProtocol.self)
         
         conn.interruptionHandler = { [weak self] in
             Task { @MainActor in
                 self?.connection = nil
-                self?.remoteService = nil
             }
         }
         
         conn.invalidationHandler = { [weak self] in
             Task { @MainActor in
                 self?.connection = nil
-                self?.remoteService = nil
             }
         }
         
         conn.resume()
-        
-        let service = RemoteXPCService<XPCHelperProtocol>(
-            connection: conn,
-            remoteInterface: XPCHelperProtocol.self
-        )
-        
         connection = conn
-        remoteService = service
-        return service
+        return conn
     }
-    
-    @MainActor
-    private func getRemoteService() -> RemoteXPCService<XPCHelperProtocol>? {
-        remoteService
+
+    // Visor: replaces AsyncXPCConnection, which this file used only for this.
+    // The error handler fails the call if the helper dies before replying.
+    private func withHelper<T>(
+        _ body: @escaping (XPCHelperProtocol, CheckedContinuation<T, Error>) -> Void
+    ) async throws -> T {
+        let conn = await MainActor.run { ensureConnection() }
+        return try await withCheckedThrowingContinuation { continuation in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: error)
+            }
+            guard let helper = proxy as? XPCHelperProtocol else {
+                continuation.resume(throwing: XPCHelperClientError.unexpectedProxy)
+                return
+            }
+            body(helper, continuation)
+        }
     }
     
     @MainActor
@@ -99,21 +104,17 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func requestAccessibilityAuthorization() {
         Task {
-            let service = await MainActor.run {
-                ensureRemoteService()
+            let conn = await MainActor.run { ensureConnection() }
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                Self.logger.error("Accessibility request failed: \(error.localizedDescription, privacy: .public)")
             }
-            try? await service.withService { service in
-                service.requestAccessibilityAuthorization()
-            }
+            (proxy as? XPCHelperProtocol)?.requestAccessibilityAuthorization()
         }
     }
     
     nonisolated func isAccessibilityAuthorized() async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: Bool = try await service.withContinuation { service, continuation in
+            let result: Bool = try await withHelper { service, continuation in
                 service.isAccessibilityAuthorized { authorized in
                     continuation.resume(returning: authorized)
                 }
@@ -129,10 +130,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func ensureAccessibilityAuthorization(promptIfNeeded: Bool) async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: Bool = try await service.withContinuation { service, continuation in
+            let result: Bool = try await withHelper { service, continuation in
                 service.ensureAccessibilityAuthorization(promptIfNeeded) { authorized in
                     continuation.resume(returning: authorized)
                 }
@@ -150,10 +148,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func isKeyboardBrightnessAvailable() async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
+            return try await withHelper { service, continuation in
                 service.isKeyboardBrightnessAvailable { available in
                     continuation.resume(returning: available)
                 }
@@ -165,10 +160,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func currentKeyboardBrightness() async -> Float? {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: NSNumber? = try await service.withContinuation { service, continuation in
+            let result: NSNumber? = try await withHelper { service, continuation in
                 service.currentKeyboardBrightness { value in
                     continuation.resume(returning: value)
                 }
@@ -181,10 +173,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func setKeyboardBrightness(_ value: Float) async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
+            return try await withHelper { service, continuation in
                 service.setKeyboardBrightness(value) { success in
                     continuation.resume(returning: success)
                 }
@@ -198,10 +187,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func isScreenBrightnessAvailable() async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
+            return try await withHelper { service, continuation in
                 service.isScreenBrightnessAvailable { available in
                     continuation.resume(returning: available)
                 }
@@ -213,10 +199,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func currentScreenBrightness() async -> Float? {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: NSNumber? = try await service.withContinuation { service, continuation in
+            let result: NSNumber? = try await withHelper { service, continuation in
                 service.currentScreenBrightness { value in
                     continuation.resume(returning: value)
                 }
@@ -229,10 +212,7 @@ final class XPCHelperClient: NSObject {
     
     nonisolated func setScreenBrightness(_ value: Float) async -> Bool {
         do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
+            return try await withHelper { service, continuation in
                 service.setScreenBrightness(value) { success in
                     continuation.resume(returning: success)
                 }
@@ -241,6 +221,10 @@ final class XPCHelperClient: NSObject {
             return false
         }
     }
+}
+
+enum XPCHelperClientError: Error {
+    case unexpectedProxy
 }
 
 extension Notification.Name {
