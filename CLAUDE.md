@@ -21,7 +21,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
 - Approved packages (2026-09-24): MediaRemoteAdapter, AsyncXPCConnection,
   Defaults, KeyboardShortcuts, LaunchAtLogin-Modern, Lottie, MacroVisionKit,
-  SkyLightWindow, SwiftUIIntrospect, each pinned exactly. No others without
+  SkyLightWindow, each pinned exactly. No others without
   approval. **Sparkle is excluded**: its feed was TheBoredTeam's appcast.
 - App Sandbox off (spawns the media adapter); LSUIElement = YES
 - project.yml excludes the five files upstream's own project never compiles
