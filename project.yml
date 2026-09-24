@@ -10,6 +10,11 @@ settings:
     SWIFT_VERSION: "5.0"
     # Apple silicon only, so an x86_64 slice is dead weight.
     ARCHS: arm64
+  configs:
+    # `xcodebuild build` skips STRIP_INSTALLED_PRODUCT unless this is on, so
+    # Release shipped its full symbol table.
+    Release:
+      DEPLOYMENT_POSTPROCESSING: YES
 # Pinned to the exact versions the ported code was built against.
 packages:
   MediaRemoteAdapter:
