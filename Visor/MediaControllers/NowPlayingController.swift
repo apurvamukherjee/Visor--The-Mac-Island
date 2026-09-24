@@ -87,14 +87,6 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
 
     // MARK: - Protocol Implementation
-    func play() async {
-        mediaController.play()
-    }
-
-    func pause() async {
-        mediaController.pause()
-    }
-
     func togglePlay() async {
         mediaController.togglePlayPause()
     }

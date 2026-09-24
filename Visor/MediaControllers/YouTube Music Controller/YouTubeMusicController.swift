@@ -67,10 +67,6 @@ final class YouTubeMusicController: MediaControllerProtocol {
     }
     
     // MARK: - MediaControllerProtocol Implementation
-    func play() async { await sendCommand(endpoint: "/play", method: "POST") }
-    
-    func pause() async { await sendCommand(endpoint: "/pause", method: "POST") }
-    
     func togglePlay() async {
         if !isActive() { launchApp() }
         await sendCommand(endpoint: "/toggle-play", method: "POST")
