@@ -2,7 +2,7 @@
 //  ShelfSelectionModel.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-09-26.
+//  Created by Apurva on 2025-09-26.
 //
 
 import Foundation

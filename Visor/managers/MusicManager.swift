@@ -2,7 +2,7 @@
 //  MusicManager.swift
 //  boringNotch
 //
-//  Created by Harsh Vardhan  Goswami  on 03/08/24.
+//  Created by Apurva   on 03/08/24.
 //
 import AppKit
 import Combine

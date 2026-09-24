@@ -2,7 +2,7 @@
 //  MusicControlButton.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-11-16.
+//  Created by Apurva on 2025-11-16.
 //
 
 import Defaults

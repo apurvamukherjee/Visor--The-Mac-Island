@@ -2,7 +2,7 @@
 //  MediaKeyInterceptor.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-11-23.
+//  Created by Apurva on 2025-11-23.
 
 import Foundation
 import AppKit

@@ -2,7 +2,7 @@
 //  ShareServiceFinder.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-10-06.
+//  Created by Apurva on 2025-10-06.
 //
 
 import Cocoa

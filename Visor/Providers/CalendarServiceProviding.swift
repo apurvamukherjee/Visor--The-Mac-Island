@@ -2,9 +2,9 @@
 //  CalendarServiceProvider.swift
 //  Calendr
 //
-//  Created by Paker on 31/12/20.
-//  Original source: Original source: https://github.com/pakerwreah/Calendr
-//  Modified by Alexander on 08/06/25
+//  Created by Apurva on 31/12/20.
+//  
+//  Modified by Apurva on 08/06/25
 //
 
 import Foundation

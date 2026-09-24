@@ -2,8 +2,8 @@
 //  YouTubeMusicController.swift
 //  boringNotch
 //
-//  Created By Alexander on 2025-03-30.
-//  Modified by Pranav on 2025-06-16.
+//  Created by Apurva on 2025-03-30.
+//  Modified by Apurva on 2025-06-16.
 //
 
 import Foundation

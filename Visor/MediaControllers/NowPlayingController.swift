@@ -2,7 +2,7 @@
 //  NowPlayingController.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-03-29.
+//  Created by Apurva on 2025-03-29.
 //
 
 import AppKit

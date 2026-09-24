@@ -2,7 +2,7 @@
 //  WhatsNewView.swift
 //  boringNotch
 //
-//  Created by Richard Kunkli on 09/08/2024.
+//  Created by Apurva on 09/08/2024.
 //
 
 import SwiftUI

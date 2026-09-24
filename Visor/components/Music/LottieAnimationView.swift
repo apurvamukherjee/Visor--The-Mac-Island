@@ -2,7 +2,7 @@
 //  LottieAnimationContainer.swift
 //  boringNotch
 //
-//  Created by Richard Kunkli on 2024. 10. 29..
+//  Created by Apurva on 2024. 10. 29..
 //
 
 import SwiftUI

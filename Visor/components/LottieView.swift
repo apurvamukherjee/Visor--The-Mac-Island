@@ -2,7 +2,7 @@
 //  LottieView.swift
 //  boringNotch
 //
-//  Created by Alexander on 2025-11-14.
+//  Created by Apurva on 2025-11-14.
 //
 
 import SwiftUI

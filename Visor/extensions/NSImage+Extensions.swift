@@ -2,7 +2,7 @@
 //  Image2Color.swift
 //  boringNotch
 //
-//  Created by Richard Kunkli on 07/08/2024.
+//  Created by Apurva on 07/08/2024.
 //
 
 import SwiftUI
