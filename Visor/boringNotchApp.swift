@@ -18,7 +18,8 @@ struct DynamicNotchApp: App {
     @Environment(\.openWindow) var openWindow
 
     var body: some Scene {
-        MenuBarExtra("Visor", systemImage: "sparkle", isInserted: $showMenuBarIcon) {
+        // Visor: a record, for the music-first island (and vinyl mode).
+        MenuBarExtra("Visor", systemImage: "opticaldisc.fill", isInserted: $showMenuBarIcon) {
             Button("Settings") {
                 DispatchQueue.main.async {
                     SettingsWindowController.shared.showWindow()
