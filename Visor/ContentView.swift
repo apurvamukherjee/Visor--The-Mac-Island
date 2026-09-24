@@ -9,13 +9,14 @@ import SwiftUI
 @MainActor
 struct ContentView: View {
     @EnvironmentObject var vm: VisorViewModel
-    @ObservedObject var webcamManager = WebcamManager.shared
 
     @ObservedObject var coordinator = VisorViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var brightnessManager = BrightnessManager.shared
-    @ObservedObject var volumeManager = VolumeManager.shared
+    // Visor: held, not observed. The root view reads neither, and observing
+    // them re-rendered the whole notch on every system volume change.
+    private let brightnessManager = BrightnessManager.shared
+    private let volumeManager = VolumeManager.shared
     @State private var hoverTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
     @State private var anyDropDebounceTask: Task<Void, Never>?
