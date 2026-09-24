@@ -23,9 +23,14 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     // Visor: every adapter event repeats the whole cover as base64, usually unchanged.
     private var lastArtworkBase64: String?
     private var lastArtwork: Data?
-    // Visor: browsers report a new track before its cover has loaded, and
-    // MediaRemote does not always post another change once it has, so the
-    // app icon stayed up for the whole track.
+    // Visor: browsers report a new track with no cover or the previous
+    // track's, and send the real one about a second later. MediaRemote does
+    // not always post that change, and the adapter keeps the old cover when
+    // the new one is smaller, so the wrong image could stay up all track.
+    private var trackTitle = ""
+    private var previousTrackArtworkBase64: String?
+    private var refetchedArtworkBase64: String?
+    private var artworkRetryTitle: String?
     private var artworkRetryTask: Task<Void, Never>?
     private static let artworkRetryDelays: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2), .seconds(4)]
 
@@ -177,9 +182,19 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         case .one: .one
         case .all: .all
         }
-        if payload.artworkDataBase64 != lastArtworkBase64 {
-            lastArtworkBase64 = payload.artworkDataBase64
-            lastArtwork = payload.artworkDataBase64.flatMap {
+        if newPlaybackState.title != trackTitle {
+            trackTitle = newPlaybackState.title
+            previousTrackArtworkBase64 = lastArtworkBase64
+            refetchedArtworkBase64 = nil
+        }
+        var artworkBase64 = payload.artworkDataBase64
+        let artworkMayBeStale = artworkBase64 == nil || artworkBase64 == previousTrackArtworkBase64
+        if artworkMayBeStale, let refetched = refetchedArtworkBase64 {
+            artworkBase64 = refetched
+        }
+        if artworkBase64 != lastArtworkBase64 {
+            lastArtworkBase64 = artworkBase64
+            lastArtwork = artworkBase64.flatMap {
                 Data(base64Encoded: $0.trimmingCharacters(in: .whitespacesAndNewlines))
             }
         }
@@ -195,17 +210,20 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
 
         self.playbackState = newPlaybackState
 
-        if newPlaybackState.artwork == nil && !newPlaybackState.title.isEmpty {
-            retryMissingArtwork(for: newPlaybackState.title)
+        if artworkMayBeStale && refetchedArtworkBase64 == nil && !trackTitle.isEmpty {
+            retryArtwork(for: trackTitle)
         } else {
-            artworkRetryTask?.cancel()
+            cancelArtworkRetry()
         }
     }
 
-    // Visor: `get` reads MediaRemote afresh, so it sees a cover that arrived
-    // without a change notification. Bounded, and only while one is missing.
-    private func retryMissingArtwork(for title: String) {
+    // Visor: `get` reads MediaRemote afresh, past the adapter's cached cover.
+    // At most one bounded round per track; a same-album track whose cover
+    // really is unchanged just runs out of attempts.
+    private func retryArtwork(for title: String) {
+        guard artworkRetryTitle != title else { return }
         artworkRetryTask?.cancel()
+        artworkRetryTitle = title
         artworkRetryTask = Task { @MainActor [weak self] in
             for delay in Self.artworkRetryDelays {
                 try? await Task.sleep(for: delay)
@@ -213,15 +231,23 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
                 self.mediaController.getTrackInfo { [weak self] trackInfo in
                     guard let self,
                           let payload = trackInfo?.payload,
+                          let artwork = payload.artworkDataBase64,
                           payload.title == title,
-                          payload.artworkDataBase64 != nil,
-                          self.playbackState.title == title,
-                          self.playbackState.artwork == nil
+                          self.trackTitle == title,
+                          self.refetchedArtworkBase64 == nil,
+                          artwork != self.previousTrackArtworkBase64
                     else { return }
+                    self.refetchedArtworkBase64 = artwork
                     self.handleTrackInfo(trackInfo)
                 }
             }
         }
+    }
+
+    private func cancelArtworkRetry() {
+        artworkRetryTask?.cancel()
+        artworkRetryTask = nil
+        artworkRetryTitle = nil
     }
 
     private static func adapterRepeatMode(_ mode: RepeatMode) -> TrackInfo.RepeatMode {
