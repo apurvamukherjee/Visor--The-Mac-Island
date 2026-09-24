@@ -18,6 +18,46 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [3.1.2] — 2026-09-25 (build 37)
+
+A cleanup release: two fixes you can see, and a much smaller codebase
+underneath. About 3,100 lines of Swift and three packages are gone.
+
+### Fixed
+
+- **Dragging the closed-notch HUD bar did nothing:** it now changes the
+  volume or brightness. The bar relied on a `didSet` on a `@Binding`,
+  which never fires.
+- **Browser players (YouTube Music in Chrome) could show the wrong cover
+  for a whole song**, either the app icon or the previous song's cover.
+  The browser reports a new song before its cover loads, and MediaRemote
+  does not always announce the cover when it arrives. Visor now asks again
+  a few times (0.5–4 s) while the cover is missing or unchanged since the
+  last song.
+- The sneak peek no longer replays on every play/pause when a new song
+  keeps the same cover (same album).
+
+### Changed
+
+- **Packages:** Lottie, AsyncXPCConnection and LaunchAtLogin are removed.
+  The Lottie visualizer could not be switched on; the XPC helper is called
+  through `NSXPCConnection` directly, and "Launch at login" uses
+  `SMAppService` directly. Five packages remain.
+- Screen and keyboard brightness share one manager instead of two copies.
+- **Removed from Settings:** the disabled "App icon" section ("Coming
+  soon"), the disabled "Change media with horizontal gestures" switch, and
+  "Extend hover area", which no code read.
+- Removed unused code throughout: the mic and download HUD chains, dead
+  shelf services, unused helpers, SwiftUI previews, two unused images, the
+  empty preview asset catalog and 39 orphaned strings.
+
+### Deliberately left out
+
+- **SkyLightWindow** stays until the lock-screen notch is checked on
+  hardware without it.
+- The shelf's `print` calls and the unreachable `catch` in Compress are
+  upstream code, left as they are.
+
 ## [3.1.1] — 2026-09-25 (build 36)
 
 A performance and size release: nothing new to learn, less power at idle,

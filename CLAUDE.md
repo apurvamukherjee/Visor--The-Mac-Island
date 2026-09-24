@@ -19,10 +19,11 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - Swift 5 language mode (the ported code is not Swift 6 clean)
 - macOS 14.0 minimum, Apple silicon
 - XcodeGen: edit project.yml, never edit .pbxproj; run `xcodegen generate` after changes
-- Approved packages (2026-09-24): MediaRemoteAdapter, AsyncXPCConnection,
-  Defaults, KeyboardShortcuts, LaunchAtLogin-Modern, MacroVisionKit,
-  SkyLightWindow, each pinned exactly. No others without
-  approval. **Sparkle is excluded**: its feed was TheBoredTeam's appcast.
+- Approved packages (2026-09-25): MediaRemoteAdapter, Defaults,
+  KeyboardShortcuts, MacroVisionKit, SkyLightWindow, each pinned exactly.
+  No others without approval. Lottie, AsyncXPCConnection and
+  LaunchAtLogin-Modern were removed in 3.1.2. **Sparkle is excluded**: its
+  feed was TheBoredTeam's appcast.
 - App Sandbox off (spawns the media adapter); LSUIElement = YES
 - Unused code is deleted, not excluded: the five never-compiled upstream
   files were removed after 3.1.1, so `project.yml` has no excludes.
@@ -155,6 +156,11 @@ before `8b05dad`.
 - **3.1.1 (2026-09-25, build 36):** Boring* names renamed to Visor*
   (`fca9014`), then an audit pass: DMG signature fix, arm64-only stripped
   Release, idle-power fixes (leaked timers, root-view observers, slider
-  timeline) and the Apple Music favourite fix; see CHANGELOG. Lottie removal
-  is pending the user's go-ahead. **Not seen on hardware.**
-- **Next:** the user tests 3.1.1 on hardware.
+  timeline) and the Apple Music favourite fix; see CHANGELOG.
+- **3.1.2 (2026-09-25, build 37):** dead-code cleanup (~3,100 Swift lines,
+  Lottie/AsyncXPCConnection/LaunchAtLogin dropped), the HUD-drag fix and the
+  browser album-cover fix (re-fetch while the cover is missing or stale).
+  Smoke-tested: launches, XPC helper connects, no errors logged.
+- **Next:** the user tests 3.1.2 on hardware. After the release, Claude
+  rewrites history to drop the old Co-Authored-By trailers (plan in
+  memory) and the user force-pushes.
