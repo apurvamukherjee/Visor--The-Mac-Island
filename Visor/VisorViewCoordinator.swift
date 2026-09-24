@@ -10,7 +10,6 @@ enum SneakContentType {
     case volume
     case backlight
     case music
-    case mic
     case battery
     case download
     // Visor: the lock/unlock padlock. `ExpandedItem.value` is 1 while locked.
@@ -43,7 +42,6 @@ class VisorViewCoordinator: ObservableObject {
     @AppStorage("firstLaunch") var firstLaunch: Bool = true
     @AppStorage("showWhatsNew") var showWhatsNew: Bool = true
     @AppStorage("musicLiveActivityEnabled") var musicLiveActivityEnabled: Bool = true
-    @AppStorage("currentMicStatus") var currentMicStatus: Bool = true
 
     @AppStorage("alwaysShowTabs") var alwaysShowTabs: Bool = true {
         didSet {
@@ -180,10 +178,6 @@ class VisorViewCoordinator: ObservableObject {
             withAnimation(.smooth) {
                 self.sneakPeek = peek
             }
-        }
-
-        if type == .mic {
-            currentMicStatus = value == 1
         }
     }
 
