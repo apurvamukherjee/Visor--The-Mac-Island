@@ -13,16 +13,20 @@ import UniformTypeIdentifiers
 actor ThumbnailService {
     static let shared = ThumbnailService()
 
-    private var cache: [String: NSImage] = [:]
+    // Visor: bounded, and emptied by the system under memory pressure; the
+    // dictionary it replaces kept every thumbnail for the life of the app.
+    private let cache = NSCache<NSString, NSImage>()
     private var pendingRequests: [String: Task<NSImage?, Never>] = [:]
     private let thumbnailGenerator = QLThumbnailGenerator.shared
 
-    private init() {}
+    private init() {
+        cache.countLimit = 200
+    }
     
     func thumbnail(for url: URL, size: CGSize) async -> NSImage? {
         let cacheKey = "\(url.path)_\(size.width)x\(size.height)"
         
-        if let cached = cache[cacheKey] {
+        if let cached = cache.object(forKey: cacheKey as NSString) {
             return cached
         }
         
@@ -33,7 +37,7 @@ actor ThumbnailService {
         let task = Task<NSImage?, Never> {
             let thumbnail = await generateQuickLookThumbnail(for: url, size: size)
             if let thumbnail = thumbnail {
-                cache[cacheKey] = thumbnail
+                cache.setObject(thumbnail, forKey: cacheKey as NSString)
             }
             pendingRequests[cacheKey] = nil
             return thumbnail
@@ -41,14 +45,6 @@ actor ThumbnailService {
         
         pendingRequests[cacheKey] = task
         return await task.value
-    }
-    
-    func clearCache() {
-        cache.removeAll()
-    }
-    
-    func clearCache(for url: URL) {
-        cache = cache.filter { !$0.key.starts(with: url.path) }
     }
     
     // MARK: - Private Methods
