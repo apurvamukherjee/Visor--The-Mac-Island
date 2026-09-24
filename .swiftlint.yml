@@ -6,7 +6,12 @@ excluded:
   # Reference checkouts, not Visor's source. Kept for porting from, so
   # their style is theirs, not ours.
   - old-code
+  - old-code-v1
   - DynamicNotch
+  # Ported verbatim from boring.notch (2026-09-24); reformatting or
+  # linting it to Visor's style would defeat copying it.
+  - Visor
+  - VisorXPCHelper
 
 opt_in_rules:
   - force_unwrapping

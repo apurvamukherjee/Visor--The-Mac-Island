@@ -1,7 +1,7 @@
---swiftversion 6.0
+--swiftversion 5.0
 --indent 4
 --maxwidth 120
 --self remove
 --importgrouping testable-bottom
 --commas inline
---exclude build,dist,old-code,DynamicNotch
+--exclude build,dist,old-code,old-code-v1,DynamicNotch,Visor,VisorXPCHelper
