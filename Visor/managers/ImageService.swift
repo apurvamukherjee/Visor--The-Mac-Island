@@ -19,7 +19,9 @@ public final class ImageService: ImageServiceProtocol {
 
     private init() {
         let config = URLSessionConfiguration.default
-        let cache = URLCache(memoryCapacity: 50 * 1024 * 1024, // 50MB
+        // Visor: 4 MB holds the last few covers; the disk tier serves the rest,
+        // so resident memory no longer grows to 50 MB of old artwork.
+        let cache = URLCache(memoryCapacity: 4 * 1024 * 1024, // 4MB
                              diskCapacity: 100 * 1024 * 1024, // 100MB
                              diskPath: "artwork_cache")
         config.urlCache = cache
