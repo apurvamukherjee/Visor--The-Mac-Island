@@ -27,8 +27,9 @@ and a smaller download.
 
 - **Smaller app:** the Release build is Apple silicon only (Visor never
   supported Intel), stripped of its symbol table, dead-code stripped, and
-  without the unused SwiftUIIntrospect package. The app is about 9 MB
-  instead of 23 MB, and the `.dmg` is compressed with LZMA instead of zlib.
+  without the unused SwiftUIIntrospect package. The app is 9.5 MB instead
+  of 23 MB, and the `.dmg`, now compressed with LZMA instead of zlib, is
+  2.8 MB instead of 6.98 MB.
 - **Less work at idle:** the closed-notch spectrum and the idle face no
   longer leave timers running after they disappear; the root views stop
   re-rendering on every system volume change or battery update; the
