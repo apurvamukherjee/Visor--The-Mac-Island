@@ -61,13 +61,17 @@ final class AIUsageService: NotchService {
         defaultsObserver = nil
         teardown()
         store.aiUsage = .empty
+        store.isUsageTracked = false
     }
 
-    /// Either surface keeps the reader running: the badge beside the notch
-    /// and the swipe-down panel inside it draw the same snapshot, and each
-    /// one alone is reason enough to watch the folders.
+    /// One switch, and it is the badge's. Paging is structural now, so it no
+    /// longer implies the reader: the usage *screen* is only reachable while
+    /// this is on (`availablePages`), because a screen of zeroes is worse than
+    /// no screen and because reading two agents' transcripts is a thing to be
+    /// asked for, not a side effect of a redesign.
     private func syncEnabled() {
-        let wanted = NewFeatures.aiUsageTracker.isEnabled() || NewFeatures.islandPaging.isEnabled()
+        let wanted = NewFeatures.aiUsageTracker.isEnabled()
+        store.isUsageTracked = wanted
         guard wanted != (stream != nil) else { return }
         if wanted {
             startWatching()

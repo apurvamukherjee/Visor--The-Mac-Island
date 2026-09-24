@@ -40,7 +40,7 @@ struct AIUsageBadgeView: View {
         .background(.black.opacity(0.82), in: Capsule())
         .opacity(isPresented ? 1 : 0)
         .scaleEffect(isPresented ? 1 : 0.9, anchor: .center)
-        .animation(Motion.resolved(isPresented ? Motion.open : Motion.close), value: isPresented)
+        .animation(Motion.resolved(isPresented ? Motion.open : Motion.settle), value: isPresented)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }

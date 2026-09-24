@@ -15,13 +15,16 @@ struct IslandLayoutTests {
             IslandLayout.idle(IslandContent(agendaRows: 3, hasTimerPresets: true))
                 .expandedSize(closed: referenceNotch) == CGSize(width: 366, height: 220)
         )
-        // The player no longer reserves a calendar column. It is still wide,
-        // because the card has a floor: dropping the column once left it
-        // narrower than the compact wing it grows out of, so expanding
-        // visibly *shrank* the island sideways.
+        // 548x190, against the motion reference's own 548x188 (measured on
+        // its 34pt cutout, where Visor's is 33). It was 421x193 — 2.3x the
+        // notch, where the reference is very nearly 3x — and the extra width
+        // is what lets the header band carry page tabs to the left of the
+        // camera housing and the battery to its right without either of them
+        // crowding the cutout. The 2pt of height over the reference is the
+        // usage screen; see `Block.musicColumn`.
         #expect(
             IslandLayout.nowPlaying(IslandContent())
-                .expandedSize(closed: referenceNotch) == CGSize(width: 421, height: 193)
+                .expandedSize(closed: referenceNotch) == CGSize(width: 548, height: 190)
         )
         #expect(IslandLayout.timer.expandedSize(closed: referenceNotch) == CGSize(width: 360, height: 117))
     }
@@ -159,14 +162,41 @@ struct IslandLayoutTests {
 }
 
 struct MotionPresetTests {
-    /// The relationships are the point of the ladder: opening is quicker
-    /// than the base period, closing slower, at every speed.
+    /// The ladder's ordering, which is the whole point of deriving every
+    /// token from one base: the relationships have to hold at every speed.
+    ///
+    /// Opening is now the **slowest** geometry spring, not the quickest.
+    /// This test asserted the opposite until 2026-09-24, and the old
+    /// assertion was backwards about the thing that matters: the expanded
+    /// island travels several times further than any other move the shape
+    /// makes, so giving it the shortest period made it the most hurried
+    /// animation in the app. The reference's table has it at 0.48 against a
+    /// 0.42 base.
     @Test
-    func openIsAlwaysQuickerThanCloseAtEverySpeed() {
+    func everySpringSitsWhereItsTravelPutsIt() {
         for preset in MotionPreset.allCases {
-            #expect(preset.expandResponse < preset.baseResponse)
-            #expect(preset.closeResponse < preset.baseResponse)
-            #expect(preset.expandResponse > 0)
+            // Furthest to travel, longest period.
+            #expect(preset.expandResponse > preset.baseResponse)
+            // Leaving is brisker than arriving.
+            #expect(preset.settleResponse < preset.baseResponse)
+            // Turning a page moves no geometry at all, so it is quicker again.
+            #expect(preset.tabResponse < preset.settleResponse)
+            // Content trails the shape and clears faster than anything.
+            #expect(preset.contentResponse < preset.tabResponse)
+            #expect(preset.contentOutResponse < preset.contentResponse)
+            // Nothing may derive its way to zero or negative at any speed.
+            #expect(preset.contentOutResponse > 0)
+            #expect(preset.retractResponse > 0)
+        }
+    }
+
+    /// The expanded card waits longer for its shape than a wing does, at
+    /// every speed — the card's shape has further to come.
+    @Test
+    func contentWaitsLongerForTheCardThanForAWing() {
+        for preset in MotionPreset.allCases {
+            #expect(preset.expandedContentDelay > preset.compactContentDelay)
+            #expect(preset.compactContentDelay > 0)
         }
     }
 
@@ -177,5 +207,78 @@ struct MotionPresetTests {
             #expect(faster.baseResponse < slower.baseResponse)
             #expect(faster.hideShowDelay < slower.hideShowDelay)
         }
+    }
+
+    /// `.balanced` *is* the motion reference's table, not an approximation.
+    @Test
+    func balancedMatchesTheReferenceTable() {
+        let balanced = MotionPreset.balanced
+        #expect(abs(balanced.expandResponse - 0.48) < 0.001)
+        #expect(abs(balanced.baseResponse - 0.42) < 0.001)
+        #expect(abs(balanced.settleResponse - 0.38) < 0.001)
+        #expect(abs(balanced.tabResponse - 0.34) < 0.001)
+        #expect(abs(balanced.contentResponse - 0.30) < 0.001)
+        #expect(abs(balanced.contentOutResponse - 0.14) < 0.001)
+    }
+}
+
+/// The rule that has to hold whatever anyone tunes: **any move that ends
+/// smaller is critically damped.**
+///
+/// Pinned by simulating the spring rather than by asserting a constant,
+/// because the constant is not the requirement — "never goes past its
+/// target on the way down" is. A future preset, or a future token, that
+/// breaks the requirement fails here even if it never touches
+/// `settleBounce`.
+struct SettleDampingTests {
+    /// SwiftUI's spring model: unit mass, `k = (2π/duration)²`,
+    /// `c = 4πζ/duration`, with `ζ = 1 - bounce`.
+    private func overshoot(from: Double, to: Double, duration: Double, bounce: Double) -> Double {
+        let zeta = 1 - bounce
+        let k = pow(2 * .pi / duration, 2)
+        let c = 4 * .pi * zeta / duration
+        var x = from, v = 0.0, worst = 0.0
+        let step = 1.0 / 120.0 / 16.0
+        for _ in 0 ..< (120 * 16 * 2) {
+            v += (-k * (x - to) - c * v) * step
+            x += v * step
+            // Positive means it has gone past the target, whichever way it
+            // was travelling.
+            worst = max(worst, to < from ? to - x : x - to)
+        }
+        return worst
+    }
+
+    @Test
+    func aShrinkNeverGoesPastItsTargetAtAnySpeed() {
+        for preset in MotionPreset.allCases {
+            let past = overshoot(
+                from: 345, to: 185,
+                duration: preset.settleResponse,
+                bounce: MotionPreset.settleBounce
+            )
+            #expect(past < 0.01, "\(preset) overshoots a shrink by \(past)pt")
+        }
+    }
+
+    /// The bug this whole rule came from: `exitCompact()` used `morph`,
+    /// which carries bounce, so compact → closed rebounded. Left here as the
+    /// counter-example, so the simulation is demonstrably capable of
+    /// catching an overshoot rather than passing vacuously.
+    ///
+    /// Two different numbers have been measured here and they are worth
+    /// keeping straight. The spring that actually shipped — the old ladder's
+    /// 0.47 at bounce 0.175 — overshot this shrink by **1.56pt** and took
+    /// 0.617s to settle. The retuned grow spring below (0.42 at bounce 0.14)
+    /// overshoots by **0.75pt**. Smaller, and still the wrong shape for a
+    /// dismissal: the rule is zero, not "not much".
+    @Test
+    func theGrowSpringWouldHaveOvershotThatSameShrink() {
+        let past = overshoot(
+            from: 345, to: 185,
+            duration: MotionPreset.balanced.baseResponse,
+            bounce: MotionPreset.growBounce
+        )
+        #expect(past > 0.5, "the grow spring should visibly overshoot, measured \(past)pt")
     }
 }

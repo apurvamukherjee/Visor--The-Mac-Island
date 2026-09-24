@@ -78,7 +78,7 @@ extension NotchWindowController {
     /// snapped to a hard-edged rectangle and then visibly re-rounded.
     func runCollapse(to target: NotchState, generation gen: Int) {
         withAnimation(
-            Motion.resolved(Motion.close),
+            Motion.resolved(Motion.settle),
             completionCriteria: .removed
         ) {
             store.state = target

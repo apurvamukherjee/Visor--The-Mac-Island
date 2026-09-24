@@ -67,6 +67,10 @@ struct IslandPageTests {
     @Test
     func theAgendaLeavesTheStackWhenThePlayerScreenIsAlreadyTheAgenda() {
         let store = NotchStore()
+        // The usage screen follows its reader, which `AIUsageService` reports
+        // through `isUsageTracked` — so a store nobody has told anything to is
+        // a machine with the tracker off, and the agent screen is not there.
+        store.isUsageTracked = true
         #expect(store.expandedKind == nil)
         #expect(store.availablePages == [.home, .usage])
         #expect(IslandPage.home.stepped(by: -1, in: store.availablePages) == .home)
@@ -85,6 +89,18 @@ struct IslandPageTests {
         #expect(store.availablePages == IslandPage.allCases)
         #expect(store.expandedKind == .nowPlaying)
         #expect(IslandPage.agenda.stepped(by: -1, in: store.availablePages) == .shelf)
+    }
+
+    /// The other half of that rule: an untracked machine has no agent screen,
+    /// so the swipe axis is shorter and nothing offers a page of zeroes.
+    @Test
+    func theUsageScreenNeedsItsReader() {
+        let store = NotchStore()
+        #expect(store.availablePages == [.home])
+
+        store.activate(.nowPlaying)
+        #expect(store.availablePages == [.agenda, .home])
+        #expect(IslandPage.home.stepped(by: 1, in: store.availablePages) == .home)
     }
 
     /// A page that drops out from under you — the track ends while the agenda

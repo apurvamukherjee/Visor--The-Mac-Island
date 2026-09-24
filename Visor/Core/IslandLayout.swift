@@ -97,9 +97,6 @@ struct IslandContent: Equatable, Sendable {
     /// which is the one that overflowed. The compact island is symmetric
     /// about the cutout, so a wing this wide costs twice as much island.
     var compactLeadingWidth: CGFloat = 0
-    /// Whether the player is showing its lyrics column. The island widens
-    /// for it rather than the panel overlapping the card.
-    var hasLyrics = false
     static let empty = IslandContent()
 }
 
@@ -174,11 +171,23 @@ extension IslandLayout {
         /// The "+N more" line under the agenda.
         static let agendaOverflow: CGFloat = 20
         static let timerPresets: CGFloat = 24
-        /// Artwork (56, or 72 in vinyl mode) beside the title, then the
-        /// scrub row (18) and the transport row (30), with 12pt between
-        /// each. Measured against what the column actually draws, so there
-        /// is no dead space under the transport row.
-        static let musicColumn: CGFloat = 128
+        /// Artwork (76, up from 56) beside the title with the transport row
+        /// alongside, then the scrub row under both.
+        ///
+        /// 125 rather than the 128 it was, landing the expanded island at
+        /// 190pt against the motion reference's 188. The island gets
+        /// *shorter* even as the artwork grows from 56 to 76, because the art
+        /// and the transport row now share a row instead of stacking.
+        ///
+        /// The last 3pt of it are not the player's own content, which wants
+        /// about 122. They are there because **the player measures the box**
+        /// (§2.6b): every paged screen resolves into one size, and the usage
+        /// screen at two rows is `2 * usageRow + row` = 125. At 122 the box
+        /// took its height from the usage screen instead, so the card the
+        /// island opens on grew a band of black to make room for a neighbour
+        /// — and `IslandPageTests.everyScreenSharesOneBox` fails on exactly
+        /// that. Raise `usageRow` or `maxUsageRows` and this has to follow.
+        static let musicColumn: CGFloat = 125
         static let shelfHeader: CGFloat = 18
         static let shelfTile: CGFloat = 76
         /// Title over two lines of detail.
@@ -224,7 +233,18 @@ extension IslandLayout {
         static let agenda: CGFloat = 240
         /// The agenda's empty state, which needs a sentence, not a list.
         static let emptyAgenda: CGFloat = 150
-        static let music: CGFloat = 240
+        /// The player's column, and — because the player measures the box
+        /// every page shares (§2.6b) — effectively the width of the expanded
+        /// island itself.
+        ///
+        /// 480 puts the island at 548 on the reference cutout, which is the
+        /// motion reference's own figure and close to 3x the notch. It was
+        /// 240, giving 421: that is 2.3x, and it is why the reference's
+        /// layouts had to be compressed to fit. Back-solved from
+        /// `extraWidth(content:)`, which adds two 34pt gutters and subtracts
+        /// the 185pt reference cutout: 480 + 68 − 185 = 363, and
+        /// 185 + 363 = 548.
+        static let music: CGFloat = 480
         static let alertIcon: CGFloat = 40
         static let alertText: CGFloat = 250
         /// The drawn battery is wider than the symbol the other alerts use,

@@ -16,11 +16,6 @@ extension NotchStore {
             return IslandLayout.palette(rows: paletteResults.count)
         }
         let activity = IslandLayout.resolved(for: expandedKind, content: islandContent)
-        guard NewFeatures.islandPaging.isEnabled() else { return activity }
-        // One box, held by every screen the swipe can reach, so turning a
-        // page cross-fades content inside a shape that does not move. Sizing
-        // each page for itself made the notch grow and shrink under a gesture
-        // that only ever meant "show me the next thing".
         // One box for every page — and the *same* box whatever is playing.
         //
         // `covering` alone made the box the max of whatever was reachable, so
@@ -40,11 +35,11 @@ extension NotchStore {
         return stacked
     }
 
-    /// Whether the island is drawing its screens as a deck. Paging has to be
-    /// on for it to mean anything — the stack is how pages are *shown*, not
-    /// a second way to reach them.
+    /// Whether the island is drawing its screens as a deck rather than
+    /// cross-fading them. The stack is how pages are *shown*, never a second
+    /// way to reach them.
     var isCardStacked: Bool {
-        NewFeatures.islandPaging.isEnabled() && pagingStyle == .cardStack
+        pagingStyle == .cardStack
     }
 
     /// Each reachable page's distance from the front.
@@ -95,8 +90,7 @@ extension NotchStore {
             // Only when the greeting actually owns the wing: a greeting still
             // stored but outranked must not widen the island for a label
             // nothing is drawing.
-            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0,
-            hasLyrics: isLyricsOpen
+            compactLeadingWidth: currentActivity?.kind == .greeting ? (greetingText?.labelWidth ?? 0) : 0
         )
     }
 
@@ -113,7 +107,16 @@ extension NotchStore {
         // covers every reachable page — it would also hold the island at the
         // shelf's height all day for a screen with no content.
         var pages: [IslandPage] = hasShelfContent ? [.shelf] : []
-        pages += expandedKind == nil ? [.home, .usage] : [.agenda, .home, .usage]
+        pages += expandedKind == nil ? [.home] : [.agenda, .home]
+        // The usage screen exists only while the reader that fills it does.
+        // Paging is structural now, so the tab row would otherwise offer a
+        // screen of zeroes on a machine whose owner never asked for either
+        // agent's transcripts to be read. `AIUsageService` writes the flag as
+        // it opens and closes the watcher, so the page and its data cannot
+        // disagree.
+        if isUsageTracked {
+            pages.append(.usage)
+        }
         return pages
     }
 

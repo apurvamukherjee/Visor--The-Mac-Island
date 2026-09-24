@@ -53,23 +53,6 @@ struct IslandStackTests {
         }
     }
 
-    /// `isCardStacked` also reads the paging switch from the standard
-    /// defaults, so the store cases pin it rather than inheriting whatever
-    /// this machine happens to have set.
-    private func withPagingEnabled(_ body: () -> Void) {
-        let defaults = UserDefaults.standard
-        let previous = defaults.object(forKey: NewFeatures.islandPaging.key)
-        defaults.set(true, forKey: NewFeatures.islandPaging.key)
-        defer {
-            if let previous {
-                defaults.set(previous, forKey: NewFeatures.islandPaging.key)
-            } else {
-                defaults.removeObject(forKey: NewFeatures.islandPaging.key)
-            }
-        }
-        body()
-    }
-
     private func makeStore(style: PagingStyle) -> NotchStore {
         let store = NotchStore()
         store.pagingStyle = style
@@ -123,53 +106,29 @@ struct IslandStackTests {
 
     @Test("Cross-fade adds no height at all")
     func crossFadeAddsNothing() {
-        withPagingEnabled {
-            let store = makeStore(style: .crossFade)
-            store.activate(.nowPlaying)
+        let store = makeStore(style: .crossFade)
+        store.activate(.nowPlaying)
 
-            #expect(store.isCardStacked == false)
-            #expect(store.layout.chinReveal == 0)
-        }
+        #expect(store.isCardStacked == false)
+        #expect(store.layout.chinReveal == 0)
     }
 
     /// The load-bearing one for §2.1: with the style unselected the resolved
     /// box must be the number today's build produces, not merely a small one.
     @Test("Selecting the stack changes the box by exactly the reveal")
     func stackGrowsBoxByReveal() {
-        withPagingEnabled {
-            let flat = makeStore(style: .crossFade)
-            flat.activate(.nowPlaying)
-            let stacked = makeStore(style: .cardStack)
-            stacked.activate(.nowPlaying)
+        let flat = makeStore(style: .crossFade)
+        flat.activate(.nowPlaying)
+        let stacked = makeStore(style: .cardStack)
+        stacked.activate(.nowPlaying)
 
-            let closed = CGSize(width: 185, height: 33)
-            let grew = stacked.layout.expandedSize(closed: closed).height
-                - flat.layout.expandedSize(closed: closed).height
-            #expect(grew == stacked.layout.chinReveal)
-            #expect(stacked.layout.chinReveal > 0)
-            // The front card itself is untouched: only the deck below it is new.
-            #expect(stacked.layout.expandedExtraHeight == flat.layout.expandedExtraHeight)
-        }
-    }
-
-    /// The paging switch gates the style, not the other way round: the stack
-    /// is how pages are shown, not a second way to reach them.
-    @Test("With paging off the stack is unreachable")
-    func pagingOffDisablesTheStack() {
-        let defaults = UserDefaults.standard
-        let previous = defaults.object(forKey: NewFeatures.islandPaging.key)
-        defaults.removeObject(forKey: NewFeatures.islandPaging.key)
-        defer {
-            if let previous {
-                defaults.set(previous, forKey: NewFeatures.islandPaging.key)
-            }
-        }
-
-        let store = makeStore(style: .cardStack)
-        store.activate(.nowPlaying)
-
-        #expect(store.isCardStacked == false)
-        #expect(store.layout.chinReveal == 0)
+        let closed = CGSize(width: 185, height: 33)
+        let grew = stacked.layout.expandedSize(closed: closed).height
+            - flat.layout.expandedSize(closed: closed).height
+        #expect(grew == stacked.layout.chinReveal)
+        #expect(stacked.layout.chinReveal > 0)
+        // The front card itself is untouched: only the deck below it is new.
+        #expect(stacked.layout.expandedExtraHeight == flat.layout.expandedExtraHeight)
     }
 
     /// The affordance has to point at the gesture that uses it: the chin you
@@ -229,37 +188,33 @@ struct IslandStackTests {
     /// chin that is not there cannot protrude.
     @Test("The card is the same size whether or not music is playing")
     func cardDoesNotTrackTheActivity() {
-        withPagingEnabled {
-            let playing = makeStore(style: .cardStack)
-            playing.activate(.nowPlaying)
-            let quiet = makeStore(style: .cardStack)
+        let playing = makeStore(style: .cardStack)
+        playing.activate(.nowPlaying)
+        let quiet = makeStore(style: .cardStack)
 
-            #expect(playing.layout.expandedExtraWidth == quiet.layout.expandedExtraWidth)
-            #expect(playing.layout.expandedExtraHeight == quiet.layout.expandedExtraHeight)
-        }
+        #expect(playing.layout.expandedExtraWidth == quiet.layout.expandedExtraWidth)
+        #expect(playing.layout.expandedExtraHeight == quiet.layout.expandedExtraHeight)
     }
 
     /// And the same on every page, not just the one it opens on.
     @Test("Turning a page does not resize the island")
     func pagingDoesNotResize() {
-        withPagingEnabled {
-            let store = makeStore(style: .cardStack)
-            store.activate(.nowPlaying)
-            let closed = CGSize(width: 185, height: 33)
+        let store = makeStore(style: .cardStack)
+        store.activate(.nowPlaying)
+        let closed = CGSize(width: 185, height: 33)
 
-            // `availablePages`, not `allCases`: the shelf screen only exists
-            // while something is on it, and the box is built by reducing
-            // `covering` over exactly the pages a swipe can reach. Iterating
-            // `allCases` asks the island to hold a box for a page that is not
-            // in the stack, which is the opposite of what this rule says.
-            let sizes = store.availablePages.map { page -> CGSize in
-                store.islandPage = page
-                return store.layout.expandedSize(closed: closed)
-            }
-
-            #expect(Set(sizes.map(\.width)).count == 1)
-            #expect(Set(sizes.map(\.height)).count == 1)
+        // `availablePages`, not `allCases`: the shelf screen only exists
+        // while something is on it, and the box is built by reducing
+        // `covering` over exactly the pages a swipe can reach. Iterating
+        // `allCases` asks the island to hold a box for a page that is not
+        // in the stack, which is the opposite of what this rule says.
+        let sizes = store.availablePages.map { page -> CGSize in
+            store.islandPage = page
+            return store.layout.expandedSize(closed: closed)
         }
+
+        #expect(Set(sizes.map(\.width)).count == 1)
+        #expect(Set(sizes.map(\.height)).count == 1)
     }
 
     /// The case the demotion created: a catch and a track at once. The shelf
@@ -270,21 +225,19 @@ struct IslandStackTests {
     /// own layout was never in the box before.
     @Test("One box still covers every page once the shelf joins the stack")
     func theBoxCoversTheShelfPage() {
-        withPagingEnabled {
-            let store = makeStore(style: .cardStack)
-            store.activate(.nowPlaying)
-            store.activate(.screenshot)
-            let closed = CGSize(width: 185, height: 33)
+        let store = makeStore(style: .cardStack)
+        store.activate(.nowPlaying)
+        store.activate(.screenshot)
+        let closed = CGSize(width: 185, height: 33)
 
-            #expect(store.availablePages.contains(.shelf), "a catch did not add its page")
-            #expect(store.expandedKind == .nowPlaying, "the catch took the island from the player")
+        #expect(store.availablePages.contains(.shelf), "a catch did not add its page")
+        #expect(store.expandedKind == .nowPlaying, "the catch took the island from the player")
 
-            let sizes = store.availablePages.map { page -> CGSize in
-                store.islandPage = page
-                return store.layout.expandedSize(closed: closed)
-            }
-            #expect(Set(sizes.map(\.width)).count == 1)
-            #expect(Set(sizes.map(\.height)).count == 1)
+        let sizes = store.availablePages.map { page -> CGSize in
+            store.islandPage = page
+            return store.layout.expandedSize(closed: closed)
         }
+        #expect(Set(sizes.map(\.width)).count == 1)
+        #expect(Set(sizes.map(\.height)).count == 1)
     }
 }

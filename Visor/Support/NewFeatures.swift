@@ -96,19 +96,6 @@ enum NewFeatures {
         isRecommended: false
     )
 
-    /// Takes the vertical axis over outright: with it on, a swipe turns to
-    /// another screen instead of dismissing an activity. Off by default for
-    /// the plainest reading of §2.1 there is — with the switch off, swiping
-    /// does exactly what it always did and neither new screen exists.
-    static let islandPaging = NewFeature(
-        key: "newFeature.usagePanel",
-        title: "Swipe between screens",
-        detail: "Two-finger swipe up and down to turn between the agenda, the player and "
-            + "today's Claude Code and Codex usage. The player is the middle screen and "
-            + "the island always opens on it. Replaces swipe-to-dismiss while it is on.",
-        isRecommended: false
-    )
-
     /// The front card's own colour, separate from the chins' because the
     /// chins are the part that has to be distinguishable and the front card
     /// is the part with a rule about it. `NotchRootView` records two earlier
@@ -131,7 +118,6 @@ enum NewFeatures {
         commandPalette,
         lyrics,
         aiUsageTracker,
-        islandPaging,
         islandStackTint
     ]
 

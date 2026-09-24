@@ -270,6 +270,6 @@ struct LockScreenNotchOverlayView: View {
             .modifier(Materialize(progress: isPresented ? 0 : 1))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .animation(Motion.resolved(Motion.morph), value: isLocked)
-            .animation(Motion.resolved(isPresented ? Motion.open : Motion.close), value: isPresented)
+            .animation(Motion.resolved(isPresented ? Motion.open : Motion.settle), value: isPresented)
     }
 }

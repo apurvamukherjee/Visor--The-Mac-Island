@@ -27,8 +27,8 @@ extension NotchRootView {
             }
             .animation(Motion.resolved(Motion.morph), value: isStackRevealed)
             .animation(Motion.resolved(Motion.retract), value: store.isStackRetracting)
-            .animation(Motion.resolved(Motion.morph), value: store.islandPage)
-            .animation(Motion.resolved(Motion.close), value: store.state)
+            .animation(Motion.resolved(Motion.tab), value: store.islandPage)
+            .animation(Motion.resolved(Motion.settle), value: store.state)
             .task(id: store.state) { await revealChins() }
             .onChange(of: store.isStackRetracting) { _, retracting in
                 // A retraction is the start of a collapse. Drop the reveal

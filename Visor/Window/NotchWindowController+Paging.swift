@@ -9,8 +9,7 @@ import SwiftUI
 /// other layout change.
 @MainActor
 extension NotchWindowController {
-    /// Swipe up: step back out of whatever the swipe down opened, or put the
-    /// current activity away.
+    /// Swipe up: turn back one screen.
     ///
     /// It deliberately does **not** close the island. It used to, and that
     /// made the vertical axis mean two things at once — one swipe both
@@ -18,29 +17,20 @@ extension NotchWindowController {
     /// between states was impossible and every gesture ended in the notch.
     /// The pointer leaving is what closes the island, as it always was; this
     /// only ever changes what is being shown.
+    ///
+    /// The axis is paging's outright, and no longer optionally so: the header
+    /// band's tabs are the same journey made visible, and a tab row you can
+    /// see with a gesture that did something else would be the island
+    /// contradicting itself. What the axis used to do instead — hide the
+    /// current activity until it ended — went with the switch; the palette's
+    /// "Hide the island" is the affordance for not wanting to look at it.
     func handleSwipeDismiss() {
-        guard NewFeatures.islandPaging.isEnabled() else {
-            Haptics.shapeChange()
-            store.dismissCurrentActivity()
-            return
-        }
         turn(to: turned(by: -1))
     }
 
-    /// Swipe down: open the usage screen once it is asked for, otherwise
-    /// bring back whatever was swiped away.
-    ///
-    /// The usage screen takes the gesture outright rather than sharing it,
-    /// because a binding that depends on whether something happens to be
-    /// dismissed is a binding nobody can predict. With the switch off this is
-    /// exactly what it was.
+    /// Swipe down: turn forward one screen, or open a closed island if that
+    /// has been asked for.
     func handleSwipeRestore() {
-        guard NewFeatures.islandPaging.isEnabled() else {
-            store.restoreDismissedActivity()
-            guard NewFeatures.swipeDownOpens.isEnabled() else { return }
-            openIslandForSwipe()
-            return
-        }
         // Down is still the direction that opens, and still only when asked
         // to — paging changes which screen a swipe lands on, never whether a
         // closed island answers a gesture at all.
@@ -83,7 +73,10 @@ extension NotchWindowController {
         // run out.
         guard page != store.islandPage else { return }
         Haptics.shapeChange()
-        withAnimation(Motion.resolved(Motion.morph)) {
+        // `Motion.tab`, not `Motion.morph`: one box holds every page, so
+        // turning one changes nothing about the island's size and has no
+        // business borrowing the spring that resizes it.
+        withAnimation(Motion.resolved(Motion.tab)) {
             store.islandPage = page
         }
     }

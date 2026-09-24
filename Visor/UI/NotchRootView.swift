@@ -159,7 +159,7 @@ struct NotchRootView: View {
                 } else if store.state == .compact, store.currentActivity != nil {
                     CompactActivityView(store: store)
                         .frame(width: restingSize.width, height: restingSize.height)
-                        .transition(.island)
+                        .transition(.islandWing)
                 }
             }
             // No blur on the gesture. The squeeze alone is the feedback —

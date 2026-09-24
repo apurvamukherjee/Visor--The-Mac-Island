@@ -45,26 +45,32 @@ extension IslandLayout {
     /// are caught, and an empty agenda still visibly shrinks.
     private static let idleExpandMargin: CGFloat = 12
 
-    /// Playing *or paused*: the player owns the whole island. The calendar
-    /// peek that used to sit beside it is gone — with a track loaded the
-    /// island is the player, and the agenda is what the idle island shows
-    /// instead. The second column only returns for the lyrics panel.
+    /// Playing *or paused*: the player owns the whole island, and — because
+    /// it is the page with the most in it and the one every open lands on —
+    /// it is what measures the box every other page shares (§2.6b).
     ///
-    /// The width has a floor: dropping the calendar column left the player
+    /// The width keeps its floor even though nothing can reach it any more.
+    /// It exists because dropping the calendar column once left the player
     /// narrower than the compact wing it grows out of, so expanding *shrank*
-    /// the island sideways, which read as cramped and wrong. The card is now
-    /// at least as wide as the wing plus a margin, so opening it always
-    /// feels like it is opening.
-    static func nowPlaying(_ content: IslandContent) -> IslandLayout {
-        let compactExtra: CGFloat = 160
-        // The player owns the island. The corner date box is gone for good;
-        // the lyrics panel is the one thing that still claims a second
-        // column, and only while it is open.
-        let columns = content.hasLyrics
-            ? Column.music + IslandSpacing.column + Column.lyrics
-            : Column.music
+    /// the island sideways. At 480pt of content the floor is 163pt below the
+    /// resolved width and cannot bind; it stays as the guard for whoever
+    /// next changes `Column.music`, and `IslandLayoutTests` says why.
+    static func nowPlaying(_: IslandContent) -> IslandLayout {
+        // The motion reference's own compact width: the cutout plus 62pt of
+        // wing a side. It was 160 (80 a side), sized back when the wing had
+        // to hold the artwork *and* the playback bars together on the left.
+        // They sit in opposite wings now, so neither needs half the island.
+        let compactExtra: CGFloat = 124
+        // One column, and one box whether or not the lyrics panel is open.
+        //
+        // Lyrics used to add `Column.lyrics` to the width, so toggling the
+        // panel resized the island out from under the track you were reading
+        // along to. At 480 there is room for both inside the box the player
+        // already measures — and the player column is *wider* sharing 480
+        // with the lyrics panel (298) than it was owning the old 240 alone.
+        // Opening lyrics is now strictly a gain, and the shape holds still.
         return IslandLayout(
-            expandedExtraWidth: max(extraWidth(content: columns), compactExtra + musicExpandMargin),
+            expandedExtraWidth: max(extraWidth(content: Column.music), compactExtra + musicExpandMargin),
             expandedExtraHeight: extraHeight(Block.musicColumn),
             compactExtraWidth: compactExtra
         )
@@ -251,7 +257,6 @@ extension IslandLayout {
         // window rather than drawn.
         idle(IslandContent(compactLeadingWidth: CompactLabel.maxWidth)),
         nowPlaying(IslandContent()),
-        nowPlaying(IslandContent(hasLyrics: true)),
         pausedTrack(IslandContent()),
         shelf,
         networkAlert,

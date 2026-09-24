@@ -228,23 +228,26 @@ struct PaletteLayoutTests {
 /// the seam it was reconnected through, so it cannot fall off again quietly.
 @Suite("Lyrics")
 struct LyricsLayoutTests {
-    @Test("Opening the panel widens the island")
-    func openingWidensTheIsland() {
-        let shut = IslandLayout.nowPlaying(IslandContent())
-        let open = IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
+    /// Reversed 2026-09-24. This asserted that opening the panel *widened*
+    /// the island, which is what it did — and that was the bug, not the
+    /// feature: the shape grew sideways out from under the track you had
+    /// just opened the words to. With the card at 480pt of content there is
+    /// room for both columns inside the box the player already measures, so
+    /// the panel now shares the island instead of extending it.
+    ///
+    /// The player is not squeezed by sharing: 480 less the lyrics column and
+    /// its gutter still leaves it 298, against the 240 it used to own
+    /// outright. Opening lyrics is a strict gain in both directions.
+    @Test("Opening the panel does not resize the island")
+    func openingDoesNotResizeTheIsland() {
+        let layout = IslandLayout.nowPlaying(IslandContent())
+        let playerWhenSharing = IslandLayout.Column.music
+            - IslandLayout.Column.lyrics
+            - IslandSpacing.column
 
-        #expect(open.expandedExtraWidth > shut.expandedExtraWidth)
-        #expect(open.expandedExtraHeight == shut.expandedExtraHeight)
-        #expect(open.compactExtraWidth == shut.compactExtraWidth)
-    }
-
-    /// The canvas is sized from `all`; a layout missing from it is a layout
-    /// the window clips instead of drawing.
-    @Test("The open panel fits the canvas")
-    func openPanelFitsTheCanvas() {
-        let open = IslandLayout.nowPlaying(IslandContent(hasLyrics: true))
-        #expect(open.expandedExtraWidth <= IslandLayout.maxExpandedExtraWidth)
-        #expect(open.expandedExtraHeight <= IslandLayout.maxExpandedExtraHeight)
+        #expect(playerWhenSharing > 240, "sharing must not leave the player narrower than it was alone")
+        #expect(layout.expandedExtraWidth <= IslandLayout.maxExpandedExtraWidth)
+        #expect(layout.expandedExtraHeight <= IslandLayout.maxExpandedExtraHeight)
     }
 
     @Test("LRC parsing survives the metadata tags real files carry")

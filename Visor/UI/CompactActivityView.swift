@@ -27,7 +27,7 @@ struct CompactActivityView: View {
         // change only animates inside a transaction. This is what carries the
         // unlock handoff — `.lock` deactivating to `.nowPlaying` dissolves the
         // latch out and resolves the cover and bars in.
-        .animation(Motion.resolved(Motion.contentIn), value: store.currentActivity?.kind)
+        .animation(Motion.resolved(Motion.wingIn), value: store.currentActivity?.kind)
         // NotchShape's bottom corners round away with the compact radius —
         // at x=0/width exactly, the shape's fill stops short of the full
         // height, so edge-flush content pokes outside it. Inset past the
@@ -113,7 +113,7 @@ struct CompactActivityView: View {
         Circle()
             .fill(store.nowPlayingTint ?? .white.opacity(0.45))
             .frame(width: 6, height: 6)
-            .transition(.island)
+            .transition(.islandWing)
     }
 
     /// Two thumbnails at wing size, then a count for the rest — four tiles
@@ -206,7 +206,7 @@ struct CompactActivityView: View {
         // here through the same `Materialize` the latch faded out through.
         // The two cannot cross-fade as one view — they live in different
         // windows — so they are sequenced to read as one.
-        .transition(.island)
+        .transition(.islandWing)
     }
 
     /// Every text label in the wing, clamped to the wing.

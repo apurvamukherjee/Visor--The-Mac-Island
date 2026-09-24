@@ -49,6 +49,14 @@ final class NotchStore {
         let run: (PaletteCommandID) -> Void
     }
 
+    /// Turning a page from the header band. The window controller owns paging
+    /// — it is the only thing that knows whether the island is even open — so
+    /// the tabs go through it rather than writing `islandPage` themselves,
+    /// which would skip the haptic, the guard and `Motion.tab`.
+    struct PagingCommands {
+        let turn: (IslandPage) -> Void
+    }
+
     struct OnboardingCommands {
         let advance: () -> Void
         let finish: () -> Void
@@ -107,6 +115,9 @@ final class NotchStore {
     /// than competing inside it — see `layout` and `expandedKind` below.
     var onboardingStep: OnboardingStep?
     var onboardingCommands: OnboardingCommands?
+    /// Set by `NotchWindowController`, not by a service: paging is the
+    /// window's own axis.
+    var pagingCommands: PagingCommands?
 
     // MARK: - Lock screen
 
@@ -159,12 +170,6 @@ final class NotchStore {
     /// delta on the measured cutout the same way every layout is.
     var notchWidthOffset: CGFloat = 0
     var notchHeightOffset: CGFloat = 0
-    /// Set by a swipe-up on the island: the current activity is hidden until
-    /// it goes away on its own or a swipe-down brings it back. Not a
-    /// `deactivate` — the feature still owns its activity, the user has just
-    /// asked not to look at it.
-    var dismissedActivity: ActivityKind?
-
     /// These three keep their setters because the setters do something:
     /// `activate`/`deactivate` own the dictionary's shape, and `setNowPlaying`
     /// keeps the track and its artwork in step.
@@ -186,13 +191,7 @@ final class NotchStore {
     static let shelfLimit = 4
 
     var currentActivity: Activity? {
-        resolveCurrentActivity(visibleActivities)
-    }
-
-    /// Everything active except whatever the user swiped away.
-    private var visibleActivities: [ActivityKind: Activity] {
-        guard let dismissedActivity else { return activities }
-        return activities.filter { $0.key != dismissedActivity }
+        resolveCurrentActivity(activities)
     }
 
     /// True while the welcome flow owns the island. `NotchWindowController`
@@ -205,19 +204,7 @@ final class NotchStore {
     /// The feature that owns the expanded island, or nil for the idle
     /// agenda. Read by both the layout and the view, so they cannot drift.
     var expandedKind: ActivityKind? {
-        resolveExpandedKind(visibleActivities)
-    }
-
-    /// Swipe up: hide whatever owns the island right now.
-    func dismissCurrentActivity() {
-        guard let kind = currentActivity?.kind else { return }
-        dismissedActivity = kind
-    }
-
-    /// Swipe down: undo that.
-    func restoreDismissedActivity() {
-        guard dismissedActivity != nil else { return }
-        dismissedActivity = nil
+        resolveExpandedKind(activities)
     }
 
     /// Bumped by Settings whenever a notch trim moves, so the window
@@ -259,6 +246,17 @@ final class NotchStore {
     /// badge's own window — it is not an activity and never competes for the
     /// island.
     var aiUsage = AIUsageSnapshot.empty
+    /// Whether the reader behind `aiUsage` is actually running. Written by
+    /// `AIUsageService` alongside the snapshot, and read by `availablePages`
+    /// to decide whether the usage screen exists at all.
+    ///
+    /// A store flag rather than a `NewFeatures` read in the store: the island's
+    /// page list is pure derivation from state everywhere else, and one
+    /// `UserDefaults` read inside it would put the developer's own switches
+    /// into the geometry suite — the same leak `NotchGeometry.closedRect`
+    /// already caused once. The service owns the setting; the store owns the
+    /// consequence.
+    var isUsageTracked = false
 
     /// Which of the three expanded screens is showing.
     ///
@@ -335,9 +333,9 @@ final class NotchStore {
         activities[kind] = Activity(kind: kind)
     }
 
-    /// Whether a kind is currently active, dismissed or not. Services that
-    /// arm a delayed deactivation read this to avoid re-arming against an
-    /// island that has already collapsed.
+    /// Whether a kind is currently active. Services that arm a delayed
+    /// deactivation read this to avoid re-arming against an island that has
+    /// already collapsed.
     func isActive(_ kind: ActivityKind) -> Bool {
         activities[kind] != nil
     }
@@ -345,12 +343,6 @@ final class NotchStore {
     func deactivate(_ kind: ActivityKind) {
         guard activities[kind] != nil else { return }
         activities.removeValue(forKey: kind)
-        // The dismissal dies with the thing it dismissed. Left standing, the
-        // *next* activity of the same kind would be silently swallowed — a
-        // track swiped away would take every track after it.
-        if dismissedActivity == kind {
-            dismissedActivity = nil
-        }
     }
 
     /// Track, artwork, tint and backdrop move together — a separate write for

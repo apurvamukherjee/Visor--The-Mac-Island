@@ -56,6 +56,9 @@ final class NotchWindowController {
         contentView.onMouseExited = { [weak self] in self?.handleMouseExited() }
         contentView.onSwipeDismiss = { [weak self] in self?.handleSwipeDismiss() }
         contentView.onSwipeRestore = { [weak self] in self?.handleSwipeRestore() }
+        store.pagingCommands = NotchStore.PagingCommands(
+            turn: { [weak self] page in self?.turn(to: page) }
+        )
     }
 
     func start() {
@@ -205,7 +208,7 @@ final class NotchWindowController {
     func finishShrink(to target: NotchState) {
         guard let screen = Self.targetScreen() else { return }
         let rect = target == .compact
-            ? NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
+            ? NotchGeometry.compactRect(for: screen)
             : NotchGeometry.closedRect(for: screen)
         panel.setFrame(rect, display: true)
         if target == .closed {
@@ -217,7 +220,7 @@ final class NotchWindowController {
     func enterCompact() {
         guard let screen = Self.targetScreen() else { return }
         generation += 1
-        let rect = NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
+        let rect = NotchGeometry.compactRect(for: screen)
         panel.setFrame(rect, display: true)
         repositionHostingView(for: rect.width)
         withAnimation(Motion.resolved(Motion.morph)) {
@@ -225,11 +228,22 @@ final class NotchWindowController {
         }
     }
 
+    /// compact → closed, which **ends smaller** and therefore takes
+    /// `Motion.settle`, not `Motion.morph`.
+    ///
+    /// It took `morph` for years, and `morph` carries bounce: the island
+    /// undershot the cutout by 1.56pt and swelled back under it, taking
+    /// 0.617s to stop against 0.525s critically damped (simulated 2026-09-24
+    /// on the 0.47/0.175 pair that shipped; the retuned grow spring still
+    /// overshoots 0.75pt, which is smaller and just as wrong here). On a notched screen the cutout hides most of the
+    /// overshoot — it is a hole, not black pixels — which is why this
+    /// survived so long; on a screen with no cutout, where the island is a
+    /// free-floating capsule, the whole rebound is visible.
     func exitCompact() {
         generation += 1
         let gen = generation
         withAnimation(
-            Motion.resolved(Motion.morph),
+            Motion.resolved(Motion.settle),
             completionCriteria: .removed
         ) {
             store.state = .closed
@@ -276,7 +290,7 @@ final class NotchWindowController {
         panel.orderFrontRegardless()
         let rect = switch store.state {
         case .expanded: NotchGeometry.expandedCanvasRect(for: screen)
-        case .compact: NotchGeometry.compactRect(for: screen, extraWidth: store.layout.compactExtraWidth)
+        case .compact: NotchGeometry.compactRect(for: screen)
         case .closed: NotchGeometry.closedRect(for: screen)
         }
         panel.setFrame(rect, display: true)

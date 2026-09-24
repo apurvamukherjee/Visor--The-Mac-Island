@@ -161,6 +161,21 @@ enum NotchGeometry {
 
     /// Wings sit symmetrically outside the real notch, at menu-bar height —
     /// no vertical growth, unlike the expanded state.
+    ///
+    /// `extraWidth` defaults to the **widest wing any feature declares**, and
+    /// callers should almost always take that default rather than passing the
+    /// current layout's own width. The panel is click-through outside the
+    /// silhouette — `NotchContentView.islandRect` measures the resting shape,
+    /// not the frame — so an over-wide compact window costs nothing visually
+    /// and nothing in hit-testing. It is the same argument
+    /// `expandedCanvasRect` already makes one screen down.
+    ///
+    /// What it buys: nothing in the app resized the panel when a wing changed
+    /// width *without leaving* `.compact` — `handleActivityChange` switches on
+    /// whether an activity exists, not on how wide it is. So a greeting (up to
+    /// a 344pt wing) arriving over a track (309pt) kept the track's narrower
+    /// window, and the panel clipped the end of the sentence clean off. Sized
+    /// for the widest wing, there is no width to get wrong.
     static func compactRect(for screen: ScreenGeometryProviding, extraWidth: CGFloat = compactExtraWidth) -> CGRect {
         let closed = closedRect(for: screen)
         let width = closed.width + extraWidth
