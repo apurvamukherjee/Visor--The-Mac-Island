@@ -42,6 +42,10 @@ ln -s /Applications "$STAGE/Applications"
 # part of macOS, so it adds no dependency.
 tiffutil -cathidpicheck scripts/dmg/background.png scripts/dmg/background@2x.png \
     -out "$STAGE/Visor.app/Contents/Resources/dmg-background.tiff" >/dev/null
+# Adding a file after Xcode signed the bundle breaks its resource seal, so
+# `codesign --verify` fails on the shipped app until the outer bundle is resealed.
+codesign --force --sign - --preserve-metadata=entitlements,requirements,flags "$STAGE/Visor.app"
+codesign --verify --deep --strict "$STAGE/Visor.app"
 
 RW="$BUILD_DIR/rw.dmg"
 rm -f "$RW" "$DMG"
