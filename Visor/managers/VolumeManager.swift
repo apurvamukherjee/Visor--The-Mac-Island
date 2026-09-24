@@ -15,11 +15,7 @@ final class VolumeManager: NSObject, ObservableObject {
 
     @Published private(set) var rawVolume: Float = 0
     @Published private(set) var isMuted: Bool = false
-    @Published private(set) var lastChangeAt: Date = .distantPast
 
-    let visibleDuration: TimeInterval = 1.2
-
-    private var didInitialFetch = false
     private let step: Float32 = 1.0 / 16.0
     // Fallback software if hardware mute is not supported
     private var previousVolumeBeforeMute: Float32 = 0.2
@@ -30,8 +26,6 @@ final class VolumeManager: NSObject, ObservableObject {
         setupAudioListener()
         fetchCurrentVolume()
     }
-
-    var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
 
     // MARK: - Public Control API
     @MainActor func increase(stepDivisor: Float = 1.0) {
@@ -73,17 +67,6 @@ final class VolumeManager: NSObject, ObservableObject {
     
     func refresh() { fetchCurrentVolume() }
 
-    func adjustRelative(delta: Float32) {
-        if isMutedInternal() { toggleMuteInternal() }
-        guard let current = readVolumeInternal() else {
-            fetchCurrentVolume()
-            return
-        }
-        let target = max(0, min(1, current + delta))
-        writeVolumeInternal(target)  
-        publish(volume: target, muted: isMutedInternal(), touchDate: true)
-    }
-
     @MainActor func setAbsolute(_ value: Float32) {
         let clamped = max(0, min(1, value))
         let currentlyMuted = isMutedInternal()
@@ -97,7 +80,7 @@ final class VolumeManager: NSObject, ObservableObject {
             toggleMuteInternal()
         }
 
-        publish(volume: clamped, muted: isMutedInternal(), touchDate: true)
+        publish(volume: clamped, muted: isMutedInternal())
     }
 
     // MARK: - CoreAudio Helpers
@@ -134,14 +117,7 @@ final class VolumeManager: NSObject, ObservableObject {
         if !volumes.isEmpty {
             let avg = max(0, min(1, volumes.reduce(0, +) / Float32(volumes.count)))
             DispatchQueue.main.async {
-                if self.rawVolume != avg {  
-                    if self.didInitialFetch {
-                        self.lastChangeAt = Date()
-                    }
-                }
                 self.rawVolume = avg
-                self.didInitialFetch = true
-
             }
         }
 
@@ -161,7 +137,6 @@ final class VolumeManager: NSObject, ObservableObject {
                 {
                     let newMuted = muted != 0
                     DispatchQueue.main.async {
-                        if self.isMuted != newMuted { self.lastChangeAt = Date() }
                         self.isMuted = newMuted
                     }
                 }
@@ -307,7 +282,7 @@ final class VolumeManager: NSObject, ObservableObject {
             var newVal: UInt32 = muted == 0 ? 1 : 0
             AudioObjectSetPropertyData(deviceID, &muteAddr, 0, nil, size, &newVal)
             let vol = readVolumeInternal() ?? rawVolume
-            publish(volume: vol, muted: newVal != 0, touchDate: true)
+            publish(volume: vol, muted: newVal != 0)
         } else {
             let currentVol = readVolumeInternal() ?? rawVolume
             performSoftwareMuteToggle(currentVolume: currentVol)
@@ -319,12 +294,12 @@ final class VolumeManager: NSObject, ObservableObject {
             let restore = max(0, min(1, previousVolumeBeforeMute))
             writeVolumeInternal(restore)
             softwareMuted = false
-            publish(volume: restore, muted: false, touchDate: true)
+            publish(volume: restore, muted: false)
         } else {
             if currentVolume > 0.001 { previousVolumeBeforeMute = currentVolume }
             writeVolumeInternal(0)
             softwareMuted = true
-            publish(volume: 0, muted: true, touchDate: true)
+            publish(volume: 0, muted: true)
         }
     }
 
@@ -362,17 +337,10 @@ final class VolumeManager: NSObject, ObservableObject {
         return AudioObjectSetPropertyData(deviceID, &addr, 0, nil, sizeNeeded, &val) == noErr
     }
 
-    private func publish(volume: Float32, muted: Bool, touchDate: Bool) {
+    private func publish(volume: Float32, muted: Bool) {
         DispatchQueue.main.async {
-            if touchDate { self.lastChangeAt = Date() }
             self.rawVolume = volume
             self.isMuted = muted
         }
     }
 }
-
-extension Array where Element == Float32 {
-    fileprivate var average: Float32? { isEmpty ? nil : reduce(0, +) / Float32(count) }
-}
-
-

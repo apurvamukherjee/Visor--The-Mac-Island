@@ -21,8 +21,6 @@ class WebcamManager: NSObject, ObservableObject {
 
     private let sessionQueue = DispatchQueue(label: "Visor.WebcamManager.SessionQueue", qos: .userInitiated)
     
-    private var isCleaningUp: Bool = false
-    
     // MARK: - Constants
     
     enum WebcamError: Error, LocalizedError {

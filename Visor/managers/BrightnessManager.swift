@@ -5,126 +5,78 @@
 
 import AppKit
 
+// Visor: screen brightness and the keyboard backlight were two copies of this
+// class, differing only in the XPC calls and the HUD they show.
 final class BrightnessManager: ObservableObject {
-	static let shared = BrightnessManager()
+	enum Kind { case screen, keyboard }
+
+	static let shared = BrightnessManager(kind: .screen)
+	static let keyboard = BrightnessManager(kind: .keyboard)
 
 	@Published private(set) var rawBrightness: Float = 0
-	@Published private(set) var animatedBrightness: Float = 0
-	@Published private(set) var lastChangeAt: Date = .distantPast
 
-	private let visibleDuration: TimeInterval = 1.2
+	private let kind: Kind
 	private let client = XPCHelperClient.shared
 
-	private init() { refresh() }
-
-	var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
+	private init(kind: Kind) {
+		self.kind = kind
+		refresh()
+	}
 
 	func refresh() {
 		Task { @MainActor in
-			if let current = await client.currentScreenBrightness() {
-				publish(brightness: current, touchDate: false)
+			if let current = await read() {
+				publish(brightness: current)
 			}
 		}
 	}
 
 	@MainActor func setRelative(delta: Float) {
 		Task { @MainActor in
-			let starting = await client.currentScreenBrightness() ?? rawBrightness
+			let starting = await read() ?? rawBrightness
 			let target = max(0, min(1, starting + delta))
-			let ok = await client.setScreenBrightness(target)
-			if ok {
-				publish(brightness: target, touchDate: true)
-			} else {
-				refresh()
-			}
-			VisorViewCoordinator.shared.toggleSneakPeek(status: true, type: .brightness, value: CGFloat(target))
-		}
-	}
-
-	func setAbsolute(value: Float) {
-		let clamped = max(0, min(1, value))
-		Task { @MainActor in
-			let ok = await client.setScreenBrightness(clamped)
-			if ok {
-				publish(brightness: clamped, touchDate: true)
-			} else {
-				refresh()
-			}
-		}
-	}
-
-	private func publish(brightness: Float, touchDate: Bool) {
-		DispatchQueue.main.async {
-			if self.rawBrightness != brightness || touchDate {
-				if touchDate { self.lastChangeAt = Date() }
-				self.rawBrightness = brightness
-				self.animatedBrightness = brightness
-			}
-		}
-	}
-}
-
-// (DisplayServices helpers moved into XPC helper)
-
-// MARK: - Keyboard Backlight Controller
-final class KeyboardBacklightManager: ObservableObject {
-	static let shared = KeyboardBacklightManager()
-
-	@Published private(set) var rawBrightness: Float = 0
-	@Published private(set) var lastChangeAt: Date = .distantPast
-
-	private let visibleDuration: TimeInterval = 1.2
-	private let client = XPCHelperClient.shared
-
-	private init() { refresh() }
-
-	var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
-
-	func refresh() {
-		Task { @MainActor in
-			if let current = await client.currentKeyboardBrightness() {
-				publish(brightness: current, touchDate: false)
-			}
-		}
-	}
-
-	@MainActor func setRelative(delta: Float) {
-		Task { @MainActor in
-			let starting = await client.currentKeyboardBrightness() ?? rawBrightness
-			let target = max(0, min(1, starting + delta))
-			let ok = await client.setKeyboardBrightness(target)
-			if ok {
-				publish(brightness: target, touchDate: true)
-			} else {
-				refresh()
-			}
+			await set(target)
 			VisorViewCoordinator.shared.toggleSneakPeek(
 				status: true,
-				type: .backlight,
+				type: kind == .screen ? .brightness : .backlight,
 				value: CGFloat(target)
 			)
 		}
 	}
 
 	func setAbsolute(value: Float) {
-		let clamped = max(0, min(1, value))
 		Task { @MainActor in
-			let ok = await client.setKeyboardBrightness(clamped)
-			if ok {
-				publish(brightness: clamped, touchDate: true)
-			} else {
-				refresh()
-			}
+			await set(max(0, min(1, value)))
 		}
 	}
 
-	private func publish(brightness: Float, touchDate: Bool) {
+	private func set(_ value: Float) async {
+		if await write(value) {
+			publish(brightness: value)
+		} else {
+			refresh()
+		}
+	}
+
+	private func read() async -> Float? {
+		switch kind {
+		case .screen: await client.currentScreenBrightness()
+		case .keyboard: await client.currentKeyboardBrightness()
+		}
+	}
+
+	private func write(_ value: Float) async -> Bool {
+		switch kind {
+		case .screen: await client.setScreenBrightness(value)
+		case .keyboard: await client.setKeyboardBrightness(value)
+		}
+	}
+
+	private func publish(brightness: Float) {
 		DispatchQueue.main.async {
-			if self.rawBrightness != brightness || touchDate {
-				if touchDate { self.lastChangeAt = Date() }
+			if self.rawBrightness != brightness {
 				self.rawBrightness = brightness
 			}
 		}
 	}
 }
-

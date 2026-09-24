@@ -226,7 +226,7 @@ final class MediaKeyInterceptor {
     private func adjustBrightness(delta: Float, keyboard: Bool) {
         Task { @MainActor in
             if keyboard {
-                KeyboardBacklightManager.shared.setRelative(delta: delta)
+                BrightnessManager.keyboard.setRelative(delta: delta)
             } else {
                 BrightnessManager.shared.setRelative(delta: delta)
             }
@@ -241,14 +241,14 @@ final class MediaKeyInterceptor {
                 VisorViewCoordinator.shared.toggleSneakPeek(status: true, type: .volume, value: CGFloat(v))
             case .brightnessUp, .brightnessDown:
                 if command {
-                    let v = KeyboardBacklightManager.shared.rawBrightness
+                    let v = BrightnessManager.keyboard.rawBrightness
                     VisorViewCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
                 } else {
                     let v = BrightnessManager.shared.rawBrightness
                     VisorViewCoordinator.shared.toggleSneakPeek(status: true, type: .brightness, value: CGFloat(v))
                 }
             case .keyboardBrightnessUp, .keyboardBrightnessDown:
-                let v = KeyboardBacklightManager.shared.rawBrightness
+                let v = BrightnessManager.keyboard.rawBrightness
                 VisorViewCoordinator.shared.toggleSneakPeek(status: true, type: .backlight, value: CGFloat(v))
             }
         }
