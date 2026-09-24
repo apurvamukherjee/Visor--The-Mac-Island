@@ -24,16 +24,10 @@ struct sneakPeek {
     var icon: String = ""
 }
 
-enum BrowserType {
-    case chromium
-    case safari
-}
-
 struct ExpandedItem {
     var show: Bool = false
     var type: SneakContentType = .battery
     var value: CGFloat = 0
-    var browser: BrowserType = .chromium
 }
 
 @MainActor
@@ -225,8 +219,7 @@ class VisorViewCoordinator: ObservableObject {
     func toggleExpandingView(
         status: Bool,
         type: SneakContentType,
-        value: CGFloat = 0,
-        browser: BrowserType = .chromium
+        value: CGFloat = 0
     ) {
         Task { @MainActor in
             // Visor: one assignment, as in toggleSneakPeek.
@@ -234,7 +227,6 @@ class VisorViewCoordinator: ObservableObject {
             item.show = status
             item.type = type
             item.value = value
-            item.browser = browser
             withAnimation(.smooth) {
                 self.expandingView = item
             }
