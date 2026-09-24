@@ -18,6 +18,61 @@ Builds before 1.6.1 were named `Visor-1.5(11)-…`. They were renamed in place
 to the scheme above when the convention was adopted; the bytes and the git
 history are unchanged.
 
+## [3.1.1] — 2026-09-25 (build 36)
+
+A performance and size release: nothing new to learn, less power at idle,
+and a smaller download.
+
+### Changed
+
+- **Smaller app:** the Release build is Apple silicon only (Visor never
+  supported Intel), stripped of its symbol table, dead-code stripped, and
+  without the unused SwiftUIIntrospect package. The app is about 9 MB
+  instead of 23 MB, and the `.dmg` is compressed with LZMA instead of zlib.
+- **Less work at idle:** the closed-notch spectrum and the idle face no
+  longer leave timers running after they disappear; the root views stop
+  re-rendering on every system volume change or battery update; the
+  paused music slider stops redrawing every frame (1 Hz when paused, 10 Hz
+  playing); the lyrics timeline pauses with the music; the 3 s
+  Accessibility check stops when Settings closes; the calendar refetches
+  only when the notch opens.
+- **Music:** artwork is decoded once per cover, its average colour is
+  sampled at 64 px, YouTube Music re-downloads the cover only when it
+  changes, lyrics are requested once per track, and the in-memory artwork
+  cache is capped at 4 MB (the 100 MB disk cache is unchanged).
+- **Shelf:** thumbnails live in a bounded `NSCache`, opening the shelf no
+  longer rewrites it to disk, and dropping a large file no longer reads it
+  into memory first.
+- Internal names, file names and source headers now read Visor. The shelf
+  setting's stored key was renamed with them, so "Shelf" switches back on
+  once after updating.
+- 18 unused strings removed from the string catalog, and Info.plist keys
+  that do nothing on macOS 14 dropped.
+
+### Fixed
+
+- **Every shipped app had an invalid code signature.** `make-dmg.sh`
+  added the window background into `Visor.app` after Xcode signed it, so
+  `codesign --verify` failed ("a sealed resource is missing or invalid").
+  The bundle is now resealed and verified before the image is made.
+- **Favouriting a track in Apple Music never worked:** the AppleScript was
+  sent with literal Swift code in it and did not compile.
+- With "Show on all displays", every notch window but the last leaked its
+  screen-change observer, including after a display was unplugged.
+
+### Deliberately left out
+
+- **Removing Lottie (about 2.3 MB):** it only powers a custom visualizer
+  that can't be switched on ("Coming soon", disabled toggle), but removing
+  it deletes files, which needs the owner's go-ahead.
+- **Deeper cuts from the audit** (unused files, the always-false
+  deprecated-Now-Playing path, duplicated YouTube Music and shelf code) and
+  larger rewrites (image processing off the main thread, a display-sleep
+  pause for all animations, the drag monitors) wait for their own reviewed
+  changes.
+- **The onboarding spotlight image and the welcome sound** stay
+  byte-for-byte; shrinking them would save under 300 KB.
+
 ## [3.1.0] — 2026-09-24 (build 35)
 
 ### Added

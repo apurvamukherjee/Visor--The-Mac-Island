@@ -76,8 +76,8 @@ targets:
         PRODUCT_NAME: Visor
         CODE_SIGN_ENTITLEMENTS: Visor.entitlements
         GENERATE_INFOPLIST_FILE: YES
-        MARKETING_VERSION: "3.1.0"
-        CURRENT_PROJECT_VERSION: "35"
+        MARKETING_VERSION: "3.1.1"
+        CURRENT_PROJECT_VERSION: "36"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         DEVELOPMENT_ASSET_PATHS: "\"Visor/Preview Content\""
         SWIFT_EMIT_LOC_STRINGS: YES
@@ -123,8 +123,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: VisorXPCHelper
         CODE_SIGN_ENTITLEMENTS: VisorXPCHelper/XPCHelper.entitlements
         CODE_SIGN_STYLE: Automatic
-        MARKETING_VERSION: "3.1.0"
-        CURRENT_PROJECT_VERSION: "35"
+        MARKETING_VERSION: "3.1.1"
+        CURRENT_PROJECT_VERSION: "36"
 schemes:
   Visor:
     build:

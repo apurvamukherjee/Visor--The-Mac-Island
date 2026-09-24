@@ -152,4 +152,9 @@ before `8b05dad`.
   holds `old-code/`, `-upstream/` (was `old-code-v1/`), the 2.x
   docs, `smoothness/`, the 2.x README and this file's old progress log. The
   README was rewritten for 3.0.
-- **Next:** the user tests 3.1.0 on hardware.
+- **3.1.1 (2026-09-25, build 36):** Boring* names renamed to Visor*
+  (`fca9014`), then an audit pass: DMG signature fix, arm64-only stripped
+  Release, idle-power fixes (leaked timers, root-view observers, slider
+  timeline) and the Apple Music favourite fix; see CHANGELOG. Lottie removal
+  is pending the user's go-ahead. **Not seen on hardware.**
+- **Next:** the user tests 3.1.1 on hardware.
