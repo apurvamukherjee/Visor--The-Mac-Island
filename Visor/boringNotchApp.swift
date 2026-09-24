@@ -24,7 +24,9 @@ struct DynamicNotchApp: App {
                     SettingsWindowController.shared.showWindow()
                 }
             }
-            .keyboardShortcut(KeyEquivalent(","), modifiers: .command)
+            // Visor: a menu Text is a disabled item, so this is a credit line,
+            // not something to click.
+            Text("By Apurva")
             Divider()
             Button("Restart Visor") {
                 ApplicationRelauncher.restart()
