@@ -17,12 +17,9 @@ struct ShelfItemView: View {
     @ObservedObject var selection = ShelfSelectionModel.shared
     @StateObject private var viewModel: ShelfItemViewModel
     @EnvironmentObject private var quickLookService: QuickLookService
-    @State private var showStack = false
     @State private var cachedPreviewImage: NSImage?
-    @State private var debouncedDropTarget = false
 
     private var isSelected: Bool { viewModel.isSelected }
-    private var shouldHideDuringDrag: Bool { selection.isDragging && selection.isSelected(item.id) && false }
     
     init(item: ShelfItem) {
         self.item = item
@@ -31,45 +28,29 @@ struct ShelfItemView: View {
 
     var body: some View {
         ZStack {
-            if !shouldHideDuringDrag {
-                VStack(alignment: .center, spacing: 2) {
-                    iconView
-                    textView
-                }
-                .frame(width: 105)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 5)
-                .background(backgroundView)
-                .contentShape(Rectangle())
-                .animation(.easeInOut(duration: 0.1), value: debouncedDropTarget)
-                .animation(.easeInOut(duration: 0.1), value: isSelected)
+            VStack(alignment: .center, spacing: 2) {
+                iconView
+                textView
+            }
+            .frame(width: 105)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 5)
+            .background(backgroundView)
+            .contentShape(Rectangle())
+            .animation(.easeInOut(duration: 0.1), value: isSelected)
 
-                DraggableClickHandler(
-                    item: item,
-                    viewModel: viewModel,
-                    cachedPreviewImage: $cachedPreviewImage,
-                    dragPreviewContent: {
-                        DragPreviewView(thumbnail: viewModel.thumbnail ?? item.icon, displayName: item.displayName)
-                    },
-                    onRightClick: viewModel.handleRightClick,
-                    onClick: { event, nsview in
-                        viewModel.handleClick(event: event, view: nsview)
-                    }
-                )
-            } else {
-                Color.clear
-                    .frame(width: 105)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 5)
-            }
-        }
-        .onChange(of: viewModel.isDropTargeted) { _, targeted in
-            vm.dragDetectorTargeting = targeted
-            // Debounce drop target state changes
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(50))
-                debouncedDropTarget = targeted
-            }
+            DraggableClickHandler(
+                item: item,
+                viewModel: viewModel,
+                cachedPreviewImage: $cachedPreviewImage,
+                dragPreviewContent: {
+                    DragPreviewView(thumbnail: viewModel.thumbnail ?? item.icon, displayName: item.displayName)
+                },
+                onRightClick: viewModel.handleRightClick,
+                onClick: { event, nsview in
+                    viewModel.handleClick(event: event, view: nsview)
+                }
+            )
         }
         .onAppear {
             Task { 
@@ -126,9 +107,7 @@ struct ShelfItemView: View {
     }
 
     private var backgroundColor: Color {
-        if debouncedDropTarget {
-            return Color.accentColor.opacity(0.25)
-        } else if isSelected {
+        if isSelected {
             return Color.accentColor.opacity(0.15)
         } else {
             return Color.clear
@@ -136,9 +115,7 @@ struct ShelfItemView: View {
     }
 
     private var strokeColor: Color {
-        if debouncedDropTarget {
-            return Color.accentColor.opacity(0.9)
-        } else if isSelected {
+        if isSelected {
             return Color.accentColor.opacity(0.8)
         } else {
             return Color.clear
@@ -146,9 +123,7 @@ struct ShelfItemView: View {
     }
 
     private var strokeWidth: CGFloat {
-        if debouncedDropTarget {
-            return 3
-        } else if isSelected {
+        if isSelected {
             return 2
         } else {
             return 1
