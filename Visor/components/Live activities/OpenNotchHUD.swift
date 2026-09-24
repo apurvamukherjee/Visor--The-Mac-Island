@@ -86,10 +86,3 @@ struct OpenNotchHUD: View {
         }
     }
 }
-
-#Preview {
-    OpenNotchHUD(type: .constant(.volume), value: .constant(0.5), icon: .constant(""))
-        .environmentObject(VisorViewModel())
-        .padding()
-        .background(Color.gray)
-}

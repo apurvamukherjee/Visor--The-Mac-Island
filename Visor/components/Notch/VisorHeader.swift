@@ -111,7 +111,3 @@ struct VisorHeader: View {
         }
     }
 }
-
-#Preview {
-    VisorHeader().environmentObject(VisorViewModel())
-}

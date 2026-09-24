@@ -123,8 +123,3 @@ extension MediaControllerType {
         }
     }
 }
-
-#Preview {
-    MusicControllerSelectionView(onContinue: {})
-        .frame(width: 400, height: 600)
-}

@@ -1288,7 +1288,3 @@ func customBadge(text: String) -> some View {
         .background(Color(nsColor: .secondarySystemFill))
         .clipShape(.capsule)
 }
-
-#Preview {
-    HUD()
-}

@@ -62,13 +62,3 @@ struct Eye: View {
             .animation(.easeInOut(duration: 0.1), value: isBlinking)
     }
 }
-
-struct MinimalFaceFeatures_Previews: PreviewProvider {
-    static var previews: some View {
-        ZStack {
-            Color.black
-            MinimalFaceFeatures()
-        }
-        .previewLayout(.fixed(width: 60, height: 60)) // Adjusted preview size for better visibility
-    }
-}

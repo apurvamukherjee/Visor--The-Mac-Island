@@ -479,10 +479,3 @@ struct ReminderToggle: View {
         .accessibilityLabel(isOn ? "Mark as incomplete" : "Mark as complete")
     }
 }
-
-#Preview {
-    CalendarView()
-        .frame(width: 215, height: 130)
-        .background(.black)
-        .environmentObject(VisorViewModel())
-}

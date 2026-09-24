@@ -22,9 +22,3 @@ struct TabButton: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
-
-#Preview {
-    TabButton(label: "Home", icon: "tray.fill", selected: true) {
-        print("Tapped")
-    }
-}

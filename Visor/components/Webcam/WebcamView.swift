@@ -112,7 +112,3 @@ struct CameraPreviewLayerView: NSViewRepresentable {
         CATransaction.commit()
     }
 }
-
-#Preview {
-    CameraPreviewView(webcamManager: .shared)
-}

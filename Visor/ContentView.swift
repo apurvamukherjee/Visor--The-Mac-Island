@@ -648,11 +648,3 @@ struct GeneralDropTargetDelegate: DropDelegate {
         return false
     }
 }
-
-#Preview {
-    let vm = VisorViewModel()
-    vm.open()
-    return ContentView()
-        .environmentObject(vm)
-        .frame(width: vm.notchSize.width, height: vm.notchSize.height)
-}

@@ -55,7 +55,3 @@ struct OnboardingFinishView: View {
         )
     }
 }
-
-#Preview {
-    OnboardingFinishView(onFinish: { }, onOpenSettings: { })
-}

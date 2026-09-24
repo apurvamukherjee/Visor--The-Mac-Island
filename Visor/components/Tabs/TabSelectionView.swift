@@ -49,7 +49,3 @@ struct TabSelectionView: View {
         .clipShape(Capsule())
     }
 }
-
-#Preview {
-    VisorHeader().environmentObject(VisorViewModel())
-}
