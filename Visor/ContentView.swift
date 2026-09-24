@@ -1,10 +1,4 @@
-//
-//  ContentView.swift
-//  boringNotchApp
-//
-//  Created by Harsh Vardhan Goswami  on 02/08/24
-//  Modified by Richard Kunkli on 24/08/2024.
-//
+
 
 import AVFoundation
 import Combine

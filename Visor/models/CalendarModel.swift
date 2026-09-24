@@ -2,8 +2,6 @@
 //  CalendarModel.swift
 //  Calendr
 //
-//  Created by Apurva on 31/12/20.
-//  Original source: https://github.com/pakerwreah/Calendr
 //
 
 import Cocoa
