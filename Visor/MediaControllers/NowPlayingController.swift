@@ -8,6 +8,7 @@
 import AppKit
 import Combine
 import Foundation
+import MediaRemoteAdapter
 
 final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     func updatePlaybackInfo() async {
@@ -55,92 +56,49 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         await updatePlaybackInfo()
     }
 
-    private var lastMusicItem:
-        (title: String, artist: String, album: String, duration: TimeInterval, artworkData: Data?)?
-
-    // MARK: - Media Remote Functions
-    private let mediaRemoteBundle: CFBundle
-    private let MRMediaRemoteSendCommandFunction: @convention(c) (Int, AnyObject?) -> Void
-    private let MRMediaRemoteSetElapsedTimeFunction: @convention(c) (Double) -> Void
-    private let MRMediaRemoteSetShuffleModeFunction: @convention(c) (Int) -> Void
-    private let MRMediaRemoteSetRepeatModeFunction: @convention(c) (Int) -> Void
-
-    private var process: Process?
-    private var pipeHandler: JSONLinesPipeHandler?
-    private var streamTask: Task<Void, Never>?
+    // MARK: - Media Remote Adapter
+    // Visor's MediaRemoteAdapter package, not a bundled perl script: the
+    // script and framework this controller used to launch were never bundled,
+    // so it received nothing and browser players (YouTube Music in Chrome,
+    // Safari, ...) never appeared. The package reports every MediaRemote
+    // source, browsers included, and carries the transport commands too.
+    private let mediaController = MediaController()
 
     // MARK: - Initialization
     init?() {
-        guard
-            let bundle = CFBundleCreate(
-                kCFAllocatorDefault,
-                NSURL(fileURLWithPath: "/System/Library/PrivateFrameworks/MediaRemote.framework")),
-            let MRMediaRemoteSendCommandPointer = CFBundleGetFunctionPointerForName(
-                bundle, "MRMediaRemoteSendCommand" as CFString),
-            let MRMediaRemoteSetElapsedTimePointer = CFBundleGetFunctionPointerForName(
-                bundle, "MRMediaRemoteSetElapsedTime" as CFString),
-            let MRMediaRemoteSetShuffleModePointer = CFBundleGetFunctionPointerForName(
-                bundle, "MRMediaRemoteSetShuffleMode" as CFString),
-            let MRMediaRemoteSetRepeatModePointer = CFBundleGetFunctionPointerForName(
-                bundle, "MRMediaRemoteSetRepeatMode" as CFString)
-            
-        else { return nil }
-
-        mediaRemoteBundle = bundle
-        MRMediaRemoteSendCommandFunction = unsafeBitCast(
-            MRMediaRemoteSendCommandPointer, to: (@convention(c) (Int, AnyObject?) -> Void).self)
-        MRMediaRemoteSetElapsedTimeFunction = unsafeBitCast(
-            MRMediaRemoteSetElapsedTimePointer, to: (@convention(c) (Double) -> Void).self)
-        MRMediaRemoteSetShuffleModeFunction = unsafeBitCast(
-            MRMediaRemoteSetShuffleModePointer, to: (@convention(c) (Int) -> Void).self)
-        MRMediaRemoteSetRepeatModeFunction = unsafeBitCast(
-            MRMediaRemoteSetRepeatModePointer, to: (@convention(c) (Int) -> Void).self)
-
-        Task { await setupNowPlayingObserver() }
+        mediaController.onTrackInfoReceived = { [weak self] trackInfo in
+            self?.handleTrackInfo(trackInfo)
+        }
+        mediaController.startListening()
     }
 
     deinit {
-        streamTask?.cancel()
-        
-        if let pipeHandler = self.pipeHandler {
-            Task { await pipeHandler.close()
-            }
-        }
-        
-        if let process = self.process {
-            if process.isRunning {
-                process.terminate()
-                process.waitUntilExit()
-            }
-        }
-
-        self.process = nil
-        self.pipeHandler = nil
+        mediaController.stopListening()
     }
 
     // MARK: - Protocol Implementation
     func play() async {
-        MRMediaRemoteSendCommandFunction(0, nil)
+        mediaController.play()
     }
 
     func pause() async {
-        MRMediaRemoteSendCommandFunction(1, nil)
+        mediaController.pause()
     }
 
     func togglePlay() async {
-        MRMediaRemoteSendCommandFunction(2, nil)
+        mediaController.togglePlayPause()
     }
 
     func nextTrack() async {
-        MRMediaRemoteSendCommandFunction(4, nil)
+        mediaController.nextTrack()
     }
 
     func previousTrack() async {
-        MRMediaRemoteSendCommandFunction(5, nil)
+        mediaController.previousTrack()
     }
 
     func seek(to time: Double) async {
-        MRMediaRemoteSetElapsedTimeFunction(time)
+        mediaController.setTime(seconds: time)
     }
 
     func isActive() -> Bool {
@@ -148,16 +106,18 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
     
     func toggleShuffle() async {
-        // MRMediaRemoteSendCommandFunction(6, nil)
-        MRMediaRemoteSetShuffleModeFunction(playbackState.isShuffled ? 1 : 3)
+        mediaController.setShuffleMode(playbackState.isShuffled ? .off : .songs)
         playbackState.isShuffled.toggle()
     }
     
     func toggleRepeat() async {
-        // MRMediaRemoteSendCommandFunction(7, nil)
-        let newRepeatMode = (playbackState.repeatMode == .off) ? 3 : (playbackState.repeatMode.rawValue - 1)
-        playbackState.repeatMode = RepeatMode(rawValue: newRepeatMode) ?? .off
-        MRMediaRemoteSetRepeatModeFunction(newRepeatMode)
+        let newRepeatMode: RepeatMode = switch playbackState.repeatMode {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+        playbackState.repeatMode = newRepeatMode
+        mediaController.setRepeatMode(Self.adapterRepeatMode(newRepeatMode))
     }
     
     func setVolume(_ level: Double) async {
@@ -185,118 +145,57 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         
         playbackState.volume = clampedLevel
     }
-    
-    // MARK: - Setup Methods
-    private func setupNowPlayingObserver() async {
-        let process = Process()
-        guard
-            let scriptURL = Bundle.main.url(forResource: "mediaremote-adapter", withExtension: "pl"),
-            let frameworkPath = Bundle.main.privateFrameworksPath?.appending("/MediaRemoteAdapter.framework")
-        else {
-            assertionFailure("Could not find mediaremote-adapter.pl script or framework path")
-            return
-        }
-        
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [scriptURL.path, frameworkPath, "stream"]
-        
-        let pipeHandler = JSONLinesPipeHandler()
-        process.standardOutput = await pipeHandler.getPipe()
-        
-        self.process = process
-        self.pipeHandler = pipeHandler
-
-        do {
-            try process.run()
-            streamTask = Task { [weak self] in
-                await self?.processJSONStream()
-            }
-        } catch {
-            assertionFailure("Failed to launch mediaremote-adapter.pl: \(error)")
-        }
-    }
-
-    // MARK: - Async Stream Processing
-    private func processJSONStream() async {
-        guard let pipeHandler = self.pipeHandler else { return }
-        
-        await pipeHandler.readJSONLines(as: NowPlayingUpdate.self) { [weak self] update in
-            await self?.handleAdapterUpdate(update)
-        }
-    }
 
     // MARK: - Update Methods
-    private func handleAdapterUpdate(_ update: NowPlayingUpdate) async {
-        let payload = update.payload
-        let diff = update.diff ?? false
-
-        var newPlaybackState = PlaybackState(bundleIdentifier: playbackState.bundleIdentifier)
-        
-        newPlaybackState.title = payload.title ?? (diff ? self.playbackState.title : "")
-        newPlaybackState.artist = payload.artist ?? (diff ? self.playbackState.artist : "")
-        newPlaybackState.album = payload.album ?? (diff ? self.playbackState.album : "")
-        newPlaybackState.duration = payload.duration ?? (diff ? self.playbackState.duration : 0)
-        
-        if let elapsedTime = payload.elapsedTime {
-            newPlaybackState.currentTime = elapsedTime
-        } else if diff {
-            if payload.playing == false {
-                let timeSinceLastUpdate = Date().timeIntervalSince(self.playbackState.lastUpdated)
-                newPlaybackState.currentTime = self.playbackState.currentTime + (self.playbackState.playbackRate * timeSinceLastUpdate)
-            } else {
-                newPlaybackState.currentTime = self.playbackState.currentTime
-            }
-        } else {
-            newPlaybackState.currentTime = 0
+    /// The adapter sends a whole payload per event, or nil when nothing is
+    /// playing. nil maps to the same empty state the old stream produced.
+    private func handleTrackInfo(_ trackInfo: TrackInfo?) {
+        guard let payload = trackInfo?.payload else {
+            var empty = PlaybackState(bundleIdentifier: playbackState.bundleIdentifier)
+            empty.title = ""
+            empty.artist = ""
+            empty.album = ""
+            empty.lastUpdated = Date()
+            empty.volume = playbackState.volume
+            playbackState = empty
+            return
         }
 
-        
-        if let shuffleMode = payload.shuffleMode {
-            newPlaybackState.isShuffled = shuffleMode != 1
-        } else if !diff {
-            newPlaybackState.isShuffled = false
-        } else {
-            newPlaybackState.isShuffled = self.playbackState.isShuffled
-        }
-        if let repeatModeValue = payload.repeatMode {
-            newPlaybackState.repeatMode = RepeatMode(rawValue: repeatModeValue) ?? .off
-        } else if !diff {
-            newPlaybackState.repeatMode = .off
-        } else {
-            newPlaybackState.repeatMode = self.playbackState.repeatMode
-        }
-
-        if let artworkDataString = payload.artworkData {
-            newPlaybackState.artwork = Data(
-                base64Encoded: artworkDataString.trimmingCharacters(in: .whitespacesAndNewlines)
-            )
-        } else if !diff {
-            newPlaybackState.artwork = nil
-        }
-
-        if let dateString = payload.timestamp,
-           let date = ISO8601DateFormatter().date(from: dateString) {
-            newPlaybackState.lastUpdated = date
-        } else if !diff {
-            newPlaybackState.lastUpdated = Date()
-        } else {
-            newPlaybackState.lastUpdated = self.playbackState.lastUpdated
-        }
-
-        newPlaybackState.playbackRate = payload.playbackRate ?? (diff ? self.playbackState.playbackRate : 1.0)
-        newPlaybackState.isPlaying = payload.playing ?? (diff ? self.playbackState.isPlaying : false)
-        newPlaybackState.bundleIdentifier = (
-            payload.parentApplicationBundleIdentifier ??
-            payload.bundleIdentifier ??
-            (diff ? self.playbackState.bundleIdentifier : "")
+        var newPlaybackState = PlaybackState(
+            bundleIdentifier: payload.bundleIdentifier ?? playbackState.bundleIdentifier
         )
-        
-        newPlaybackState.volume = payload.volume ?? (diff ? self.playbackState.volume : 0.5)
-        
+        newPlaybackState.title = payload.title ?? ""
+        newPlaybackState.artist = payload.artist ?? ""
+        newPlaybackState.album = payload.album ?? ""
+        newPlaybackState.duration = (payload.durationMicros ?? 0) / 1_000_000
+        newPlaybackState.currentTime = (payload.elapsedTimeMicros ?? 0) / 1_000_000
+        newPlaybackState.isShuffled = (payload.shuffleMode ?? .off) != .off
+        newPlaybackState.repeatMode = switch payload.repeatMode ?? .off {
+        case .off: .off
+        case .one: .one
+        case .all: .all
+        }
+        newPlaybackState.artwork = payload.artworkDataBase64.flatMap {
+            Data(base64Encoded: $0.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        newPlaybackState.lastUpdated = payload.timestampEpochMicros
+            .map { Date(timeIntervalSince1970: $0 / 1_000_000) } ?? Date()
+        newPlaybackState.isPlaying = payload.isPlaying ?? false
+        newPlaybackState.playbackRate = payload.playbackRate ?? (newPlaybackState.isPlaying ? 1.0 : 0.0)
+        newPlaybackState.volume = playbackState.volume
+        newPlaybackState.isFavorite = playbackState.title == newPlaybackState.title
+            && playbackState.artist == newPlaybackState.artist
+            && playbackState.isFavorite
+
         self.playbackState = newPlaybackState
-        
-        // Fetch favorite state for supported apps asynchronously
-        // await fetchFavoriteStateIfSupported()
+    }
+
+    private static func adapterRepeatMode(_ mode: RepeatMode) -> TrackInfo.RepeatMode {
+        switch mode {
+        case .off: .off
+        case .one: .one
+        case .all: .all
+        }
     }
     
      private func fetchFavoriteStateIfSupported() async {
@@ -323,104 +222,4 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
          }
      }
     
-}
-
-struct NowPlayingUpdate: Codable {
-    let payload: NowPlayingPayload
-    let diff: Bool?
-}
-
-struct NowPlayingPayload: Codable {
-    let title: String?
-    let artist: String?
-    let album: String?
-    let duration: Double?
-    let elapsedTime: Double?
-    let shuffleMode: Int?
-    let repeatMode: Int?
-    let artworkData: String?
-    let timestamp: String?
-    let playbackRate: Double?
-    let playing: Bool?
-    let parentApplicationBundleIdentifier: String?
-    let bundleIdentifier: String?
-    let volume: Double?
-}
-
-actor JSONLinesPipeHandler {
-    private let pipe: Pipe
-    private let fileHandle: FileHandle
-    private var buffer = ""
-    
-    init() {
-        self.pipe = Pipe()
-        self.fileHandle = pipe.fileHandleForReading
-    }
-    
-    func getPipe() -> Pipe {
-        return pipe
-    }
-    
-    func readJSONLines<T: Decodable>(as type: T.Type, onLine: @escaping (T) async -> Void) async {
-        do {
-            try await self.processLines(as: type) { decodedObject in
-                await onLine(decodedObject)
-            }
-        } catch {
-            print("Error processing JSON stream: \(error)")
-        }
-    }
-    
-    private func processLines<T: Decodable>(as type: T.Type, onLine: @escaping (T) async -> Void) async throws {
-        while true {
-            let data = try await readData()
-            guard !data.isEmpty else { break }
-            
-            if let chunk = String(data: data, encoding: .utf8) {
-                buffer.append(chunk)
-                
-                while let range = buffer.range(of: "\n") {
-                    let line = String(buffer[..<range.lowerBound])
-                    buffer = String(buffer[range.upperBound...])
-                    
-                    if !line.isEmpty {
-                        await processJSONLine(line, as: type, onLine: onLine)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func processJSONLine<T: Decodable>(_ line: String, as type: T.Type, onLine: @escaping (T) async -> Void) async {
-        guard let data = line.data(using: .utf8) else {
-            return
-        }
-        do {
-            let decodedObject = try JSONDecoder().decode(T.self, from: data)
-            await onLine(decodedObject)
-        } catch {
-            // Ignore lines that can't be decoded
-        }
-    }
-    
-    private func readData() async throws -> Data {
-        return try await withCheckedThrowingContinuation { continuation in
-            
-            fileHandle.readabilityHandler = { handle in
-                let data = handle.availableData
-                handle.readabilityHandler = nil
-                continuation.resume(returning: data)
-            }
-        }
-    }
-    
-    func close() async {
-        do {
-            fileHandle.readabilityHandler = nil
-            try fileHandle.close()
-            try pipe.fileHandleForWriting.close()
-        } catch {
-            print("Error closing pipe handler: \(error)")
-        }
-    }
 }
