@@ -213,20 +213,36 @@ if [ "$SHIPPED" != "$EXPECTED" ]; then
 fi
 # Keep a dated copy in the repo so a build is downloadable straight from
 # GitHub. dist/ is gitignored and gets overwritten; this one is permanent.
-VERSION="$(sed -n 's/.*MARKETING_VERSION: "\(.*\)".*/\1/p' project.yml)"
-[ -n "$VERSION" ] || VERSION="0.0.0"
+# Read from the app that was just built, not grepped out of project.yml:
+# project.yml has one MARKETING_VERSION per target (the app and its XPC
+# helper), and grepping it returned both, putting newlines in the permanent
+# filename (3.0.0, measured). The bundle is also the truth about what shipped.
+PLIST="$APP/Contents/Info.plist"
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$PLIST")"
 # Semantic versioning, MAJOR.MINOR.PATCH, enforced here rather than trusted:
 # the filename is the permanent record, and a "1.6" that should have been
 # "1.6.0" cannot be corrected later without rewriting history.
+# The glob's `*` matches newlines too, so a multi-line value passed this
+# check once; anything but digits and dots is rejected before it.
 case "$VERSION" in
-    [0-9]*.[0-9]*.[0-9]*) ;;
+    *[!0-9.]*) VERSION_OK=0 ;;
+    [0-9]*.[0-9]*.[0-9]*) VERSION_OK=1 ;;
+    *) VERSION_OK=0 ;;
+esac
+case "$VERSION_OK" in
+    1) ;;
     *)
         echo "MARKETING_VERSION must be MAJOR.MINOR.PATCH (got \"$VERSION\")" >&2
         exit 1
         ;;
 esac
-BUILD="$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)".*/\1/p' project.yml)"
-[ -n "$BUILD" ] || BUILD="1"
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST")"
+case "$BUILD" in
+    "" | *[!0-9]*)
+        echo "CURRENT_PROJECT_VERSION must be a whole number (got \"$BUILD\")" >&2
+        exit 1
+        ;;
+esac
 # Seconds, not just the date: several builds a day is the normal case, and the
 # old -2/-3 suffix said which was later but not when either was cut. Seconds
 # rather than minutes because two builds of one commit inside the same minute
