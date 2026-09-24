@@ -4,20 +4,9 @@ import SwiftUI
 
 
 public class VisorAnimations {
-    @Published var notchStyle: Style = .notch
-    
-    init() {
-        self.notchStyle = .notch
-    }
-    
+    // Visor: the notch style was always .notch on macOS 14+, so the floating
+    // timing curve was unreachable.
     var animation: Animation {
-        if #available(macOS 14.0, *), notchStyle == .notch {
-            Animation.spring(.bouncy(duration: 0.4))
-        } else {
-            Animation.timingCurve(0.16, 1, 0.3, 1, duration: 0.7)
-        }
+        Animation.spring(.bouncy(duration: 0.4))
     }
-    
-    // TODO: Move all animations to this file
-    
 }

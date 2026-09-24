@@ -21,7 +21,7 @@ enum OnboardingStep {
 private let calendarService = CalendarService()
 
 struct OnboardingView: View {
-    @State var step: OnboardingStep = .welcome
+    @State private var step: OnboardingStep = .welcome
     let onFinish: () -> Void
     let onOpenSettings: () -> Void
 
@@ -157,6 +157,6 @@ struct OnboardingView: View {
     }
     
     func requestAccessibilityPermission() async {
-        await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: true)
+        _ = await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: true)
     }
 }

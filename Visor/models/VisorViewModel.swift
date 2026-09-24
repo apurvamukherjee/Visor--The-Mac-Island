@@ -16,7 +16,6 @@ class VisorViewModel: NSObject, ObservableObject {
     let animationLibrary: VisorAnimations = .init()
     let animation: Animation?
 
-    @Published var contentType: ContentType = .normal
     @Published private(set) var notchState: NotchState = .closed
 
     @Published var dragDetectorTargeting: Bool = false
@@ -176,19 +175,6 @@ class VisorViewModel: NSObject, ObservableObject {
         }
     }
     
-    func isMouseHovering(position: NSPoint = NSEvent.mouseLocation) -> Bool {
-        let screenFrame = getScreenFrame(screenUUID)
-        if let frame = screenFrame {
-            
-            let baseY = frame.maxY - notchSize.height
-            let baseX = frame.midX - notchSize.width / 2
-            
-            return position.y >= baseY && position.x >= baseX && position.x <= baseX + notchSize.width
-        }
-        
-        return false
-    }
-
     func open() {
         self.notchSize = openNotchSize
         self.notchState = .open

@@ -41,7 +41,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let vm: VisorViewModel = .init()
     @ObservedObject var coordinator = VisorViewCoordinator.shared
     var quickShareService = QuickShareService.shared
-    var whatsNewWindow: NSWindow?
     var timer: Timer?
     var closeNotchTask: Task<Void, Never>?
     private var previousScreens: [NSScreen]?
@@ -454,17 +453,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         audioPlayer.play(fileName: "visor", fileExtension: "m4a")
     }
 
-    func deviceHasNotch() -> Bool {
-        if #available(macOS 12.0, *) {
-            for screen in NSScreen.screens {
-                if screen.safeAreaInsets.top > 0 {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
     @objc func screenConfigurationDidChange() {
         let currentScreens = NSScreen.screens
 
@@ -552,23 +540,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc func togglePopover(_ sender: Any?) {
-        if window?.isVisible == true {
-            window?.orderOut(nil)
-        } else {
-            window?.orderFrontRegardless()
-        }
-    }
-
-    @objc func showMenu() {
-        statusItem?.menu?.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-
-    @objc func quitAction() {
-        NSApplication.shared.terminate(self)
-    }
-
-    private func showOnboardingWindow(step: OnboardingStep = .welcome) {
+    private func showOnboardingWindow() {
         if onboardingWindowController == nil {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 400, height: 600),
@@ -582,7 +554,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.titleVisibility = .hidden
             window.contentView = NSHostingView(
                 rootView: OnboardingView(
-                    step: step,
                     onFinish: {
                         window.orderOut(nil)
                         window.close()

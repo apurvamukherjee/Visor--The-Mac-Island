@@ -8,17 +8,6 @@
 import Foundation
 import Defaults
 
-public enum Style {
-    case notch
-    case floating
-}
-
-public enum ContentType: Int, Codable, Hashable, Equatable {
-    case normal
-    case menu
-    case settings
-}
-
 public enum NotchState {
     case closed
     case open
@@ -27,17 +16,6 @@ public enum NotchState {
 public enum NotchViews {
     case home
     case shelf
-}
-
-enum SettingsEnum {
-    case general
-    case about
-    case charge
-    case download
-    case mediaPlayback
-    case hud
-    case shelf
-    case extensions
 }
 
 enum MirrorShapeEnum: String, Defaults.Serializable {
