@@ -30,6 +30,8 @@ history are unchanged.
   permission flow, animations, file shelf, volume/brightness HUDs,
   calendar and reminders, webcam mirror, battery and download live
   activities, and Apple Music / Spotify / YouTube Music controllers.
+- `VisorXPCHelper`, an XPC service embedded in the app. It runs the
+  Accessibility checks and the screen/keyboard brightness calls.
 
 ### Changed
 
@@ -55,9 +57,6 @@ history are unchanged.
 
 - **Sparkle auto-updates.** The feed pointed at TheBoredTeam's appcast, so
   it would have offered their builds as Visor updates.
-- **The XPC helper target**, for now. Until `VisorXPCHelper` is added,
-  Accessibility checks report "not granted", so the media-key and
-  brightness HUDs stay off.
 - Five files upstream never compiles (including an unused Metal shader)
   are excluded from the build the same way upstream excludes them.
 

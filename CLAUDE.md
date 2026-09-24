@@ -88,8 +88,9 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   its absence was the "doesn't hear YouTube Music" bug.
 - Permissions: the upstream onboarding flow (explain first, then request);
   Accessibility goes through `XPCHelperClient` -> the XPC service
-  `com.apurvamukherjee.visor.VisorXPCHelper`. **The helper target is not in
-  the repo yet** (see Progress), so those checks return false for now.
+  `com.apurvamukherjee.visor.VisorXPCHelper` (target `VisorXPCHelper`,
+  upstream's helper copied verbatim, unsandboxed, embedded in
+  `Contents/XPCServices`). It also handles screen and keyboard brightness.
 - Branding: user-visible text says only Visor / "By Apurva"; links go to
   github.com/apurvamukherjee/Visor--The-Mac-Island. Keep upstream's GPL
   copyright headers in source files.
@@ -662,12 +663,9 @@ file holds the full detail. Anything still unverified on hardware is flagged.
   features it lacks were dropped on purpose: lock-screen player, palette,
   launch groups, AI usage badge, timer, card stack, lyrics, and the
   Bluetooth/VPN/Focus alerts. Four commits: swap (`8b05dad`), media fix
-  (`e5b1c17`), branding (`dd4d611`), docs. Build passes; no tests exist.
-  **Open:** the XPC helper target. Copying upstream's
-  `BoringNotchXPCHelper/` was blocked by the auto-mode safety check, so
-  Accessibility checks, media-key HUD and brightness HUD fail until it is
-  added as target `VisorXPCHelper` (bundle ID above). **Not seen on
-  hardware.**
+  (`e5b1c17`), branding (`dd4d611`), docs, then the XPC helper target
+  (the user copied it in after the auto-mode check blocked Claude from
+  doing so). Build passes; no tests exist. **Not seen on hardware.**
 - **Next (2.x, superseded by 3.0.0):** `docs/HARDWARE-CHECKLIST.md` — the one manual list, ordered by
   machine state rather than by phase, superseding Phase 2 Task 10, Phase 3
   Task 11 and the card stack's Task 7 (all three kept as history, none

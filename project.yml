@@ -44,6 +44,9 @@ targets:
     dependencies:
       - package: MediaRemoteAdapter
         embed: true
+      # Embedded under Contents/XPCServices; XPCHelperClient connects to it
+      # by this target's bundle ID.
+      - target: VisorXPCHelper
       - package: AsyncXPCConnection
       - package: Defaults
       - package: KeyboardShortcuts
@@ -99,6 +102,28 @@ targets:
         # The YouTube Music controller talks to a local HTTP server.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+  # Ported verbatim from boring.notch's BoringNotchXPCHelper. Unsandboxed,
+  # it runs the Accessibility checks and the screen/keyboard brightness
+  # calls for the app.
+  VisorXPCHelper:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VisorXPCHelper
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.apurvamukherjee.visor.VisorXPCHelper
+        PRODUCT_NAME: VisorXPCHelper
+        INFOPLIST_FILE: VisorXPCHelper/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: VisorXPCHelper
+        CODE_SIGN_ENTITLEMENTS: VisorXPCHelper/BoringNotchXPCHelper.entitlements
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "3.0.0"
+        CURRENT_PROJECT_VERSION: "34"
 schemes:
   Visor:
     build:
