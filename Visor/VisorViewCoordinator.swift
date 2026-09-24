@@ -214,11 +214,15 @@ class VisorViewCoordinator: ObservableObject {
             }
         }
         Task { @MainActor in
+            // Visor: one assignment, so didSet (and its hide task) runs once, not
+            // once per field.
+            var peek = self.sneakPeek
+            peek.show = status
+            peek.type = type
+            peek.value = value
+            peek.icon = icon
             withAnimation(.smooth) {
-                self.sneakPeek.show = status
-                self.sneakPeek.type = type
-                self.sneakPeek.value = value
-                self.sneakPeek.icon = icon
+                self.sneakPeek = peek
             }
         }
 
@@ -263,11 +267,14 @@ class VisorViewCoordinator: ObservableObject {
         browser: BrowserType = .chromium
     ) {
         Task { @MainActor in
+            // Visor: one assignment, as in toggleSneakPeek.
+            var item = self.expandingView
+            item.show = status
+            item.type = type
+            item.value = value
+            item.browser = browser
             withAnimation(.smooth) {
-                self.expandingView.show = status
-                self.expandingView.type = type
-                self.expandingView.value = value
-                self.expandingView.browser = browser
+                self.expandingView = item
             }
         }
     }
