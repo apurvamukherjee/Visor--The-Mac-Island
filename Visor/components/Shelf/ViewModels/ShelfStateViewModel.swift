@@ -92,8 +92,9 @@ final class ShelfStateViewModel: ObservableObject {
     func cleanupInvalidItems() {
         Task { [weak self] in
             guard let self else { return }
+            let snapshot = self.items
             var keep: [ShelfItem] = []
-            for item in self.items {
+            for item in snapshot {
                 switch item.kind {
                 case .file(let data):
                     let bookmark = Bookmark(data: data)
@@ -106,6 +107,9 @@ final class ShelfStateViewModel: ObservableObject {
                     keep.append(item)
                 }
             }
+            // Visor: assigning unconditionally re-saved the shelf to disk and
+            // re-rendered it on every shelf open, even with nothing removed.
+            guard keep.count != snapshot.count else { return }
             await MainActor.run { self.items = keep }
         }
     }
