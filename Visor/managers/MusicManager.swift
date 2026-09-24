@@ -61,6 +61,8 @@ class MusicManager: ObservableObject {
     private var lastArtworkArtist: String = "Me"
     private var lastArtworkAlbum: String = "Self Love"
     private var lastArtworkBundleIdentifier: String? = nil
+    // Visor: the track whose lyrics were last requested. See fetchLyricsIfAvailable.
+    private var lastLyricsKey: String?
 
     @Published var isFlipping: Bool = false
     private var flipWorkItem: DispatchWorkItem?
@@ -346,12 +348,19 @@ class MusicManager: ObservableObject {
     // MARK: - Lyrics
     private func fetchLyricsIfAvailable(bundleIdentifier: String?, title: String, artist: String) {
         guard Defaults[.enableLyrics], !title.isEmpty else {
+            lastLyricsKey = nil
             DispatchQueue.main.async {
                 self.isFetchingLyrics = false
                 self.currentLyrics = ""
             }
             return
         }
+
+        // Visor: called on every content change, including artwork arriving for
+        // the same song, and each call was an AppleScript or lrclib request.
+        let lyricsKey = "\(bundleIdentifier ?? "")|\(title)|\(artist)"
+        guard lyricsKey != lastLyricsKey else { return }
+        lastLyricsKey = lyricsKey
 
         // Prefer native Apple Music lyrics when available
         if let bundleIdentifier = bundleIdentifier, bundleIdentifier.contains("com.apple.Music") {
