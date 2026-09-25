@@ -29,11 +29,7 @@ struct OnboardingView: View {
         ZStack {
             switch step {
             case .welcome:
-                WelcomeView {
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        step = .cameraPermission
-                    }
-                }
+                WelcomeView { go(.cameraPermission) }
                 .transition(.opacity)
 
             case .cameraPermission:
@@ -44,17 +40,11 @@ struct OnboardingView: View {
                     privacyNote: "Your camera is never used without your consent, and nothing is recorded or stored.",
                     onAllow: {
                         Task {
-                            await requestCameraPermission()
-                            withAnimation(.easeInOut(duration: 0.6)) {
-                                step = .calendarPermission
-                            }
+                            _ = await AVCaptureDevice.requestAccess(for: .video)
+                            go(.calendarPermission)
                         }
                     },
-                    onSkip: {
-                        withAnimation(.easeInOut(duration: 0.6)) {
-                            step = .calendarPermission
-                        }
-                    }
+                    onSkip: { go(.calendarPermission) }
                 )
                 .transition(.opacity)
 
@@ -66,42 +56,30 @@ struct OnboardingView: View {
                     privacyNote: "Your calendar data is only used to show your events and is never shared.",
                     onAllow: {
                         Task {
-                                await requestCalendarPermission()
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    step = .remindersPermission
-                                }
+                            _ = try? await calendarService.requestAccess(to: .event)
+                            go(.remindersPermission)
                         }
                     },
-                    onSkip: {
-                            withAnimation(.easeInOut(duration: 0.6)) {
-                                step = .remindersPermission
-                            }
-                    }
+                    onSkip: { go(.remindersPermission) }
                 )
                 .transition(.opacity)
 
-                case .remindersPermission:
-                    PermissionRequestView(
-                        icon: Image(systemName: "checklist"),
-                        title: "Enable Reminders Access",
-                        description: "Visor can show your scheduled reminders alongside your calendar events. Access to Reminders is needed to display your reminders.",
-                        privacyNote: "Your reminders data is only used to show your reminders and is never shared.",
-                        onAllow: {
-                            Task {
-                                await requestRemindersPermission()
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    step = .accessibilityPermission
-                                }
-                            }
-                        },
-                        onSkip: {
-                            withAnimation(.easeInOut(duration: 0.6)) {
-                                step = .accessibilityPermission
-                            }
+            case .remindersPermission:
+                PermissionRequestView(
+                    icon: Image(systemName: "checklist"),
+                    title: "Enable Reminders Access",
+                    description: "Visor can show your scheduled reminders alongside your calendar events. Access to Reminders is needed to display your reminders.",
+                    privacyNote: "Your reminders data is only used to show your reminders and is never shared.",
+                    onAllow: {
+                        Task {
+                            _ = try? await calendarService.requestAccess(to: .reminder)
+                            go(.accessibilityPermission)
                         }
-                    )
-                    .transition(.opacity)
-                
+                    },
+                    onSkip: { go(.accessibilityPermission) }
+                )
+                .transition(.opacity)
+            
             case .accessibilityPermission:
                 PermissionRequestView(
                     icon: Image(systemName: "hand.raised.fill"),
@@ -110,17 +88,11 @@ struct OnboardingView: View {
                     privacyNote: "Accessibility access is used only to improve media and brightness notifications. No data is collected or shared.",
                     onAllow: {
                         Task {
-                            await requestAccessibilityPermission()
-                            withAnimation(.easeInOut(duration: 0.6)) {
-                                step = .musicPermission
-                            }
+                            _ = await AccessibilityPermission.shared.ensure(promptIfNeeded: true)
+                            go(.musicPermission)
                         }
                     },
-                    onSkip: {
-                        withAnimation(.easeInOut(duration: 0.6)) {
-                            step = .musicPermission
-                        }
-                    }
+                    onSkip: { go(.musicPermission) }
                 )
                 .transition(.opacity)
                 
@@ -142,21 +114,9 @@ struct OnboardingView: View {
         .frame(width: 400, height: 600)
     }
 
-    // MARK: - Permission Request Logic
-
-    func requestCameraPermission() async {
-        await AVCaptureDevice.requestAccess(for: .video)
-    }
-
-    func requestCalendarPermission() async {
-        _ = try? await calendarService.requestAccess(to: .event)
-    }
-
-    func requestRemindersPermission() async {
-        _ = try? await calendarService.requestAccess(to: .reminder)
-    }
-    
-    func requestAccessibilityPermission() async {
-        _ = await AccessibilityPermission.shared.ensure(promptIfNeeded: true)
+    private func go(_ next: OnboardingStep) {
+        withAnimation(.easeInOut(duration: 0.6)) {
+            step = next
+        }
     }
 }
