@@ -164,6 +164,9 @@ before `8b05dad`.
   Smoke-tested: launches, XPC helper connects, no errors logged.
 - **After 3.1.2:** SkyLightWindow vendored (symbols verified on macOS 26.7;
   lock screen not yet seen on hardware).
+- **Second dead-code pass (2026-09-25, unreleased):** 32 commits after
+  `c0d3389`, ~340 Swift lines, no visible change; what was kept and why
+  is in CHANGELOG [Unreleased].
 - **Next:** the user tests 3.1.2 on hardware. After the release, Claude
   rewrites history to drop the old Co-Authored-By trailers (plan in
   memory) and the user force-pushes.
