@@ -204,40 +204,13 @@ class MusicManager: ObservableObject {
             self.fetchLyricsIfAvailable(bundleIdentifier: state.bundleIdentifier, title: state.title, artist: state.artist)
         }
 
-        let timeChanged = state.currentTime != self.elapsedTime
-        let durationChanged = state.duration != self.songDuration
-        let playbackRateChanged = state.playbackRate != self.playbackRate
-        let shuffleChanged = state.isShuffled != self.isShuffled
-        let repeatModeChanged = state.repeatMode != self.repeatMode
-        let volumeChanged = state.volume != self.volume
-        
-        if state.title != self.songTitle {
-            self.songTitle = state.title
-        }
-
-        if state.artist != self.artistName {
-            self.artistName = state.artist
-        }
-
-        if state.album != self.album {
-            self.album = state.album
-        }
-
-        if timeChanged {
-            self.elapsedTime = state.currentTime
-        }
-
-        if durationChanged {
-            self.songDuration = state.duration
-        }
-
-        if playbackRateChanged {
-            self.playbackRate = state.playbackRate
-        }
-        
-        if shuffleChanged {
-            self.isShuffled = state.isShuffled
-        }
+        set(\.songTitle, state.title)
+        set(\.artistName, state.artist)
+        set(\.album, state.album)
+        set(\.elapsedTime, state.currentTime)
+        set(\.songDuration, state.duration)
+        set(\.playbackRate, state.playbackRate)
+        set(\.isShuffled, state.isShuffled)
 
         if state.bundleIdentifier != self.bundleIdentifier {
             self.bundleIdentifier = state.bundleIdentifier
@@ -245,20 +218,16 @@ class MusicManager: ObservableObject {
             self.volumeControlSupported = activeController?.supportsVolumeControl ?? false
         }
 
-        if repeatModeChanged {
-            self.repeatMode = state.repeatMode
-        }
-        if state.isFavorite != self.isFavoriteTrack {
-            self.isFavoriteTrack = state.isFavorite
-        }
-        
-        if volumeChanged {
-            self.volume = state.volume
-        }
-        
-        // Visor: an unconditional @Published write re-renders every observer.
-        if state.lastUpdated != self.timestampDate {
-            self.timestampDate = state.lastUpdated
+        set(\.repeatMode, state.repeatMode)
+        set(\.isFavoriteTrack, state.isFavorite)
+        set(\.volume, state.volume)
+        set(\.timestampDate, state.lastUpdated)
+    }
+
+    // Visor: an unconditional @Published write re-renders every observer.
+    private func set<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<MusicManager, Value>, _ value: Value) {
+        if self[keyPath: keyPath] != value {
+            self[keyPath: keyPath] = value
         }
     }
 
