@@ -214,8 +214,8 @@ fi
 # Keep a dated copy in the repo so a build is downloadable straight from
 # GitHub. dist/ is gitignored and gets overwritten; this one is permanent.
 # Read from the app that was just built, not grepped out of project.yml:
-# project.yml has one MARKETING_VERSION per target (the app and its XPC
-# helper), and grepping it returned both, putting newlines in the permanent
+# project.yml had one MARKETING_VERSION per target while the XPC helper
+# existed, and grepping it returned both, putting newlines in the permanent
 # filename (3.0.0, measured). The bundle is also the truth about what shipped.
 PLIST="$APP/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$PLIST")"
