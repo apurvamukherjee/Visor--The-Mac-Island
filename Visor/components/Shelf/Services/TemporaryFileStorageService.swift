@@ -19,14 +19,6 @@ class TemporaryFileStorageService {
     
     // MARK: - Public Interface
     
-    /// Creates a temporary file and tracks it for manual cleanup
-    func createTempFile(for type: TempFileType) async -> URL? {
-        return await withCheckedContinuation { continuation in
-            let result = createTempFile(for: type)
-            continuation.resume(returning: result)
-        }
-    }
-    
     func removeTemporaryFileIfNeeded(at url: URL) {
         let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
 
@@ -54,9 +46,9 @@ class TemporaryFileStorageService {
         }
     }
     
-    // MARK: - Private Implementation
-    
-    private func createTempFile(for type: TempFileType) -> URL? {
+    // Visor: was a sync twin behind an async withCheckedContinuation wrapper.
+    /// Creates a temporary file and tracks it for manual cleanup
+    func createTempFile(for type: TempFileType) async -> URL? {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
         let uuid = UUID().uuidString
         
