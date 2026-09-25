@@ -468,7 +468,6 @@ struct ReminderToggle: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(0)
         .accessibilityLabel(isOn ? "Mark as incomplete" : "Mark as complete")
     }
 }

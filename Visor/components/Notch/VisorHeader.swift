@@ -76,7 +76,6 @@ struct VisorHeader: View {
             .zIndex(2)
         }
         .foregroundColor(.gray)
-        .environmentObject(vm)
     }
 
     // Visor: the mirror and settings buttons were two copies of this.

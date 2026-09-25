@@ -233,7 +233,6 @@ struct MusicControlsView: View {
         return HStack(spacing: 6) {
             ForEach(Array(slots.enumerated()), id: \.offset) { index, slot in
                 slotView(for: slot)
-                    .frame(alignment: .center)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -437,7 +436,6 @@ struct NotchHomeView: View {
                     .onHover { isHovering in
                         vm.isHoveringCalendar = isHovering
                     }
-                    .environmentObject(vm)
                     .transition(.opacity)
             }
 

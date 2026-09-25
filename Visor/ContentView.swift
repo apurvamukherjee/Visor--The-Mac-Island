@@ -194,7 +194,6 @@ struct ContentView: View {
         .animation(.smooth, value: gestureProgress)
         .background(dragDetector)
         .preferredColorScheme(.dark)
-        .environmentObject(vm)
         .onChange(of: vm.anyDropZoneTargeting) { _, isTargeted in
             anyDropDebounceTask?.cancel()
 
@@ -278,7 +277,6 @@ struct ContentView: View {
                               .transition(.opacity)
                       } else if showsMusicActivity {
                           MusicLiveActivity()
-                              .frame(alignment: .center)
                       } else if showsFace {
                           VisorFaceAnimation()
                        } else if vm.notchState == .open {
