@@ -46,8 +46,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private static let notchSpace = CGSSpace(level: 2147483647) // Max level
     private var previousScreens: [NSScreen]?
     private var onboardingWindowController: NSWindowController?
-    private var screenLockedObserver: Any?
-    private var screenUnlockedObserver: Any?
     private var isScreenLocked: Bool = false
     // Visor: true while the windows were kept above the lock shield only for
     // the lock animation (not because "Show notch on lock screen" is on).
@@ -61,16 +59,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    // Visor: observers die with the process; the teardown that matters is
+    // stopping the media adapter and closing the notch windows.
     func applicationWillTerminate(_ notification: Notification) {
-        NotificationCenter.default.removeObserver(self)
-        if let observer = screenLockedObserver {
-            DistributedNotificationCenter.default().removeObserver(observer)
-            screenLockedObserver = nil
-        }
-        if let observer = screenUnlockedObserver {
-            DistributedNotificationCenter.default().removeObserver(observer)
-            screenUnlockedObserver = nil
-        }
         MusicManager.shared.destroy()
         cleanupDragDetectors()
         cleanupWindows()
@@ -330,7 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Use closure-based observers for DistributedNotificationCenter and keep tokens for removal
-        screenLockedObserver = DistributedNotificationCenter.default().addObserver(
+        DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(rawValue: "com.apple.screenIsLocked"),
             object: nil, queue: .main) { [weak self] notification in
                 Task { @MainActor in
@@ -338,7 +329,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
         }
 
-        screenUnlockedObserver = DistributedNotificationCenter.default().addObserver(
+        DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(rawValue: "com.apple.screenIsUnlocked"),
             object: nil, queue: .main) { [weak self] notification in
                 Task { @MainActor in
