@@ -39,8 +39,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
 
     var supportsVolumeControl: Bool {
-        let bundleID = playbackState.bundleIdentifier
-        return bundleID == "com.apple.Music" || bundleID == "com.spotify.client"
+        AppleScriptHelper.volumeScriptableApps[playbackState.bundleIdentifier] != nil
     }
 
     var supportsFavorite: Bool {
@@ -134,20 +133,9 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         let volumePercentage = Int(clampedLevel * 100)
         
         let bundleID = playbackState.bundleIdentifier
-        if !bundleID.isEmpty {
-            if bundleID == "com.apple.Music" {
-                let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Music")
-                if !runningApps.isEmpty {
-                    let script = "tell application \"Music\" to set sound volume to \(volumePercentage)"
-                    try? await AppleScriptHelper.executeVoid(script)
-                }
-            } else if bundleID == "com.spotify.client" {
-                let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client")
-                if !runningApps.isEmpty {
-                    let script = "tell application \"Spotify\" to set sound volume to \(volumePercentage)"
-                    try? await AppleScriptHelper.executeVoid(script)
-                }
-            }
+        if let appName = AppleScriptHelper.volumeScriptableApps[bundleID],
+           !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
+            try? await AppleScriptHelper.executeVoid("tell application \"\(appName)\" to set sound volume to \(volumePercentage)")
         }
         
         playbackState.volume = clampedLevel

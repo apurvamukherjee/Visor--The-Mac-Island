@@ -8,6 +8,9 @@
 import Foundation
 
 class AppleScriptHelper {
+    // Visor: the players whose sound volume AppleScript can get and set.
+    static let volumeScriptableApps = ["com.apple.Music": "Music", "com.spotify.client": "Spotify"]
+
     @discardableResult
     class func execute(_ scriptText: String) async throws -> NSAppleEventDescriptor? {
         try await withCheckedThrowingContinuation { continuation in
