@@ -1,5 +1,3 @@
-import AVFoundation
-import Combine
 import Defaults
 import KeyboardShortcuts
 import SwiftUI

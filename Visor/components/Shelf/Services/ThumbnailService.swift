@@ -8,7 +8,6 @@
 import Foundation
 import AppKit
 import QuickLookThumbnailing
-import UniformTypeIdentifiers
 
 actor ThumbnailService {
     static let shared = ThumbnailService()

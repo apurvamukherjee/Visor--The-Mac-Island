@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import UniformTypeIdentifiers
 import SwiftUI
 import QuickLookUI
 import AppKit
