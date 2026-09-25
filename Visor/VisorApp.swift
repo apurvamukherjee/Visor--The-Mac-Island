@@ -34,14 +34,12 @@ struct VisorApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var statusItem: NSStatusItem?
     var windows: [String: NSWindow] = [:] // UUID -> NSWindow
     var viewModels: [String: VisorViewModel] = [:] // UUID -> VisorViewModel
     var window: NSWindow?
     let vm: VisorViewModel = .init()
     @ObservedObject var coordinator = VisorViewCoordinator.shared
     var quickShareService = QuickShareService.shared
-    var timer: Timer?
     var closeNotchTask: Task<Void, Never>?
     // Visor: was NotchSpaceManager, a singleton holding only this space.
     private static let notchSpace = CGSSpace(level: 2147483647) // Max level
