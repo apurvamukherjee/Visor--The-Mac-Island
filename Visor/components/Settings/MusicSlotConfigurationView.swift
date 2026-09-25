@@ -209,17 +209,11 @@ struct MusicSlotConfigurationView: View {
     private func handleDrop(_ providers: [NSItemProvider], toIndex: Int) -> Bool {
         for provider in providers {
             if provider.canLoadObject(ofClass: NSString.self) {
+                // Visor: `as? String` bridges the NSString, so one branch covers both casts.
                 provider.loadObject(ofClass: NSString.self) { item, error in
-                    // item may be an NSString (which conforms to NSItemProviderReading) or other reading type
-                    if let nsstring = item as? NSString {
-                        let raw = nsstring as String
-                        DispatchQueue.main.async {
-                            processDropString(raw, toIndex: toIndex)
-                        }
-                    } else if let str = item as? String {
-                        DispatchQueue.main.async {
-                            processDropString(str, toIndex: toIndex)
-                        }
+                    guard let raw = item as? String else { return }
+                    DispatchQueue.main.async {
+                        processDropString(raw, toIndex: toIndex)
                     }
                 }
                 return true
@@ -231,31 +225,18 @@ struct MusicSlotConfigurationView: View {
     private func handleDropOnTrash(_ providers: [NSItemProvider]) -> Bool {
         for provider in providers {
             if provider.canLoadObject(ofClass: NSString.self) {
+                // Visor: `as? String` bridges the NSString, so one branch covers both casts.
                 provider.loadObject(ofClass: NSString.self) { item, error in
-                    if let nsstring = item as? NSString {
-                        let raw = nsstring as String
-                        DispatchQueue.main.async {
-                            if raw.hasPrefix("slot:") {
-                                // parse source slot index and clear it
-                                let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
-                                guard from >= 0 && from < fixedSlotCount else { return }
-                                var slots = musicControlSlots
-                                if from < slots.count {
-                                    slots[from] = .none
-                                    musicControlSlots = slots
-                                }
-                            }
-                        }
-                    } else if let str = item as? String {
-                        DispatchQueue.main.async {
-                            if str.hasPrefix("slot:") {
-                                let from = Int(str.replacingOccurrences(of: "slot:", with: "")) ?? -1
-                                guard from >= 0 && from < fixedSlotCount else { return }
-                                var slots = musicControlSlots
-                                if from < slots.count {
-                                    slots[from] = .none
-                                    musicControlSlots = slots
-                                }
+                    guard let raw = item as? String else { return }
+                    DispatchQueue.main.async {
+                        if raw.hasPrefix("slot:") {
+                            // parse source slot index and clear it
+                            let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
+                            guard from >= 0 && from < fixedSlotCount else { return }
+                            var slots = musicControlSlots
+                            if from < slots.count {
+                                slots[from] = .none
+                                musicControlSlots = slots
                             }
                         }
                     }
