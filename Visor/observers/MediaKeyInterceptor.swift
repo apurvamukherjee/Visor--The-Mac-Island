@@ -8,7 +8,6 @@ import Foundation
 import AppKit
 import ApplicationServices
 import Defaults
-import AVFoundation
 
 private let kSystemDefinedEventType = CGEventType(rawValue: 14)!
 
@@ -28,7 +27,11 @@ final class MediaKeyInterceptor {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let step: Float = 1.0 / 16.0
-    private var audioPlayer: AVAudioPlayer?
+    // Visor: NSSound plays the one bezel clip without pulling in AVFoundation.
+    private lazy var feedbackSound = NSSound(
+        contentsOfFile: "/System/Library/LoginPlugins/BezelServices.loginPlugin/Contents/Resources/volume.aiff",
+        byReference: true
+    )
     
     private init() {}
     
@@ -153,47 +156,13 @@ final class MediaKeyInterceptor {
         }
     }
     
-    private func prepareAudioPlayerIfNeeded() {
-        guard audioPlayer == nil else { return }
-
-        let defaultPath = "/System/Library/LoginPlugins/BezelServices.loginPlugin/Contents/Resources/volume.aiff"
-        if FileManager.default.fileExists(atPath: defaultPath) {
-            do {
-                audioPlayer = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: defaultPath))
-                print("🔊 [MediaKeyInterceptor] Loaded default Bezel audio from: \(defaultPath)")
-            } catch {
-                print("⚠️ [MediaKeyInterceptor] Failed to init AVAudioPlayer with default path \(defaultPath): \(error.localizedDescription)")
-            }
-        } else {
-            print("⚠️ [MediaKeyInterceptor] Default bezel audio not found at: \(defaultPath)")
-        }
-
-        if let player = audioPlayer {
-            player.volume = 1.0
-            player.numberOfLoops = 0
-            player.prepareToPlay()
-        }
-    }
-
     private func playFeedbackSound() {
         guard let feedback = UserDefaults.standard.persistentDomain(forName: "NSGlobalDomain")?["com.apple.sound.beep.feedback"] as? Int,
-              feedback == 1 else { return }
+              feedback == 1, let sound = feedbackSound else { return }
 
-        prepareAudioPlayerIfNeeded()
-        guard let player = audioPlayer else {
-            print("⚠️ [MediaKeyInterceptor] No audio player available to play feedback sound")
-            return
-        }
-        if let url = player.url {
-            print("🔊 [MediaKeyInterceptor] Playing feedback sound from: \(url.path)")
-        } else {
-            print("🔊 [MediaKeyInterceptor] Playing feedback sound (no url available for AVAudioPlayer)")
-        }
-        if player.isPlaying {
-            player.stop()
-            player.currentTime = 0
-        }
-        player.play()
+        sound.stop()
+        sound.currentTime = 0
+        sound.play()
     }
 
     private func handleKeyPress(keyType: NXKeyType, option: Bool, shift: Bool, command: Bool) {
