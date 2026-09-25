@@ -51,18 +51,10 @@ extension ShapeStyle where Self == AngularGradient {
     }
 }
 
-struct GlowingSnake<
-    Content: Shape,
-    Fill: ShapeStyle
->: View, Animatable {
-    
+// Visor: HelloAnimation was the only user and never set delay, whose
+// default of 1 made the trim start 2 * progress - 1 once drawing began.
+struct GlowingSnake: View, Animatable {
     var progress: Double
-    var delay: Double = 1.0
-    var fill: Fill
-    var lineWidth = 4.0
-    var blurRadius = 8.0
-    
-    @ViewBuilder var shape: Content
     
     var animatableData: Double {
         get { progress }
@@ -70,24 +62,9 @@ struct GlowingSnake<
     }
     
     var body: some View {
-        shape
-            .trim(
-                from: {
-                    if progress > 1 - delay {
-                        2 * progress - 1.0
-                    } else if progress > delay {
-                        progress - delay
-                    } else {
-                        .zero
-                    }
-                }(),
-                to: progress
-            )
-            .glow(
-                fill: fill,
-                lineWidth: lineWidth,
-                blurRadius: blurRadius
-            )
+        HelloShape()
+            .trim(from: progress > 0 ? 2 * progress - 1 : .zero, to: progress)
+            .glow(fill: .hello, lineWidth: 8, blurRadius: 8.0)
     }
 }
 
@@ -97,28 +74,22 @@ struct HelloAnimation: View {
     var onFinish: () -> Void
     
     var body: some View {
-        GlowingSnake(
-            progress: progress,
-            fill: .hello,
-            lineWidth: 8,
-            blurRadius: 8.0,
-            shape: { HelloShape() }
-        )
-        .task {
-            // Wait for the "opening" animation (notch expansion) to complete before starting the snake
-            try? await Task.sleep(for: .seconds(0.6))
-            
-            withAnimation(
-                .easeInOut(duration: 4.0)
-            ) {
-                progress = 1.0
+        GlowingSnake(progress: progress)
+            .task {
+                // Wait for the "opening" animation (notch expansion) to complete before starting the snake
+                try? await Task.sleep(for: .seconds(0.6))
+                
+                withAnimation(
+                    .easeInOut(duration: 4.0)
+                ) {
+                    progress = 1.0
+                }
+                
+                // Wait for the animation to complete
+                try? await Task.sleep(for: .seconds(4.0))
+                
+                onFinish()
             }
-            
-            // Wait for the animation to complete
-            try? await Task.sleep(for: .seconds(4.0))
-            
-            onFinish()
-        }
     }
 }
 
