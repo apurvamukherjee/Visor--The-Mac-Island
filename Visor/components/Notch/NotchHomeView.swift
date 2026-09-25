@@ -133,7 +133,6 @@ struct MusicControlsView: View {
     @State private var dragging: Bool = false
     @State private var lastDragged: Date = .distantPast
     @Default(.musicControlSlots) private var slotConfig
-    @Default(.musicControlSlotLimit) private var slotLimit
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -242,12 +241,10 @@ struct MusicControlsView: View {
     }
 
     private var activeSlots: [MusicControlButton] {
-        let sanitizedLimit = min(
-            max(slotLimit, MusicControlButton.minSlotCount),
-            MusicControlButton.maxSlotCount
-        )
-        let padded = slotConfig.padded(to: sanitizedLimit, filler: .none)
-        let result = Array(padded.prefix(sanitizedLimit))
+        // Visor: nothing ever wrote musicControlSlotLimit, so the limit was always its default of 5.
+        let limit = MusicControlButton.maxSlotCount
+        let padded = slotConfig.padded(to: limit, filler: .none)
+        let result = Array(padded.prefix(limit))
         // If calendar and camera are both visible alongside music, hide the edge slots
         let shouldHideEdges = Defaults[.showCalendar] && Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
         if shouldHideEdges && result.count >= 5 {

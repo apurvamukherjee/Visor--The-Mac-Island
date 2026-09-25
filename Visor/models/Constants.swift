@@ -116,10 +116,6 @@ extension Defaults.Keys {
         "musicControlSlots",
         default: MusicControlButton.defaultLayout
     )
-    static let musicControlSlotLimit = Key<Int>(
-        "musicControlSlotLimit",
-        default: MusicControlButton.defaultLayout.count
-    )
     
     // MARK: Battery
     static let showPowerStatusNotifications = Key<Bool>("showPowerStatusNotifications", default: true)
