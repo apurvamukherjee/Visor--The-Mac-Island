@@ -61,7 +61,7 @@ struct ShelfItemView: View {
                 }
             }
             viewModel.onQuickLookRequest = { urls in
-                quickLookService.show(urls: urls, selectFirst: true)
+                quickLookService.show(urls: urls)
             }
         }
         .onChange(of: viewModel.thumbnail) { _, _ in
@@ -70,7 +70,7 @@ struct ShelfItemView: View {
                 cachedPreviewImage = await renderDragPreview()
             }
         }
-        .quickLookPresenter(using: quickLookService)
+        .quickLookPreview($quickLookService.selectedURL, in: quickLookService.urls)
     }
 
     // MARK: - View Components

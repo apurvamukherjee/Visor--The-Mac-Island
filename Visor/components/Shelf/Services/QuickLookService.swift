@@ -21,7 +21,7 @@ final class QuickLookService: ObservableObject {
     private var previewPanel: QLPreviewPanel?
     private var accessingURLs: [URL] = []
 
-    func show(urls: [URL], selectFirst: Bool = true) {
+    func show(urls: [URL]) {
         guard !urls.isEmpty else { return }
         stopAccessingCurrentURLs()
         accessingURLs = urls.filter { url in
@@ -32,33 +32,14 @@ final class QuickLookService: ObservableObject {
         }
         self.urls = accessingURLs
         self.isQuickLookOpen = true
-        if selectFirst {
-            self.selectedURL = accessingURLs.first
-        }
-        // Observe the shared Quick Look preview panel closing so we can relinquish security scope
+        self.selectedURL = accessingURLs.first
+        // Observe the shared Quick Look preview panel closing so we can relinquish security scope.
+        // Visor: stopAccessingCurrentURLs above already removed the previous observer.
         let panel = QLPreviewPanel.shared()
-        // Remove any existing observer for previous panel
-        if let prev = previewPanel {
-            NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: prev)
-        }
         previewPanel = panel
         NotificationCenter.default.addObserver(self, selector: #selector(previewPanelWillClose(_:)), name: NSWindow.willCloseNotification, object: panel)
     }
 
-    func hide() {
-        stopAccessingCurrentURLs()
-        selectedURL = nil
-        urls.removeAll()
-        isQuickLookOpen = false
-        if let panel = previewPanel, panel.isVisible {
-            panel.orderOut(nil)
-        }
-        if let panel = previewPanel {
-            NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: panel)
-            previewPanel = nil
-        }
-    }
-    
     private func stopAccessingCurrentURLs() {
         NSLog("Stopping access to \(accessingURLs.count) URLs")
         for url in accessingURLs where url.isFileURL {
@@ -74,7 +55,7 @@ final class QuickLookService: ObservableObject {
     
     func updateSelection(urls: [URL]) {
         guard isQuickLookOpen else { return }
-    show(urls: urls, selectFirst: true)
+        show(urls: urls)
     }
 }
 
@@ -87,25 +68,6 @@ extension QuickLookService {
             selectedURL = nil
             urls.removeAll()
             isQuickLookOpen = false
-            // Remove observer and clear reference
-            NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: panel)
-            previewPanel = nil
         }
     }
 }
-
-struct QuickLookPresenter: ViewModifier {
-    @ObservedObject var service: QuickLookService
-
-    func body(content: Content) -> some View {
-        content
-            .quickLookPreview($service.selectedURL, in: service.urls)
-    }
-}
-
-extension View {
-    func quickLookPresenter(using service: QuickLookService) -> some View {
-        self.modifier(QuickLookPresenter(service: service))
-    }
-}
-

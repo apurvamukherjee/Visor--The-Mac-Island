@@ -29,7 +29,7 @@ struct ShelfView: View {
         .onChange(of: selection.selectedIDs) {
             updateQuickLookSelection()
         }
-        .quickLookPresenter(using: quickLookService)
+        .quickLookPreview($quickLookService.selectedURL, in: quickLookService.urls)
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
