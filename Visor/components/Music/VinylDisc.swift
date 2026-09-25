@@ -3,54 +3,31 @@ import SwiftUI
 
 /// A record turning in place of the album art.
 ///
-/// Backed by `CALayer` for the same reason as `PlaybackBars` (RESEARCH.md
-/// §5.1b): a continuous SwiftUI rotation re-runs the view graph every frame.
-/// Here the whole disc is drawn once into layers and the render server spins
-/// it, so the main thread does nothing between track changes.
+/// Backed by `CALayer`: a continuous SwiftUI rotation re-runs the view graph
+/// every frame. Here the whole disc is drawn once into layers and the render
+/// server spins it, so the main thread does nothing between track changes.
 ///
 /// The spin is *removed*, not paused, whenever the island isn't showing it —
 /// collapse, pause, or Reduce Motion. An animation left attached to an
 /// offscreen layer still keeps the render server awake.
 ///
-/// Ported from Visor 2.x into the new player's album-art slot. It fills a
-/// square of whatever size the slot gives it, rather than 2.x's fixed side,
-/// so switching vinyl on moves nothing around it.
-struct VinylDisc: View {
+/// Ported from Visor 2.x into the player's album-art slot. It fills whatever
+/// square the slot gives it (the caller fixes the aspect ratio), so switching
+/// vinyl on moves nothing around it.
+struct VinylDisc: NSViewRepresentable {
     var isSpinning: Bool
-    /// The album colour, used for the centre label. Art-less tracks have no
-    /// tint to derive, so the view falls back on its own.
-    var tint: Color?
+    /// The album colour, used for the centre label.
+    var tint: NSColor
     /// Drawn in the label when there's art to show — a real record's centre.
     var artwork: CGImage?
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Disc(
-            isSpinning: isSpinning && !reduceMotion,
-            tint: NSColor(tint ?? Self.fallbackLabel),
-            artwork: artwork
-        )
-        .aspectRatio(1, contentMode: .fit)
+    func makeNSView(context _: Context) -> VinylDiscView {
+        VinylDiscView()
     }
 
-    /// Warm neutral rather than grey: a tintless disc should still look like
-    /// an object, not like a missing asset.
-    private static let fallbackLabel = Color(red: 0.62, green: 0.56, blue: 0.50)
-
-    private struct Disc: NSViewRepresentable {
-        var isSpinning: Bool
-        var tint: NSColor
-        var artwork: CGImage?
-
-        func makeNSView(context _: Context) -> VinylDiscView {
-            VinylDiscView()
-        }
-
-        func updateNSView(_ view: VinylDiscView, context _: Context) {
-            view.configure(tint: tint, artwork: artwork)
-            view.setSpinning(isSpinning)
-        }
+    func updateNSView(_ view: VinylDiscView, context: Context) {
+        view.configure(tint: tint, artwork: artwork)
+        view.setSpinning(isSpinning && !context.environment.accessibilityReduceMotion)
     }
 }
 

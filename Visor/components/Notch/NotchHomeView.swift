@@ -104,9 +104,10 @@ struct AlbumArtView: View {
     private var vinylDisc: some View {
         VinylDisc(
             isSpinning: musicManager.isPlaying,
-            tint: Color(nsColor: musicManager.avgColor),
+            tint: musicManager.avgColor,
             artwork: musicManager.albumArt.cgImage(forProposedRect: nil, context: nil, hints: nil)
         )
+        .aspectRatio(1, contentMode: .fit)
         .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
     }
 
