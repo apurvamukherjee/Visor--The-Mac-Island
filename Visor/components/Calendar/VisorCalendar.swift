@@ -8,26 +8,22 @@
 import Defaults
 import SwiftUI
 
-struct Config: Equatable {
-    var past: Int = 7
-    var future: Int = 14
-    var steps: Int = 1  // Each step is one day
-    var spacing: CGFloat = 0
-    var offset: Int = 2  // Number of dates to the left of the selected date
-}
-
 struct WheelPicker: View {
     @EnvironmentObject var vm: VisorViewModel
     @Binding var selectedDate: Date
     @State private var scrollPosition: Int?
     @State private var haptics: Bool = false
     @State private var byClick: Bool = false
-    let config: Config
+    // Visor: the only configuration ever built (Config's defaults), with
+    // one-day steps and no spacing folded in.
+    private static let past = 7
+    private static let future = 14
+    private static let offset = 2  // Number of dates to the left of the selected date
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: config.spacing) {
-                let spacerNum = config.offset
+            HStack(spacing: 0) {
+                let spacerNum = Self.offset
                 let dateCount = totalDateItems()
                 let totalItems = dateCount + 2 * spacerNum
                 ForEach(0..<totalItems, id: \.self) { index in
@@ -62,13 +58,13 @@ struct WheelPicker: View {
         .sensoryFeedback(.alignment, trigger: haptics)
         .onChange(of: scrollPosition) { oldValue, newValue in
             if !byClick {
-                handleScrollChange(newValue: newValue, config: config)
+                handleScrollChange(newValue: newValue)
             } else {
                 byClick = false
             }
         }
         .onAppear {
-            scrollToToday(config: config)
+            scrollToToday()
         }
         // When parent updates the bound selectedDate (e.g., view reopen), center the wheel on it
         .onChange(of: selectedDate) { _, newValue in
@@ -122,9 +118,9 @@ struct WheelPicker: View {
         }
     }
 
-    func handleScrollChange(newValue: Int?, config: Config) {
+    func handleScrollChange(newValue: Int?) {
         guard let newIndex = newValue else { return }
-        let spacerNum = config.offset
+        let spacerNum = Self.offset
         let dateCount = totalDateItems()
         guard (spacerNum..<(spacerNum + dateCount)).contains(newIndex) else { return }
         let date = dateForItemIndex(index: newIndex, spacerNum: spacerNum)
@@ -136,7 +132,7 @@ struct WheelPicker: View {
         }
     }
 
-    private func scrollToToday(config: Config) {
+    private func scrollToToday() {
         let today = Date()
         byClick = true
         scrollPosition = indexForDate(today)
@@ -145,28 +141,26 @@ struct WheelPicker: View {
 
     // MARK: - Index/Date mapping with steps and spacers
     private func indexForDate(_ date: Date) -> Int {
-        let spacerNum = config.offset
+        let spacerNum = Self.offset
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let startDate = cal.startOfDay(for: cal.date(byAdding: .day, value: -config.past, to: today) ?? today)
+        let startDate = cal.startOfDay(for: cal.date(byAdding: .day, value: -Self.past, to: today) ?? today)
         let target = cal.startOfDay(for: date)
         let days = cal.dateComponents([.day], from: startDate, to: target).day ?? 0
-        let stepIndex = max(0, min(days / max(config.steps, 1), totalDateItems() - 1))
+        let stepIndex = max(0, min(days, totalDateItems() - 1))
         return spacerNum + stepIndex
     }
 
     private func dateForItemIndex(index: Int, spacerNum: Int) -> Date {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let startDate = cal.date(byAdding: .day, value: -config.past, to: today) ?? today
+        let startDate = cal.date(byAdding: .day, value: -Self.past, to: today) ?? today
         let stepIndex = index - spacerNum
-        return cal.date(byAdding: .day, value: stepIndex * max(config.steps, 1), to: startDate) ?? today
+        return cal.date(byAdding: .day, value: stepIndex, to: startDate) ?? today
     }
 
     private func totalDateItems() -> Int {
-        let range = config.past + config.future
-        let step = max(config.steps, 1)
-        return Int(ceil(Double(range) / Double(step))) + 1
+        Self.past + Self.future + 1
     }
 
     // Visor: one formatter, instead of a new one per day cell per render.
@@ -202,7 +196,7 @@ struct CalendarView: View {
                 }
 
                 ZStack(alignment: .top) {
-                    WheelPicker(selectedDate: $selectedDate, config: Config())
+                    WheelPicker(selectedDate: $selectedDate)
                     HStack(alignment: .top) {
                         LinearGradient(
                             colors: [Color.black, .clear], startPoint: .leading, endPoint: .trailing
