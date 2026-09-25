@@ -169,11 +169,12 @@ before `8b05dad`.
 - **Second dead-code pass (2026-09-25, unreleased):** 32 commits after
   `c0d3389`, ~340 Swift lines, no visible change; what was kept and why
   is in CHANGELOG [Unreleased].
-- **Ponytail audit pass (2026-09-25, unreleased):** items 1–49 done, one
-  commit each, through `aaf1da9`; 42 and 45 skipped (CHANGELOG says why).
-  Found and fixed `250d5ab`'s regression (a `Set` of `CGRect` needs macOS
-  15). Not seen on hardware. Left: the tail (50–53); items 34 (lint rules
-  that match no file) and 54 (MacroVisionKit) need the user's call.
+- **Ponytail audit pass (2026-09-25, unreleased):** all 54 items done, one
+  commit each; 42 and 45 skipped (CHANGELOG says why). Found and fixed
+  `250d5ab`'s regression (a `Set` of `CGRect` needs macOS 15).
+  MacroVisionKit vendored (item 54). Not seen on hardware.
+- **Repo renamed (2026-09-25):** GitHub `apurvamukherjee/visor-mac-island`;
+  origin and all links updated. The local folder keeps its old name.
 - **Next:** the user tests 3.1.2 on hardware. After the release, Claude
   rewrites history to drop the old Co-Authored-By trailers (plan in
   memory) and the user force-pushes.

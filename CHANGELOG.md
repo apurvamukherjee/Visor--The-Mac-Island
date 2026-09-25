@@ -60,6 +60,18 @@ history are unchanged.
   YouTube Music auth actor, a dead screen-name migration and the orphaned
   `%lld` string. The camera session no longer adds a video output that
   nothing read.
+- The audit's tail, also with no visible change: the shelf's bookmark,
+  drag, drop, share and image-conversion code, the settings panes, the tab
+  bar, HUD sliders, calendar wheel and vinyl disc lost duplicated or dead
+  code, and the release script checks the version with an anchored regex
+  (it used to accept `1.2.3.4`).
+- The MacroVisionKit package is gone. Visor used one function of it, the
+  one that tells when a display is showing a full-screen app (for the "Full screen
+  behavior" setting). That code now lives in Visor (MIT, credited), and
+  looks up its private system calls when it runs. If a macOS update removes
+  one, full-screen hiding stops working, but Visor still launches.
+- The GitHub repository is now `apurvamukherjee/visor-mac-island`; the
+  README, the About pane's link and the git remote point there.
 
 ### Fixed
 
@@ -67,6 +79,11 @@ history are unchanged.
   Artist or title names containing "&" now reach the lyrics search intact.
 - Restart Visor relaunches the copy that is running, not whichever copy
   macOS finds first by bundle ID.
+- Full-screen hiding now updates when a display is plugged in or
+  rearranged; the screen-change observer had been registered where macOS
+  never posts that notification.
+- The shelf's share drop zone drew a second, unstyled share icon under the
+  grey one.
 
 ### Left out on purpose
 
