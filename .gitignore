@@ -1,6 +1,8 @@
 .DS_Store
 /DerivedData/
 /*.xcodeproj
+# Written by xcodegen from project.yml's info.properties on every generate.
+/Generated-Info.plist
 /.build/
 /.swiftpm/
 xcuserdata/
