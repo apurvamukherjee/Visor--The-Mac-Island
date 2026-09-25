@@ -39,6 +39,9 @@ history are unchanged.
   the XPC brightness-availability calls nobody made, and the unused
   `AppIcons` struct. The never-written `releaseName` and
   `musicControlSlotLimit` settings are now constants with the same values.
+- The music slot editor's drop code is shorter, and it still works the same
+  way: the slot and trash drops share one loader and one `slot:N` parser,
+  and the slot count comes from `MusicControlButton.maxSlotCount`.
 
 ### Left out on purpose
 
