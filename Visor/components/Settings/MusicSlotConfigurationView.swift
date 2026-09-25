@@ -229,10 +229,8 @@ struct MusicSlotConfigurationView: View {
                             // parse source slot index and clear it
                             let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
                             guard from >= 0 && from < MusicControlButton.maxSlotCount else { return }
-                            var slots = musicControlSlots
-                            if from < slots.count {
-                                slots[from] = .none
-                                musicControlSlots = slots
+                            if musicControlSlots.indices.contains(from) {
+                                musicControlSlots[from] = .none
                             }
                         }
                     }
