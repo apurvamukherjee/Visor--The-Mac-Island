@@ -7,7 +7,6 @@
 
 import AppKit
 import SwiftUI
-import Defaults
 
 class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
@@ -37,17 +36,11 @@ class SettingsWindowController: NSWindowController {
         guard let window = window else { return }
         
         window.title = "Visor Settings"
-        window.titlebarAppearsTransparent = false
-        window.titleVisibility = .visible
         window.toolbarStyle = .unified
         window.isMovableByWindowBackground = true
         
         // Make it behave like a regular app window with proper Spaces support
         window.collectionBehavior = [.managed, .participatesInCycle, .fullScreenAuxiliary]
-        
-        // Ensure proper window behavior
-        window.hidesOnDeactivate = false
-        window.isExcludedFromWindowsMenu = false
         
         // Configure window to be a standard document-style window
         window.isRestorable = true
@@ -92,37 +85,18 @@ class SettingsWindowController: NSWindowController {
             self?.window?.makeKeyAndOrderFront(nil)
         }
     }
-    
-    override func close() {
-        super.close()
-        relinquishFocus()
-    }
-    
-    private func relinquishFocus() {
-        window?.orderOut(nil)
-        
-        // Set app back to accessory mode immediately
-        NSApp.setActivationPolicy(.accessory)
-    }
 }
 
 extension SettingsWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         resumeAccessibilityMonitoring = AccessibilityPermission.shared.isMonitoring
         AccessibilityPermission.shared.stopMonitoring()
-        relinquishFocus()
-    }
-    
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        return true
+        window?.orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
     }
     
     func windowDidBecomeKey(_ notification: Notification) {
         // Ensure app is in regular mode when window becomes key
         NSApp.setActivationPolicy(.regular)
     }
-    
-    func windowDidResignKey(_ notification: Notification) {
-    }
-    
 }
