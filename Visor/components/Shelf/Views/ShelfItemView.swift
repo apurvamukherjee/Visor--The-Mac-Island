@@ -96,38 +96,14 @@ struct ShelfItemView: View {
 
     private var backgroundView: some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(backgroundColor)
+            .fill(isSelected ? Color.accentColor.opacity(0.15) : .clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(
-                        strokeColor,
-                        lineWidth: strokeWidth
+                        isSelected ? Color.accentColor.opacity(0.8) : .clear,
+                        lineWidth: isSelected ? 2 : 1
                     )
             )
-    }
-
-    private var backgroundColor: Color {
-        if isSelected {
-            return Color.accentColor.opacity(0.15)
-        } else {
-            return Color.clear
-        }
-    }
-
-    private var strokeColor: Color {
-        if isSelected {
-            return Color.accentColor.opacity(0.8)
-        } else {
-            return Color.clear
-        }
-    }
-
-    private var strokeWidth: CGFloat {
-        if isSelected {
-            return 2
-        } else {
-            return 1
-        }
     }
     
     // MARK: - Drag Preview Rendering
