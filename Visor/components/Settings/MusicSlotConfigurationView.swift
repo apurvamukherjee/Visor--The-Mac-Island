@@ -13,8 +13,6 @@ struct MusicSlotConfigurationView: View {
     @Default(.musicControlSlots) private var musicControlSlots
     @ObservedObject private var musicManager = MusicManager.shared
 
-    private let fixedSlotCount: Int = 5
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Slot configuration (fixed 5)
@@ -32,14 +30,14 @@ struct MusicSlotConfigurationView: View {
             }
         }
         .onAppear {
-            ensureSlotCapacity(fixedSlotCount)
+            ensureSlotCapacity(MusicControlButton.maxSlotCount)
         }
     }
 
     private var previewSection: some View {
         HStack(alignment: .top, spacing: 12) {
             HStack(spacing: 6) {
-                ForEach(0..<fixedSlotCount, id: \.self) { index in
+                ForEach(0..<MusicControlButton.maxSlotCount, id: \.self) { index in
                     let slot = slotValue(at: index)
                     Group {
                         if slot != .none {
@@ -230,7 +228,7 @@ struct MusicSlotConfigurationView: View {
                         if raw.hasPrefix("slot:") {
                             // parse source slot index and clear it
                             let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
-                            guard from >= 0 && from < fixedSlotCount else { return }
+                            guard from >= 0 && from < MusicControlButton.maxSlotCount else { return }
                             var slots = musicControlSlots
                             if from < slots.count {
                                 slots[from] = .none
@@ -248,7 +246,7 @@ struct MusicSlotConfigurationView: View {
     private func processDropString(_ raw: String, toIndex: Int) {
         if raw.hasPrefix("slot:") {
             let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
-            guard from >= 0 && from < fixedSlotCount else { return }
+            guard from >= 0 && from < MusicControlButton.maxSlotCount else { return }
             var slots = musicControlSlots
             if from < slots.count && toIndex < slots.count {
                 slots.swapAt(from, toIndex)
