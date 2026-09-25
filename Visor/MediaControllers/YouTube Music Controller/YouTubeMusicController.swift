@@ -44,8 +44,9 @@ final class YouTubeMusicController: MediaControllerProtocol {
     }
 
     // MARK: - Private Properties
-    private let configuration: YouTubeMusicConfiguration
-    private let httpClient: YouTubeMusicHTTPClient
+    // Visor: nothing passed another configuration, so the init takes none.
+    private let configuration = YouTubeMusicConfiguration.default
+    private let httpClient = YouTubeMusicHTTPClient(baseURL: YouTubeMusicConfiguration.default.baseURL)
     // Visor: replaces the YouTubeMusicAuthManager actor. One cached token
     // task, shared by concurrent callers; main-actor isolation stands in for
     // the actor, and a failure or a 401 clears it so the next call re-auths.
@@ -57,10 +58,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
     private var reconnectDelay: TimeInterval = 1.0
     
     // MARK: - Initialization
-    init(configuration: YouTubeMusicConfiguration = .default) {
-        self.configuration = configuration
-        self.httpClient = YouTubeMusicHTTPClient(baseURL: configuration.baseURL)
-        
+    init() {
         setupAppStateObserver()
         
         Task {

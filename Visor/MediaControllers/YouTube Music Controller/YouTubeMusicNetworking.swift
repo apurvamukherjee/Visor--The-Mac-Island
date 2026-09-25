@@ -74,27 +74,7 @@ final class YouTubeMusicHTTPClient {
         body: (any Codable & Sendable)? = nil,
         token: String
     ) async throws -> Data {
-        let request = try createAuthenticatedRequest(
-            endpoint: "/api/v1\(endpoint)",
-            method: method,
-            body: body,
-            token: token
-        )
-        
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
-        
-        return data
-    }
-    
-    // MARK: - Private Helpers
-    private func createAuthenticatedRequest(
-        endpoint: String,
-        method: String,
-        body: (any Codable & Sendable)? = nil,
-        token: String
-    ) throws -> URLRequest {
-        guard let url = URL(string: "\(baseURL)\(endpoint)") else {
+        guard let url = URL(string: "\(baseURL)/api/v1\(endpoint)") else {
             throw YouTubeMusicError.invalidURL
         }
         
@@ -107,9 +87,13 @@ final class YouTubeMusicHTTPClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         
-        return request
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response)
+        
+        return data
     }
     
+    // MARK: - Private Helpers
     private func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw YouTubeMusicError.invalidResponse
@@ -129,18 +113,15 @@ final class YouTubeMusicHTTPClient {
 // MARK: - WebSocket Client
 actor YouTubeMusicWebSocketClient {
     private var task: URLSessionWebSocketTask?
-    private let session: URLSession
     private let onMessage: @Sendable (Data) async -> Void
     private let onDisconnect: @Sendable () async -> Void
     
     init(
         onMessage: @escaping @Sendable (Data) async -> Void,
-        onDisconnect: @escaping @Sendable () async -> Void,
-        session: URLSession = .shared
+        onDisconnect: @escaping @Sendable () async -> Void
     ) {
         self.onMessage = onMessage
         self.onDisconnect = onDisconnect
-        self.session = session
     }
     
     func connect(to url: URL, with token: String) async throws {
@@ -149,7 +130,7 @@ actor YouTubeMusicWebSocketClient {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
-        let newTask = session.webSocketTask(with: request)
+        let newTask = URLSession.shared.webSocketTask(with: request)
         task = newTask
         newTask.resume()
         
