@@ -58,8 +58,6 @@ class XPCHelper: NSObject, XPCHelperProtocol {
             }
         }
 
-        var isAvailable: Bool { clientInstance != nil }
-
         func currentBrightness() -> Float? {
             guard let clientInstance,
                   let fn: BrightnessGetter = methodIMP(on: clientInstance, selector: getSelector, as: BrightnessGetter.self)
@@ -88,10 +86,6 @@ class XPCHelper: NSObject, XPCHelperProtocol {
 
     private static let keyboardClient = KeyboardBrightnessClient()
 
-    @objc func isKeyboardBrightnessAvailable(with reply: @escaping (Bool) -> Void) {
-        reply(Self.keyboardClient.isAvailable)
-    }
-
     @objc func currentKeyboardBrightness(with reply: @escaping (NSNumber?) -> Void) {
         reply(Self.keyboardClient.currentBrightness().map { NSNumber(value: $0) })
     }
@@ -100,11 +94,6 @@ class XPCHelper: NSObject, XPCHelperProtocol {
         reply(Self.keyboardClient.setBrightness(value))
     }
     // MARK: - Screen Brightness (moved from client app into helper)
-
-    @objc func isScreenBrightnessAvailable(with reply: @escaping (Bool) -> Void) {
-        var b: Float = 0
-        reply(displayServicesGetBrightness(displayID: CGMainDisplayID(), out: &b) || ioServiceFor(displayID: CGMainDisplayID()) != nil)
-    }
 
     @objc func currentScreenBrightness(with reply: @escaping (NSNumber?) -> Void) {
         var b: Float = 0

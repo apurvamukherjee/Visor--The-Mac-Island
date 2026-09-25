@@ -146,18 +146,6 @@ final class XPCHelperClient: NSObject {
     
     // MARK: - Keyboard Brightness
     
-    nonisolated func isKeyboardBrightnessAvailable() async -> Bool {
-        do {
-            return try await withHelper { service, continuation in
-                service.isKeyboardBrightnessAvailable { available in
-                    continuation.resume(returning: available)
-                }
-            }
-        } catch {
-            return false
-        }
-    }
-    
     nonisolated func currentKeyboardBrightness() async -> Float? {
         do {
             let result: NSNumber? = try await withHelper { service, continuation in
@@ -184,18 +172,6 @@ final class XPCHelperClient: NSObject {
     }
     
     // MARK: - Screen Brightness
-    
-    nonisolated func isScreenBrightnessAvailable() async -> Bool {
-        do {
-            return try await withHelper { service, continuation in
-                service.isScreenBrightnessAvailable { available in
-                    continuation.resume(returning: available)
-                }
-            }
-        } catch {
-            return false
-        }
-    }
     
     nonisolated func currentScreenBrightness() async -> Float? {
         do {
