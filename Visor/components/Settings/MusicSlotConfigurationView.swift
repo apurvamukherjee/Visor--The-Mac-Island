@@ -188,8 +188,6 @@ struct MusicSlotConfigurationView: View {
             return musicManager.repeatMode != .off ? .red : .primary
         case .favorite:
             return musicManager.isFavoriteTrack ? .red : .primary
-        case .playPause:
-            return .primary
         default:
             return .primary
         }
