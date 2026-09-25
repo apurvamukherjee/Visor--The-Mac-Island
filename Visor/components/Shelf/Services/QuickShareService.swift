@@ -14,6 +14,8 @@ struct QuickShareProvider: Identifiable, Hashable, Sendable {
     var id: String
     var imageData: Data?
     var supportsRawText: Bool
+
+    static let systemShareMenu = QuickShareProvider(id: "System Share Menu", imageData: nil, supportsRawText: true)
 }
 
 class QuickShareService: ObservableObject {
@@ -65,8 +67,8 @@ class QuickShareService: ObservableObject {
             providers.insert(ad, at: 0)
         }
 
-        if !providers.contains(where: { $0.id == "System Share Menu" }) {
-            providers.append(QuickShareProvider(id: "System Share Menu", imageData: nil, supportsRawText: true))
+        if !providers.contains(where: { $0.id == QuickShareProvider.systemShareMenu.id }) {
+            providers.append(.systemShareMenu)
         }
 
         self.availableProviders = providers
@@ -91,21 +93,13 @@ class QuickShareService: ObservableObject {
         panel.title = "Select Files for \(provider.id)"
         panel.message = "Choose files to share via \(provider.id)"
 
-        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
-            defer {
-                self?.isPickerOpen = false
-                SharingStateManager.shared.endInteraction()
-            }
-
-            if response == .OK && !panel.urls.isEmpty {
-                Task {
-                    await self?.shareFilesOrText(panel.urls, using: provider, from: view)
-                }
-            }
-        }
-
         let response = panel.runModal()
-        completion(response)
+        isPickerOpen = false
+        SharingStateManager.shared.endInteraction()
+
+        if response == .OK && !panel.urls.isEmpty {
+            await shareFilesOrText(panel.urls, using: provider, from: view)
+        }
     }
     
     // MARK: - Sharing
@@ -146,10 +140,7 @@ class QuickShareService: ObservableObject {
         }
         sharingAccessingURLs.removeAll()
     }
-// MARK: - SharingServiceDelegate
 
-private class SharingServiceDelegate: NSObject {}
-    
     func shareDroppedFiles(_ providers: [NSItemProvider], using shareProvider: QuickShareProvider, from view: NSView?) async {
         var itemsToShare: [Any] = []
         var foundText: String?
@@ -200,12 +191,8 @@ private class SharingServiceDelegate: NSObject {}
 // MARK: - App Storage Extension for Provider Selection
 
 extension QuickShareProvider {
+    // Visor: discovery already moves AirDrop to the front when it exists.
     static var defaultProvider: QuickShareProvider {
-        let svc = QuickShareService.shared
-
-        if let airdrop = svc.availableProviders.first(where: { $0.id == "AirDrop" }) {
-            return airdrop
-        }
-        return svc.availableProviders.first ?? QuickShareProvider(id: "System Share Menu", imageData: nil, supportsRawText: true)
+        QuickShareService.shared.availableProviders.first ?? .systemShareMenu
     }
 }
