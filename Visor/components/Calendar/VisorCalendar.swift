@@ -442,7 +442,7 @@ struct EventListView: View {
                     .frame(minWidth: 44, alignment: .trailing)
                 }
                 .opacity(
-                    event.eventStatus == .ended && Calendar.current.isDateInToday(event.start)
+                    event.end <= Date() && Calendar.current.isDateInToday(event.start)
                         ? 0.6 : 1.0)
             )
         }
