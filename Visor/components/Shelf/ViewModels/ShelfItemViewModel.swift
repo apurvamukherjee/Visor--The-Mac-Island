@@ -128,9 +128,7 @@ final class ShelfItemViewModel: ObservableObject {
 
         if !selectedOpenableURLs.isEmpty {
             addMenuItem(title: "Open")
-        }
 
-        if !selectedOpenableURLs.isEmpty {
             let openWith = NSMenuItem(title: "Open With", action: nil, keyEquivalent: "")
             let submenu = NSMenu()
 
@@ -139,15 +137,12 @@ final class ShelfItemViewModel: ObservableObject {
 
             let openWithApps: [URL] = {
                 guard let u = baseURLForApps else { return [] }
-                if u.isFileURL {
-                    var results = NSWorkspace.shared.urlsForApplications(toOpen: u)
-                    if results.isEmpty, let uti = try? u.resourceValues(forKeys: [.contentTypeKey]).contentType {
-                        results = NSWorkspace.shared.urlsForApplications(toOpen: uti)
-                    }
-                    return Array(Set(results))
-                } else {
-                    return Array(Set(NSWorkspace.shared.urlsForApplications(toOpen: u)))
+                var results = NSWorkspace.shared.urlsForApplications(toOpen: u)
+                // A file with no direct handler may still have apps for its type
+                if results.isEmpty, u.isFileURL, let uti = try? u.resourceValues(forKeys: [.contentTypeKey]).contentType {
+                    results = NSWorkspace.shared.urlsForApplications(toOpen: uti)
                 }
+                return Array(Set(results))
             }()
             let defaultApp = defaultAppURL()
 
@@ -198,9 +193,7 @@ final class ShelfItemViewModel: ObservableObject {
         if !selectedFileURLs.isEmpty { addMenuItem(title: "Show in Finder") }
         // Allow Quick Look for files and link URLs
         if selectedItems.contains(where: { $0.openableURL != nil }) {
-            // Add Quick Look menu item
-            let quickLookItem = NSMenuItem(title: "Quick Look", action: nil, keyEquivalent: "")
-            menu.addItem(quickLookItem)
+            addMenuItem(title: "Quick Look")
         }
 
         menu.addItem(NSMenuItem.separator())
@@ -221,8 +214,7 @@ final class ShelfItemViewModel: ObservableObject {
             }
 
             // Create PDF - for one or more images
-            let createPDF = NSMenuItem(title: "Create PDF", action: nil, keyEquivalent: "")
-            imageSubmenu.addItem(createPDF)
+            imageSubmenu.addItem(NSMenuItem(title: "Create PDF", action: nil, keyEquivalent: ""))
 
             imageActions.submenu = imageSubmenu
             menu.addItem(imageActions)
@@ -230,10 +222,7 @@ final class ShelfItemViewModel: ObservableObject {
         }
 
         // Add compression option for files/folders (single or multiple)
-        if !selectedFileURLs.isEmpty {
-            let compressItem = NSMenuItem(title: "Compress", action: nil, keyEquivalent: "")
-            menu.addItem(compressItem)
-        }
+        if !selectedFileURLs.isEmpty { addMenuItem(title: "Compress") }
 
         if selectedItems.count == 1, case .file(_) = item.kind { addMenuItem(title: "Rename") }
 
@@ -302,25 +291,18 @@ final class ShelfItemViewModel: ObservableObject {
             if let appURL = sender.representedObject as? URL {
                 let selected = selectedShelfItems
                 
+                let allSelectedURLs = selected.compactMap { $0.openableURL }
+                guard !allSelectedURLs.isEmpty else { return }
+                // Visor: with no file URLs, accessSecurityScopedResources just runs the open.
+                let fileURLs = allSelectedURLs.filter { $0.isFileURL }
                 Task {
-                        let allSelectedURLs = selected.compactMap { $0.openableURL }
-
-                        guard !allSelectedURLs.isEmpty else { return }
-
-                        let config = NSWorkspace.OpenConfiguration()
-
-                        let fileURLs = allSelectedURLs.filter { $0.isFileURL }
-                        do {
-                            if !fileURLs.isEmpty {
-                                _ = try await fileURLs.accessSecurityScopedResources { _ in
-                                    try await NSWorkspace.shared.open(allSelectedURLs, withApplicationAt: appURL, configuration: config)
-                                }
-                            } else {
-                                try await NSWorkspace.shared.open(allSelectedURLs, withApplicationAt: appURL, configuration: config)
-                            }
-                        } catch {
-                            print("❌ Failed to open with application: \(error.localizedDescription)")
+                    do {
+                        _ = try await fileURLs.accessSecurityScopedResources { _ in
+                            try await NSWorkspace.shared.open(allSelectedURLs, withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
                         }
+                    } catch {
+                        print("❌ Failed to open with application: \(error.localizedDescription)")
+                    }
                 }
                 return
             }
