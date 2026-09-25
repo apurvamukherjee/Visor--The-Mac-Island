@@ -162,7 +162,6 @@ if [ "$ACTUAL" != "$EXPECTED" ]; then
     echo "DMG volume contents unexpected." >&2
     echo "  expected: $EXPECTED" >&2
     echo "  actual:   $ACTUAL" >&2
-    hdiutil detach "$DEV" >/dev/null 2>&1 || true
     exit 1
 fi
 
@@ -222,20 +221,12 @@ VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$PLIST
 # Semantic versioning, MAJOR.MINOR.PATCH, enforced here rather than trusted:
 # the filename is the permanent record, and a "1.6" that should have been
 # "1.6.0" cannot be corrected later without rewriting history.
-# The glob's `*` matches newlines too, so a multi-line value passed this
-# check once; anything but digits and dots is rejected before it.
-case "$VERSION" in
-    *[!0-9.]*) VERSION_OK=0 ;;
-    [0-9]*.[0-9]*.[0-9]*) VERSION_OK=1 ;;
-    *) VERSION_OK=0 ;;
-esac
-case "$VERSION_OK" in
-    1) ;;
-    *)
-        echo "MARKETING_VERSION must be MAJOR.MINOR.PATCH (got \"$VERSION\")" >&2
-        exit 1
-        ;;
-esac
+# An anchored regex, not a glob: the old glob's `*` let "1.2.3.4" through and
+# once matched a multi-line value; `$` here is end of string, not of a line.
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "MARKETING_VERSION must be MAJOR.MINOR.PATCH (got \"$VERSION\")" >&2
+    exit 1
+fi
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$PLIST")"
 case "$BUILD" in
     "" | *[!0-9]*)

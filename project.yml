@@ -75,5 +75,3 @@ schemes:
     build:
       targets:
         Visor: all
-    run:
-      config: Debug

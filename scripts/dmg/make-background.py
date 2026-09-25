@@ -46,7 +46,6 @@ d = ImageDraw.Draw(img)
 # The island, hanging off the top edge the way the real notch does.
 L, R, B, RAD = 396, 684, 108, 32
 d.rounded_rectangle([L, -RAD, R, B], radius=RAD, fill=(0, 0, 0, 255))
-d.rectangle([L, 0, R, RAD], fill=(0, 0, 0, 255))
 hair = (255, 255, 255, 30)
 d.line([(L, 0), (L, B - RAD)], fill=hair, width=3)
 d.line([(R, 0), (R, B - RAD)], fill=hair, width=3)
