@@ -28,7 +28,7 @@ final class ShelfItemViewModel: ObservableObject {
 
     var isSelected: Bool { selection.isSelected(item.id) }
 
-    func loadThumbnail() async {
+    private func loadThumbnail() async {
         guard let url = item.fileURL else { return }
         if let image = await ThumbnailService.shared.thumbnail(for: url, size: CGSize(width: 56, height: 56)) {
             self.thumbnail = image

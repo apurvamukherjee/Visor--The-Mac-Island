@@ -53,8 +53,9 @@ struct ShelfItemView: View {
             )
         }
         .onAppear {
-            Task { 
-                await viewModel.loadThumbnail()
+            // Visor: the view model loads the thumbnail in its init; the
+            // onChange below re-renders the preview when it arrives.
+            Task {
                 // Pre-render drag preview once on appear
                 if cachedPreviewImage == nil {
                     cachedPreviewImage = await renderDragPreview()
