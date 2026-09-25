@@ -112,24 +112,26 @@ final class ShelfStateViewModel: ObservableObject {
     }
 
 
+    /// Resolves a file item's URL, deferring a stale-bookmark refresh so it
+    /// is safe to call during a view update.
     func resolveFileURL(for item: ShelfItem) -> URL? {
-        guard case .file(let bookmarkData) = item.kind else { return nil }
-        let bookmark = Bookmark(data: bookmarkData)
-        let result = bookmark.resolve()
-        if let refreshed = result.refreshedData, refreshed != bookmarkData {
-            NSLog("Bookmark for \(item) stale; refreshing")
-            scheduleDeferredBookmarkUpdate(for: item, bookmark: refreshed)
-        }
-        return result.url
+        resolve(item, refresh: scheduleDeferredBookmarkUpdate)
     }
 
+    /// Resolves a file item's URL and stores a refreshed bookmark at once,
+    /// for user-initiated actions.
     func resolveAndUpdateBookmark(for item: ShelfItem) -> URL? {
+        resolve(item, refresh: updateBookmark)
+    }
+
+    // Visor: the two public resolvers differed only in how they stored a
+    // refreshed bookmark.
+    private func resolve(_ item: ShelfItem, refresh: (ShelfItem, Data) -> Void) -> URL? {
         guard case .file(let bookmarkData) = item.kind else { return nil }
-        let bookmark = Bookmark(data: bookmarkData)
-        let result = bookmark.resolve()
+        let result = Bookmark(data: bookmarkData).resolve()
         if let refreshed = result.refreshedData, refreshed != bookmarkData {
             NSLog("Bookmark for \(item) stale; refreshing")
-            updateBookmark(for: item, bookmark: refreshed)
+            refresh(item, refreshed)
         }
         return result.url
     }

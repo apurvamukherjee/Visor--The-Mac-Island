@@ -15,29 +15,12 @@ enum ShelfActionService {
     static func open(_ item: ShelfItem) {
         switch item.kind {
         case .file(let bookmark):
-            handleBookmarkedFile(bookmark) { url in
-                NSWorkspace.shared.open(url)
-            }
+            _ = Bookmark(data: bookmark).resolveURL()?.accessSecurityScopedResource { NSWorkspace.shared.open($0) }
         case .link(let url):
             NSWorkspace.shared.open(url)
         case .text(let string):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(string, forType: .string)
-        }
-    }
-
-    static func remove(_ item: ShelfItem) {
-        ShelfStateViewModel.shared.remove(item)
-    }
-
-    private static func handleBookmarkedFile(_ bookmarkData: Data, action: @escaping @Sendable (URL) -> Void) {
-        Task {
-            let bookmark = Bookmark(data: bookmarkData)
-            if let url = bookmark.resolveURL() {
-                url.accessSecurityScopedResource { accessibleURL in
-                    action(accessibleURL)
-                }
-            }
         }
     }
 }
