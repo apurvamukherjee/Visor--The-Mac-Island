@@ -246,7 +246,7 @@ struct MusicControlsView: View {
         let result = Array((slotConfig + Array(repeating: .none, count: limit)).prefix(limit))
         // If calendar and camera are both visible alongside music, hide the edge slots
         let shouldHideEdges = Defaults[.showCalendar] && Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
-        if shouldHideEdges && result.count >= 5 {
+        if shouldHideEdges {
             return Array(result.dropFirst().dropLast())
         }
 
