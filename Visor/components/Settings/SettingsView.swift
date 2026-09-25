@@ -704,7 +704,8 @@ struct About: View {
                     HStack {
                         Text("Release name")
                         Spacer()
-                        Text(Defaults[.releaseName])
+                        // Visor: the releaseName key was never written, so it always read "Visor".
+                        Text(verbatim: "Visor")
                             .foregroundStyle(.secondary)
                     }
                     HStack {
