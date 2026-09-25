@@ -76,98 +76,70 @@ class WebcamManager: NSObject, ObservableObject {
         }
     }
     
-    /// Checks if any camera devices are available and sets up capture session if needed
-    func checkCameraAvailability() {
-        let availableDevices = AVCaptureDevice.DiscoverySession(
+    private var videoDevices: [AVCaptureDevice] {
+        AVCaptureDevice.DiscoverySession(
             deviceTypes: [.external, .builtInWideAngleCamera],
             mediaType: .video,
             position: .unspecified
         ).devices
-        
-        let hasAvailableDevices = !availableDevices.isEmpty
-        
+    }
+
+    func checkCameraAvailability() {
+        let hasAvailableDevices = !videoDevices.isEmpty
         DispatchQueue.main.async {
             self.cameraAvailable = hasAvailableDevices
         }
     }
     
-    /// Sets up the capture session with a completion handler
-    private func setupCaptureSession(completion: @escaping (Bool) -> Void) {
-        sessionQueue.async { [weak self] in
-            guard let self = self else { 
-                completion(false)
-                return 
-            }
-            
-            // Clean up any existing session before creating a new one
-            self.cleanupExistingSession()
-            
-            let session = AVCaptureSession()
-            
-            do {
-                // Get available devices and prefer external camera if available
-                let discoverySession = AVCaptureDevice.DiscoverySession(
-                    deviceTypes: [.external, .builtInWideAngleCamera],
-                    mediaType: .video,
-                    position: .unspecified
-                )
-                
-                guard let videoDevice = discoverySession.devices.first else {
-                    NSLog("No video devices available")
-                    DispatchQueue.main.async {
-                        self.isSessionRunning = false
-                        self.cameraAvailable = false
-                    }
-                    completion(false)
-                    return
-                }
-                
-                NSLog("Using camera: \(videoDevice.localizedName)")
-                
-                // Lock device for configuration
-                try videoDevice.lockForConfiguration()
-                defer { videoDevice.unlockForConfiguration() }
-                
-                let videoInput = try AVCaptureDeviceInput(device: videoDevice)
-                guard session.canAddInput(videoInput) else {
-                    throw NSError(domain: "Visor.WebcamManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Cannot add video input"])
-                }
-                
-                session.beginConfiguration()
-                session.sessionPreset = .high
-                session.addInput(videoInput)
-                
-                let videoOutput = AVCaptureVideoDataOutput()
-                videoOutput.setSampleBufferDelegate(nil, queue: nil)
-                if session.canAddOutput(videoOutput) {
-                    session.addOutput(videoOutput)
-                }
-                session.commitConfiguration()
-                
-                self.captureSession = session
-                
-                // Create and set up preview layer on main thread
-                DispatchQueue.main.async {
-                    self.cameraAvailable = true
-                    let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-                    previewLayer.videoGravity = .resizeAspectFill
-                    self.previewLayer = previewLayer
-                    
-                    // Setup is complete, let the caller know
-                    completion(true)
-                }
-                
-                NSLog("Capture session setup completed successfully")
-            } catch {
-                NSLog("Failed to setup capture session: \(error.localizedDescription)")
+    // Visor: runs on sessionQueue, where startSession already is, so it
+    // returns its result instead of hopping to main and back to start.
+    // The preview layer needs no data output, so none is added.
+    private func setupCaptureSession() -> Bool {
+        let session = AVCaptureSession()
+        
+        do {
+            // Prefer an external camera if available
+            guard let videoDevice = videoDevices.first else {
+                NSLog("No video devices available")
                 DispatchQueue.main.async {
                     self.isSessionRunning = false
                     self.cameraAvailable = false
-                    self.previewLayer = nil
                 }
-                completion(false)
+                return false
             }
+            
+            NSLog("Using camera: \(videoDevice.localizedName)")
+            
+            let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+            guard session.canAddInput(videoInput) else {
+                throw NSError(domain: "Visor.WebcamManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Cannot add video input"])
+            }
+            
+            session.beginConfiguration()
+            session.sessionPreset = .high
+            session.addInput(videoInput)
+            session.commitConfiguration()
+        } catch {
+            NSLog("Failed to setup capture session: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.isSessionRunning = false
+                self.cameraAvailable = false
+                self.previewLayer = nil
+            }
+            return false
         }
+        
+        self.captureSession = session
+        
+        DispatchQueue.main.async {
+            self.cameraAvailable = true
+            let previewLayer = AVCaptureVideoPreviewLayer(session: session)
+            previewLayer.videoGravity = .resizeAspectFill
+            self.previewLayer = previewLayer
+        }
+        
+        NSLog("Capture session setup completed successfully")
+        return true
     }
     
     /// Cleans up an existing capture session, removing all inputs and outputs
@@ -227,26 +199,8 @@ class WebcamManager: NSObject, ObservableObject {
     
     func startSession() {
         sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            // If no session exists, create new session
-            if self.captureSession == nil {
-                self.setupCaptureSession { success in
-                    if success {
-                        // Only start the session if setup was successful
-                        self.startRunningCaptureSession()
-                    }
-                }
-            } else {
-                // Session already exists, just start it
-                self.startRunningCaptureSession()
-            }
-        }
-    }
-    
-    private func startRunningCaptureSession() {
-        sessionQueue.async { [weak self] in
-            guard let self = self, let session = self.captureSession, !session.isRunning else {
+            guard let self = self, self.captureSession != nil || self.setupCaptureSession(),
+                  let session = self.captureSession, !session.isRunning else {
                 return
             }
             
