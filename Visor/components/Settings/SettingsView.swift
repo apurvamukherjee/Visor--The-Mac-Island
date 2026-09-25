@@ -751,6 +751,21 @@ struct Shelf: View {
     init() {
         Task { await QuickShareService.shared.discoverAvailableProviders() }
     }
+
+    // Visor: the picker rows and the selected-provider row drew this twice.
+    private func providerIcon(_ provider: QuickShareProvider) -> some View {
+        Group {
+            if let imgData = provider.imageData, let nsImg = NSImage(data: imgData) {
+                Image(nsImage: nsImg)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Image(systemName: "square.and.arrow.up")
+            }
+        }
+        .frame(width: 16, height: 16)
+        .foregroundColor(.accentColor)
+    }
     
     var body: some View {
         Form {
@@ -778,26 +793,14 @@ struct Shelf: View {
                 }
 
             } header: {
-                HStack {
-                    Text("General")
-                }
+                Text("General")
             }
             
             Section {
                 Picker("Quick Share Service", selection: $quickShareProvider) {
                     ForEach(quickShareService.availableProviders, id: \.id) { provider in
                         HStack {
-                            Group {
-                                if let imgData = provider.imageData, let nsImg = NSImage(data: imgData) {
-                                    Image(nsImage: nsImg)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                } else {
-                                    Image(systemName: "square.and.arrow.up")
-                                }
-                            }
-                            .frame(width: 16, height: 16)
-                            .foregroundColor(.accentColor)
+                            providerIcon(provider)
                             Text(provider.id)
                         }
                         .tag(provider.id)
@@ -807,17 +810,7 @@ struct Shelf: View {
                 
                 if let selectedProvider = selectedProvider {
                     HStack {
-                        Group {
-                            if let imgData = selectedProvider.imageData, let nsImg = NSImage(data: imgData) {
-                                Image(nsImage: nsImg)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                        }
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(.accentColor)
+                        providerIcon(selectedProvider)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Currently selected: \(selectedProvider.id)")
                                 .font(.caption)
@@ -832,9 +825,7 @@ struct Shelf: View {
                 // Providers are always enabled; user can pick default service above.
                 
             } header: {
-                HStack {
-                    Text("Quick Share")
-                }
+                Text("Quick Share")
             } footer: {
                 Text("Choose which service to use when sharing files from the shelf. Click the shelf button to select files, or drag files onto it to share immediately.")
                     .font(.caption)
@@ -899,9 +890,7 @@ struct Appearance: View {
                     Text("Show cool face animation while inactive")
                 }
             } header: {
-                HStack {
-                    Text("Additional features")
-                }
+                Text("Additional features")
             }
         }
         .accentColor(.effectiveAccent)
