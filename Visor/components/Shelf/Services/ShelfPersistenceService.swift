@@ -7,10 +7,6 @@
 
 import Foundation
 
-// Access model types
-@_exported import struct Foundation.URL
-
-
 final class ShelfPersistenceService {
     static let shared = ShelfPersistenceService()
 
@@ -25,8 +21,6 @@ final class ShelfPersistenceService {
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("items.json")
         encoder.outputFormatting = [.prettyPrinted]
-        decoder.dateDecodingStrategy = .iso8601
-        encoder.dateEncodingStrategy = .iso8601
     }
 
     func load() -> [ShelfItem] {

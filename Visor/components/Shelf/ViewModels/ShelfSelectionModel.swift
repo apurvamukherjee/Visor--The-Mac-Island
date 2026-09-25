@@ -28,6 +28,11 @@ final class ShelfSelectionModel: ObservableObject {
         lastAnchorID = item.id
     }
 
+    /// Selects only `item` unless it is already part of the selection.
+    func ensureSelected(_ item: ShelfItem) {
+        if !isSelected(item.id) { selectSingle(item) }
+    }
+
     func toggle(_ item: ShelfItem) {
         if selectedIDs.contains(item.id) {
             selectedIDs.remove(item.id)
@@ -56,13 +61,5 @@ final class ShelfSelectionModel: ObservableObject {
         lastAnchorID = nil
     }
 
-    @Published private(set) var isDragging: Bool = false
-
-    func beginDrag() {
-        isDragging = true
-    }
-
-    func endDrag() {
-        isDragging = false
-    }
+    @Published var isDragging: Bool = false
 }

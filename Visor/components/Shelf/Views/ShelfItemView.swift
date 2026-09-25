@@ -292,12 +292,12 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         }
         
         func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {
-            ShelfSelectionModel.shared.beginDrag()
+            ShelfSelectionModel.shared.isDragging = true
         }
         
         
         func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-            ShelfSelectionModel.shared.endDrag()
+            ShelfSelectionModel.shared.isDragging = false
 
             // Stop accessing security-scoped resources after drag completes
             for url in draggedURLs {

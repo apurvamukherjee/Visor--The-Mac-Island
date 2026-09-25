@@ -45,13 +45,12 @@ final class ShelfItemViewModel: ObservableObject {
         } else if flags.contains(.control) {
             handleRightClick(event: event, view: view)
         } else {
-            if !selection.isSelected(item.id) { selection.selectSingle(item) }
+            selection.ensureSelected(item)
         }
         if event.clickCount == 2 { handleDoubleClick() }
     }
 
     func handleRightClick(event: NSEvent, view: NSView) {
-        if !selection.isSelected(item.id) { selection.selectSingle(item) }
         presentContextMenu(event: event, in: view)
     }
 
@@ -113,12 +112,8 @@ final class ShelfItemViewModel: ObservableObject {
     var onQuickLookRequest: (([URL]) -> Void)?
 
     // MARK: - Context Menu helpers (extracted from view)
-    private func ensureContextMenuSelection() {
-        if !selection.isSelected(item.id) { selection.selectSingle(item) }
-    }
-
     func presentContextMenu(event: NSEvent, in view: NSView) {
-        ensureContextMenuSelection()
+        selection.ensureSelected(item)
         let menu = NSMenu()
 
         func addMenuItem(title: String) {
