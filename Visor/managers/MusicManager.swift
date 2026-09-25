@@ -325,102 +325,60 @@ class MusicManager: ObservableObject {
             .replacingOccurrences(of: "\u{FFFD}", with: "")
     }
 
+    private struct LRCLibResult: Decodable {
+        let plainLyrics: String?
+        let syncedLyrics: String?
+    }
+
+    // Visor: every exit publishes through the defer, so a failed lookup also
+    // clears the previous song's synced lyrics, which lyricLine prefers.
+    // URLComponents encodes "&" in a name, which .urlQueryAllowed did not.
     @MainActor
     private func fetchLyricsFromWeb(title: String, artist: String) async {
-        let cleanTitle = normalizedQuery(title)
-        let cleanArtist = normalizedQuery(artist)
-        guard let encodedTitle = cleanTitle.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let encodedArtist = cleanArtist.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            self.currentLyrics = ""
-            self.isFetchingLyrics = false
-            return
+        var plain = ""
+        var synced = ""
+        defer {
+            currentLyrics = plain.isEmpty ? synced : plain
+            isFetchingLyrics = false
+            syncedLyrics = synced.isEmpty ? [] : parseLRC(synced)
         }
 
-        // LRCLIB simple search (no auth): https://lrclib.net/api/search?track_name=...&artist_name=...
-        let urlString = "https://lrclib.net/api/search?track_name=\(encodedTitle)&artist_name=\(encodedArtist)"
-        guard let url = URL(string: urlString) else {
-            self.currentLyrics = ""
-            self.isFetchingLyrics = false
-            return
-        }
-        do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                self.currentLyrics = ""
-                self.isFetchingLyrics = false
-                return
-            }
-            if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-               let first = jsonArray.first {
-                // Prefer plain lyrics (syncedLyrics may also be present)
-                let plain = (first["plainLyrics"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let synced = (first["syncedLyrics"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let resolved = plain.isEmpty ? synced : plain
-                self.currentLyrics = resolved
-                self.isFetchingLyrics = false
-                if !synced.isEmpty {
-                    self.syncedLyrics = self.parseLRC(synced)
-                } else {
-                    self.syncedLyrics = []
-                }
-            } else {
-                self.currentLyrics = ""
-                self.isFetchingLyrics = false
-                self.syncedLyrics = []
-            }
-        } catch {
-            self.currentLyrics = ""
-            self.isFetchingLyrics = false
-            self.syncedLyrics = []
-        }
+        // LRCLIB simple search (no auth)
+        var components = URLComponents(string: "https://lrclib.net/api/search")
+        components?.queryItems = [
+            URLQueryItem(name: "track_name", value: normalizedQuery(title)),
+            URLQueryItem(name: "artist_name", value: normalizedQuery(artist)),
+        ]
+        guard let url = components?.url,
+              let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let first = try? JSONDecoder().decode([LRCLibResult].self, from: data).first else { return }
+
+        // Prefer plain lyrics (syncedLyrics may also be present)
+        plain = first.plainLyrics?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        synced = first.syncedLyrics?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
     // MARK: - Synced lyrics helpers
     // Visor: compiled once rather than once per lyric line.
     // Match [mm:ss.xx] or [m:ss]
-    private static let lrcTimestamp = try? NSRegularExpression(pattern: #"\[(\d{1,2}):(\d{2})(?:\.(\d{1,2}))?\]"#)
+    private static let lrcTimestamp = #/\[(\d{1,2}):(\d{2})(?:\.(\d{1,2}))?\]/#
 
     private func parseLRC(_ lrc: String) -> [(time: Double, text: String)] {
-        var result: [(Double, String)] = []
-        lrc.split(separator: "\n").forEach { lineSub in
-            let line = String(lineSub)
-            guard let regex = Self.lrcTimestamp else { return }
-            let nsLine = line as NSString
-            if let match = regex.firstMatch(in: line, range: NSRange(location: 0, length: nsLine.length)) {
-                let minStr = nsLine.substring(with: match.range(at: 1))
-                let secStr = nsLine.substring(with: match.range(at: 2))
-                let csRange = match.range(at: 3)
-                let centiStr = csRange.location != NSNotFound ? nsLine.substring(with: csRange) : "0"
-                let minutes = Double(minStr) ?? 0
-                let seconds = Double(secStr) ?? 0
-                let centis = Double(centiStr) ?? 0
-                let time = minutes * 60 + seconds + centis / 100.0
-                let textStart = match.range.location + match.range.length
-                let text = nsLine.substring(from: textStart).trimmingCharacters(in: .whitespaces)
-                if !text.isEmpty {
-                    result.append((time, text))
-                }
-            }
+        lrc.split(separator: "\n").compactMap { line -> (time: Double, text: String)? in
+            guard let match = line.firstMatch(of: Self.lrcTimestamp) else { return nil }
+            let (_, minutes, seconds, centis) = match.output
+            let time = (Double(minutes) ?? 0) * 60 + (Double(seconds) ?? 0) + (centis.flatMap { Double($0) } ?? 0) / 100.0
+            let text = line[match.range.upperBound...].trimmingCharacters(in: .whitespaces)
+            return text.isEmpty ? nil : (time, text)
         }
-        return result.sorted { $0.0 < $1.0 }
+        .sorted { $0.time < $1.time }
     }
 
     func lyricLine(at elapsed: Double) -> String {
-        guard !syncedLyrics.isEmpty else { return currentLyrics }
-        // Binary search for last line with time <= elapsed
-        var low = 0
-        var high = syncedLyrics.count - 1
-        var idx = 0
-        while low <= high {
-            let mid = (low + high) / 2
-            if syncedLyrics[mid].time <= elapsed {
-                idx = mid
-                low = mid + 1
-            } else {
-                high = mid - 1
-            }
-        }
-        return syncedLyrics[idx].text
+        guard let first = syncedLyrics.first else { return currentLyrics }
+        // Last line with time <= elapsed, or the first line before it starts
+        return (syncedLyrics.last { $0.time <= elapsed } ?? first).text
     }
 
     private func updateArtwork(_ artworkData: Data) {
