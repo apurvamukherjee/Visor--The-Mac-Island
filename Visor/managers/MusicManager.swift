@@ -85,53 +85,37 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Setup Methods
-    private func createController(for type: MediaControllerType) -> (any MediaControllerProtocol)? {
+    // Visor: every controller's init succeeds, so this returns one directly
+    // and the Apple Music fallback for a failed creation could never run.
+    private func createController(for type: MediaControllerType) -> any MediaControllerProtocol {
         // Cleanup previous controller
         if activeController != nil {
             controllerCancellables.removeAll()
             activeController = nil
         }
 
-        let newController: (any MediaControllerProtocol)?
-
-        switch type {
-        case .nowPlaying:
-            newController = NowPlayingController()
-        case .appleMusic:
-            newController = AppleMusicController()
-        case .spotify:
-            newController = SpotifyController()
-        case .youtubeMusic:
-            newController = YouTubeMusicController()
+        let controller: any MediaControllerProtocol = switch type {
+        case .nowPlaying: NowPlayingController()
+        case .appleMusic: AppleMusicController()
+        case .spotify: SpotifyController()
+        case .youtubeMusic: YouTubeMusicController()
         }
 
         // Set up state observation for the new controller
-        if let controller = newController {
-            controller.playbackStatePublisher
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] state in
-                    guard let self = self,
-                          self.activeController === controller else { return }
-                    self.updateFromPlaybackState(state)
-                }
-                .store(in: &controllerCancellables)
-        }
+        controller.playbackStatePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                guard let self = self,
+                      self.activeController === controller else { return }
+                self.updateFromPlaybackState(state)
+            }
+            .store(in: &controllerCancellables)
 
-        return newController
+        return controller
     }
 
     private func setActiveControllerBasedOnPreference() {
-        let preferredType = Defaults[.mediaController]
-        print("Preferred Media Controller: \(preferredType)")
-
-        let controllerType = preferredType
-
-        if let controller = createController(for: controllerType) {
-            setActiveController(controller)
-        } else if controllerType != .appleMusic, let fallbackController = createController(for: .appleMusic) {
-            // Fallback to Apple Music if preferred controller couldn't be created
-            setActiveController(fallbackController)
-        }
+        setActiveController(createController(for: Defaults[.mediaController]))
     }
 
     private func setActiveController(_ controller: any MediaControllerProtocol) {

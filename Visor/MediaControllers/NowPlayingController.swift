@@ -78,7 +78,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     private let mediaController = MediaController()
 
     // MARK: - Initialization
-    init?() {
+    init() {
         mediaController.onTrackInfoReceived = { [weak self] trackInfo in
             self?.handleTrackInfo(trackInfo)
         }
