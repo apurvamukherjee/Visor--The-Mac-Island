@@ -13,8 +13,8 @@ class VisorViewModel: NSObject, ObservableObject {
     @ObservedObject var coordinator = VisorViewCoordinator.shared
     @ObservedObject var detector = FullscreenMediaDetector.shared
 
-    let animationLibrary: VisorAnimations = .init()
-    let animation: Animation?
+    // Visor: was a one-property VisorAnimations class.
+    let animation: Animation = .spring(.bouncy(duration: 0.4))
 
     @Published private(set) var notchState: NotchState = .closed
 
@@ -50,8 +50,6 @@ class VisorViewModel: NSObject, ObservableObject {
     }
 
     init(screenUUID: String? = nil) {
-        animation = animationLibrary.animation
-
         super.init()
         
         self.screenUUID = screenUUID
@@ -206,7 +204,7 @@ class VisorViewModel: NSObject, ObservableObject {
 
     func closeHello() {
         Task { @MainActor in
-            withAnimation(animationLibrary.animation) {
+            withAnimation(animation) {
                 coordinator.helloAnimationRunning = false
                 close()
             }
