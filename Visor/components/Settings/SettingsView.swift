@@ -178,14 +178,8 @@ struct GeneralSettings: View {
                         .tag(WindowHeightMode.custom)
                 }
                 .onChange(of: notchHeightMode) {
-                    switch notchHeightMode {
-                    case .matchRealNotchSize:
-                        notchHeight = 38
-                    case .matchMenuBar:
-                        notchHeight = 44
-                    case .custom:
-                        notchHeight = 38
-                    }
+                    // Visor: real-notch and custom both start at 38
+                    notchHeight = notchHeightMode == .matchMenuBar ? 44 : 38
                     NotificationCenter.default.post(
                         name: Notification.Name.notchHeightChanged, object: nil)
                 }
@@ -207,14 +201,8 @@ struct GeneralSettings: View {
                         .tag(WindowHeightMode.custom)
                 }
                 .onChange(of: nonNotchHeightMode) {
-                    switch nonNotchHeightMode {
-                    case .matchMenuBar:
-                        nonNotchHeight = 24
-                    case .matchRealNotchSize:
-                        nonNotchHeight = 32
-                    case .custom:
-                        nonNotchHeight = 32
-                    }
+                    // Visor: real-notch and custom both start at 32
+                    nonNotchHeight = nonNotchHeightMode == .matchMenuBar ? 24 : 32
                     NotificationCenter.default.post(
                         name: Notification.Name.notchHeightChanged, object: nil)
                 }
