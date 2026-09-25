@@ -47,14 +47,14 @@ struct MusicSlotConfigurationView: View {
                                     NSItemProvider(object: NSString(string: "slot:\(index)"))
                                 }
                                 .onDrop(of: [UTType.plainText.identifier], isTargeted: nil) { providers in
-                                    handleDrop(providers, toIndex: index)
+                                    handleDrop(providers) { processDropString($0, toIndex: index) }
                                 }
                         } else {
                             // empty slot: allow drops but do not allow dragging
                             slotPreview(for: slot)
                                 .frame(maxWidth: 44)
                                 .onDrop(of: [UTType.plainText.identifier], isTargeted: nil) { providers in
-                                    handleDrop(providers, toIndex: index)
+                                    handleDrop(providers) { processDropString($0, toIndex: index) }
                                 }
                         }
                     }
@@ -77,7 +77,7 @@ struct MusicSlotConfigurationView: View {
                 .cornerRadius(10)
                 .contentShape(RoundedRectangle(cornerRadius: 10))
                 .onDrop(of: [UTType.plainText.identifier], isTargeted: nil) { providers in
-                    return handleDropOnTrash(providers)
+                    handleDrop(providers, perform: clearSlot)
                 }
 
                 Text("Clear slot")
@@ -202,14 +202,15 @@ struct MusicSlotConfigurationView: View {
         return musicControlSlots[index]
     }
 
-    private func handleDrop(_ providers: [NSItemProvider], toIndex: Int) -> Bool {
+    // Visor: slots and the trash shared this loader as two copies; each now passes its action.
+    private func handleDrop(_ providers: [NSItemProvider], perform action: @escaping (String) -> Void) -> Bool {
         for provider in providers {
             if provider.canLoadObject(ofClass: NSString.self) {
                 // Visor: `as? String` bridges the NSString, so one branch covers both casts.
                 provider.loadObject(ofClass: NSString.self) { item, error in
                     guard let raw = item as? String else { return }
                     DispatchQueue.main.async {
-                        processDropString(raw, toIndex: toIndex)
+                        action(raw)
                     }
                 }
                 return true
@@ -218,22 +219,10 @@ struct MusicSlotConfigurationView: View {
         return false
     }
 
-    private func handleDropOnTrash(_ providers: [NSItemProvider]) -> Bool {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: NSString.self) {
-                // Visor: `as? String` bridges the NSString, so one branch covers both casts.
-                provider.loadObject(ofClass: NSString.self) { item, error in
-                    guard let raw = item as? String else { return }
-                    DispatchQueue.main.async {
-                        if let from = slotIndex(raw), musicControlSlots.indices.contains(from) {
-                            musicControlSlots[from] = .none
-                        }
-                    }
-                }
-                return true
-            }
+    private func clearSlot(_ raw: String) {
+        if let from = slotIndex(raw), musicControlSlots.indices.contains(from) {
+            musicControlSlots[from] = .none
         }
-        return false
     }
 
     // Visor: one parser for the "slot:N" payload both drop targets read.
