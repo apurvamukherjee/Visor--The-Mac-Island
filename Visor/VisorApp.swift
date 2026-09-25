@@ -22,7 +22,11 @@ struct VisorApp: App {
             Text("By Apurva")
             Divider()
             Button("Restart Visor") {
-                ApplicationRelauncher.restart()
+                // Visor: relaunch this copy; a bundle ID lookup could pick another build.
+                let configuration = NSWorkspace.OpenConfiguration()
+                configuration.createsNewApplicationInstance = true
+                NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration)
+                NSApplication.shared.terminate(nil)
             }
             Button("Quit", role: .destructive) {
                 NSApplication.shared.terminate(self)
