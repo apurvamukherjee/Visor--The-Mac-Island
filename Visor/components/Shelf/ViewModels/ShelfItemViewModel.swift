@@ -790,60 +790,35 @@ final class ShelfItemViewModel: ObservableObject {
             qualityValueLabel.alignment = .left
             accessoryView.addSubview(qualityValueLabel)
             
-            // Update quality label and hide/show compression row based on format
-            let updateQualityLabel = {
-                let value = Int(qualitySlider.doubleValue * 100)
-                qualityValueLabel.stringValue = "\(value)%"
-            }
-            
-            let updateCompressionVisibility = {
+            // Visor: one refresh for every control; each part is idempotent,
+            // so running all of them on any change is the same as running one.
+            let refresh = {
+                qualityValueLabel.stringValue = "\(Int(qualitySlider.doubleValue * 100))%"
                 let formatIndex = formatPopup.indexOfSelectedItem
                 let showCompression = formatIndex == 1 || formatIndex == 2 // JPEG or HEIC
                 qualitySlider.isHidden = !showCompression
                 qualityValueLabel.isHidden = !showCompression
                 qualityLabel.isHidden = !showCompression
+                customSizeField.isHidden = imageSizePopup.indexOfSelectedItem != 4 // Show only for "Custom..."
             }
             
-            let updateCustomSizeVisibility = {
-                let sizeIndex = imageSizePopup.indexOfSelectedItem
-                customSizeField.isHidden = sizeIndex != 4 // Show only for "Custom..."
-            }
-            
-            // Create a target object to handle slider value changes
-            class SliderHandler: NSObject {
-                let updateLabel: () -> Void
-                let updateVisibility: () -> Void
-                let updateCustomSize: () -> Void
-                init(updateLabel: @escaping () -> Void, updateVisibility: @escaping () -> Void, updateCustomSize: @escaping () -> Void) {
-                    self.updateLabel = updateLabel
-                    self.updateVisibility = updateVisibility
-                    self.updateCustomSize = updateCustomSize
+            class ControlHandler: NSObject {
+                let refresh: () -> Void
+                init(refresh: @escaping () -> Void) {
+                    self.refresh = refresh
                 }
-                @objc func sliderChanged(_ sender: NSSlider) {
-                    updateLabel()
-                }
-                @objc func formatChanged(_ sender: NSPopUpButton) {
-                    updateVisibility()
-                }
-                @objc func sizeChanged(_ sender: NSPopUpButton) {
-                    updateCustomSize()
+                @objc func changed(_ sender: NSControl) {
+                    refresh()
                 }
             }
             
-            let handler = SliderHandler(updateLabel: updateQualityLabel, updateVisibility: updateCompressionVisibility, updateCustomSize: updateCustomSizeVisibility)
-            qualitySlider.target = handler
-            qualitySlider.action = #selector(SliderHandler.sliderChanged(_:))
+            let handler = ControlHandler(refresh: refresh)
+            for control in [qualitySlider, formatPopup, imageSizePopup] as [NSControl] {
+                control.target = handler
+                control.action = #selector(ControlHandler.changed(_:))
+            }
             qualitySlider.isContinuous = true
-            
-            formatPopup.target = handler
-            formatPopup.action = #selector(SliderHandler.formatChanged(_:))
-            
-            imageSizePopup.target = handler
-            imageSizePopup.action = #selector(SliderHandler.sizeChanged(_:))
-            
-            updateCompressionVisibility()
-            updateQualityLabel()
-            updateCustomSizeVisibility()
+            refresh()
             
             alert.accessoryView = accessoryView
             
