@@ -106,7 +106,7 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   dropped after 3.1.2: the app is unsandboxed and TCC charges an embedded
   helper's check to the host app anyway.
 - Branding: user-visible text says only Visor / "By Apurva"; links go to
-  github.com/apurvamukherjee/Visor--The-Mac-Island. Keep upstream's GPL
+  github.com/apurvamukherjee/visor-mac-island. Keep upstream's GPL
   copyright headers in source files.
 - The 2.x rules (NotchStore, Motion tokens, card stack, power rules) are
   retired with the code they governed. They live in git history before

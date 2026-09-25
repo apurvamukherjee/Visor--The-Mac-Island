@@ -8,7 +8,7 @@
 
 <br><br>
 
-<a href="https://github.com/apurvamukherjee/Visor--The-Mac-Island/releases/latest"><img src="https://img.shields.io/github/v/release/apurvamukherjee/Visor--The-Mac-Island?style=for-the-badge&logo=github&label=Release&color=e11d48&labelColor=18181b" alt="Latest release"></a>&nbsp;<img src="https://img.shields.io/badge/Open%20Source-Free-16a34a?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=18181b" alt="Open source">&nbsp;<a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-2563eb?style=for-the-badge&labelColor=18181b" alt="GPL-3.0"></a>&nbsp;<img src="https://img.shields.io/badge/macOS-14%2B-f4f4f5?style=for-the-badge&logo=apple&logoColor=white&labelColor=18181b" alt="macOS 14+">&nbsp;<img src="https://img.shields.io/badge/Swift-SwiftUI-F05138?style=for-the-badge&logo=swift&logoColor=white&labelColor=18181b" alt="Swift">
+<a href="https://github.com/apurvamukherjee/visor-mac-island/releases/latest"><img src="https://img.shields.io/github/v/release/apurvamukherjee/visor-mac-island?style=for-the-badge&logo=github&label=Release&color=e11d48&labelColor=18181b" alt="Latest release"></a>&nbsp;<img src="https://img.shields.io/badge/Open%20Source-Free-16a34a?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=18181b" alt="Open source">&nbsp;<a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-2563eb?style=for-the-badge&labelColor=18181b" alt="GPL-3.0"></a>&nbsp;<img src="https://img.shields.io/badge/macOS-14%2B-f4f4f5?style=for-the-badge&logo=apple&logoColor=white&labelColor=18181b" alt="macOS 14+">&nbsp;<img src="https://img.shields.io/badge/Swift-SwiftUI-F05138?style=for-the-badge&logo=swift&logoColor=white&labelColor=18181b" alt="Swift">
 
 <br><br>
 
@@ -21,7 +21,7 @@
 
 <br><br>
 
-<a href="https://github.com/apurvamukherjee/Visor--The-Mac-Island/releases/latest"><img src="assets/readme/download.svg" height="64" alt="Download for macOS"></a>
+<a href="https://github.com/apurvamukherjee/visor-mac-island/releases/latest"><img src="assets/readme/download.svg" height="64" alt="Download for macOS"></a>
 
 </div>
 
@@ -111,7 +111,7 @@ System accent color, a preset or any color. Tint the player from the artwork, gl
 
 ## <img src="assets/readme/icons/download.svg" width="34" align="center"> &nbsp;Install
 
-1. Download the latest `.dmg` from **[Releases](https://github.com/apurvamukherjee/Visor--The-Mac-Island/releases/latest)**. Every build ever made also lives in [`new-releases/`](new-releases).
+1. Download the latest `.dmg` from **[Releases](https://github.com/apurvamukherjee/visor-mac-island/releases/latest)**. Every build ever made also lives in [`new-releases/`](new-releases).
 2. Open it and drag **Visor** into **Applications**.
 3. Builds are ad-hoc signed, so macOS quarantines them. Clear that once:
 
@@ -176,9 +176,9 @@ bash scripts/make-dmg.sh
 
 ## <img src="assets/readme/icons/opensource.svg" width="34" align="center"> &nbsp;Open source
 
-Visor is free and open source under the [GPL-3.0](LICENSE) license. Read the code, fork it, [open an issue](https://github.com/apurvamukherjee/Visor--The-Mac-Island/issues) when something breaks, or send a pull request.
+Visor is free and open source under the [GPL-3.0](LICENSE) license. Read the code, fork it, [open an issue](https://github.com/apurvamukherjee/visor-mac-island/issues) when something breaks, or send a pull request.
 
-<a href="https://github.com/apurvamukherjee/Visor--The-Mac-Island/stargazers"><img src="https://img.shields.io/github/stars/apurvamukherjee/Visor--The-Mac-Island?style=for-the-badge&logo=github&label=Star%20Visor&color=e11d48&labelColor=18181b" alt="Star Visor on GitHub"></a>
+<a href="https://github.com/apurvamukherjee/visor-mac-island/stargazers"><img src="https://img.shields.io/github/stars/apurvamukherjee/visor-mac-island?style=for-the-badge&logo=github&label=Star%20Visor&color=e11d48&labelColor=18181b" alt="Star Visor on GitHub"></a>
 
 <br>
 
