@@ -702,10 +702,10 @@ struct About: View {
                         Text("Version")
                         Spacer()
                         if showBuildNumber {
-                            Text("(\(Bundle.main.buildVersionNumber ?? ""))")
+                            Text("(\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
                                 .foregroundStyle(.secondary)
                         }
-                        Text(Bundle.main.releaseVersionNumber ?? "unkown")
+                        Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unkown")
                             .foregroundStyle(.secondary)
                     }
                     .onTapGesture {
