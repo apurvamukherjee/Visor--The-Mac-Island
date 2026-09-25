@@ -42,6 +42,12 @@ history are unchanged.
 - The music slot editor's drop code is shorter, and it still works the same
   way: the slot and trash drops share one loader and one `slot:N` parser,
   and the slot count comes from `MusicControlButton.maxSlotCount`.
+- The XPC helper is gone. Visor checks Accessibility and sets screen and
+  keyboard brightness itself, with the same system calls the helper made.
+  The helper added nothing: Visor is unsandboxed, and macOS already counted
+  the helper's Accessibility check as Visor's. The app no longer ships
+  `Contents/XPCServices`, and the permission still appears as "Visor" in
+  System Settings.
 
 ### Left out on purpose
 
