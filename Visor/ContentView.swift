@@ -112,14 +112,13 @@ struct ContentView: View {
                 
                 mainLayout
                     .frame(height: vm.notchState == .open ? vm.notchSize.height : nil)
-                    .conditionalModifier(true) { view in
-                        let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
-                        let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
-                        
-                        return view
-                            .animation(vm.notchState == .open ? openAnimation : closeAnimation, value: vm.notchState)
-                            .animation(.smooth, value: gestureProgress)
-                    }
+                    .animation(
+                        vm.notchState == .open
+                            ? .spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
+                            : .spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0),
+                        value: vm.notchState
+                    )
+                    .animation(.smooth, value: gestureProgress)
                     .contentShape(Rectangle())
                     .onHover { hovering in
                         handleHover(hovering)
