@@ -124,7 +124,9 @@ class VisorViewModel: NSObject, ObservableObject {
         return max(0, menuBarHeight - currentHeight)
     }
 
-    func toggleCameraPreview() {
+    // Visor: the header button collapses the mirror when it stops the camera;
+    // tapping the preview itself only pauses it, as upstream's view did.
+    func toggleCameraPreview(collapsesOnStop: Bool = true) {
         if isRequestingAuthorization {
             return
         }
@@ -133,7 +135,7 @@ class VisorViewModel: NSObject, ObservableObject {
         case .authorized:
             if webcamManager.isSessionRunning {
                 webcamManager.stopSession()
-                isCameraExpanded = false
+                if collapsesOnStop { isCameraExpanded = false }
             } else if webcamManager.cameraAvailable {
                 webcamManager.startSession()
                 isCameraExpanded = true
