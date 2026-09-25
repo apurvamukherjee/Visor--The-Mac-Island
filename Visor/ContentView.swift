@@ -47,30 +47,34 @@ struct ContentView: View {
         )
     }
 
-    private var computedChinWidth: CGFloat {
-        var chinWidth: CGFloat = vm.closedNotchSize.width
+    // Visor: the closed-notch activities, shared by the chin width and the
+    // body so the two cannot drift apart.
+    private var showsLockActivity: Bool {
+        coordinator.expandingView.type == .lock && coordinator.expandingView.show && vm.notchState == .closed
+    }
 
-        if coordinator.expandingView.type == .lock && coordinator.expandingView.show
-            && vm.notchState == .closed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
+    private var showsBatteryActivity: Bool {
+        coordinator.expandingView.type == .battery && coordinator.expandingView.show
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
-        {
-            chinWidth = 640
-        } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
+    }
+
+    private var showsMusicActivity: Bool {
+        (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        } else if !coordinator.expandingView.show && vm.notchState == .closed
+    }
+
+    private var showsFace: Bool {
+        !coordinator.expandingView.show && vm.notchState == .closed
             && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace]
             && !vm.hideOnClosed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        }
+    }
 
-        return chinWidth
+    private var computedChinWidth: CGFloat {
+        // Lock and battery are exclusive (one expanding view type), so battery can go first.
+        if showsBatteryActivity { return 640 }
+        let hasWings = showsLockActivity || showsMusicActivity || showsFace
+        return vm.closedNotchSize.width + (hasWings ? 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20 : 0)
     }
 
     var body: some View {
@@ -225,9 +229,7 @@ struct ContentView: View {
                     .padding(.top, 40)
                     Spacer()
                 } else {
-                    if coordinator.expandingView.type == .lock && coordinator.expandingView.show
-                        && vm.notchState == .closed
-                    {
+                    if showsLockActivity {
                         LockLiveActivity(
                             isLocked: coordinator.expandingView.value == 1,
                             side: max(0, vm.effectiveClosedNotchHeight - 12),
@@ -237,9 +239,7 @@ struct ContentView: View {
                         // Blurs out as the album cover comes back in, rather
                         // than cutting to it.
                         .transition(.blurReplace)
-                    } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
-                        && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
-                    {
+                    } else if showsBatteryActivity {
                         HStack(spacing: 0) {
                             HStack {
                                 Text(batteryModel.statusText)
@@ -267,10 +267,10 @@ struct ContentView: View {
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
-                      } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
+                      } else if showsMusicActivity {
                           MusicLiveActivity()
                               .frame(alignment: .center)
-                      } else if !coordinator.expandingView.show && vm.notchState == .closed && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace] && !vm.hideOnClosed  {
+                      } else if showsFace {
                           VisorFaceAnimation()
                        } else if vm.notchState == .open {
                            VisorHeader()
