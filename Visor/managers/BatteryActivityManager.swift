@@ -8,7 +8,6 @@ class BatteryActivityManager {
     static let shared = BatteryActivityManager()
 
     private var batterySource: CFRunLoopSource?
-    private var observers: [(BatteryEvent) -> Void] = []
     private var previousBatteryInfo: BatteryInfo?
     private var notificationQueue: [BatteryEvent] = []
     private var isProcessingNotifications = false
@@ -69,14 +68,6 @@ class BatteryActivityManager {
         }
         batterySource = powerSource
         CFRunLoopAddSource(CFRunLoopGetCurrent(), powerSource, .defaultMode)
-    }
-
-    /// Stops monitoring battery changes
-    private func stopMonitoring() {
-        if let powerSource = batterySource {
-            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), powerSource, .defaultMode)
-            batterySource = nil
-        }
     }
 
     /// Checks for changes in a property and notifies observers
@@ -164,7 +155,7 @@ class BatteryActivityManager {
         let event = notificationQueue.removeFirst()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            self.notifyObservers(event: event)
+            self.notifyObserver(event: event)
             self.isProcessingNotifications = false
             
             // Check if there are more items in the queue
@@ -260,37 +251,15 @@ class BatteryActivityManager {
         }
     }
     
-    /// Adds an observer to listen to battery changes
-    /// - Parameter observer: The observer closure to be called on battery events
-    /// - Returns: The ID of the observer for later removal
-    func addObserver(_ observer: @escaping (BatteryEvent) -> Void) -> Int {
-        observers.append(observer)
-        return observers.count - 1
-    }
+    // Visor: BatteryStatusViewModel is the only observer, and both are
+    // singletons, so one callback replaces the add/remove registry.
+    var onEvent: ((BatteryEvent) -> Void)?
 
-    /// Removes an observer by its ID
-    /// - Parameter id: The ID of the observer to be removed
-    func removeObserver(byId id: Int) {
-        guard id >= 0 && id < observers.count else { return }
-        observers.remove(at: id)
-    }
-    
-    /// Notifies all observers of a battery event
-    /// - Parameter event: The battery event to notify
-    private func notifyObservers(event: BatteryEvent) {
+    private func notifyObserver(event: BatteryEvent) {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            for observer in self.observers {
-                observer(event)
-            }
+            self?.onEvent?(event)
         }
     }
-    
-    deinit {
-        stopMonitoring()
-        NotificationCenter.default.removeObserver(self)
-    }
-    
 }
 
 /// Struct to hold battery information
