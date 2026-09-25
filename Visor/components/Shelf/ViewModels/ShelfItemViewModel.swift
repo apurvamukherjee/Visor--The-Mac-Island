@@ -10,7 +10,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import CoreServices
-import ObjectiveC
 
 @MainActor
 final class ShelfItemViewModel: ObservableObject {
@@ -287,9 +286,11 @@ final class ShelfItemViewModel: ObservableObject {
             }
         }
         
-        menu.retainActionTarget(actionTarget)
-        
-        NSMenu.popUpContextMenu(menu, with: event, for: view)
+        // Visor: menu items hold their target weakly; popUpContextMenu blocks
+        // until the menu closes, so this keeps the target alive long enough.
+        withExtendedLifetime(actionTarget) {
+            NSMenu.popUpContextMenu(menu, with: event, for: view)
+        }
     }
 
     private func isDirectory(_ url: URL) -> Bool {
@@ -302,9 +303,6 @@ final class ShelfItemViewModel: ObservableObject {
         let item: ShelfItem
         weak var view: NSView?
         unowned let viewModel: ShelfItemViewModel
-
-        // Keep associated objects (like accessory view handlers) without magic keys
-        private static var sliderHandlerAssoc = AssociatedObject<AnyObject>()
 
         init(item: ShelfItem, view: NSView, viewModel: ShelfItemViewModel) {
             self.item = item
@@ -847,12 +845,11 @@ final class ShelfItemViewModel: ObservableObject {
             updateQualityLabel()
             updateCustomSizeVisibility()
             
-            // Keep the handler alive using the `AssociatedObject` helper instead of a magic string key
-            MenuActionTarget.sliderHandlerAssoc[accessoryView] = handler
-            
             alert.accessoryView = accessoryView
             
-            let response = alert.runModal()
+            // Visor: controls hold their target weakly; runModal blocks, so this
+            // keeps the handler alive for as long as the dialog is up.
+            let response = withExtendedLifetime(handler) { alert.runModal() }
             
             if response == .alertFirstButtonReturn {
                 // Get selected options
