@@ -31,9 +31,7 @@ struct FileShareView: View {
                 return true
             }
             .onTapGesture {
-                Task {
-                    await handleClick()
-                }
+                Task { await quickShare.showFilePicker(for: selectedProvider, from: hostView) }
             }
     }
 
@@ -62,7 +60,7 @@ struct FileShareView: View {
                             vm.dropZoneTargeting ? 0.11 : 0.09
                         ))
                         .frame(width: 55, height: 55)
-                    Image(systemName: "square.and.arrow.up")
+                    // Visor: a second, unstyled share glyph sat under this one.
                     Group {
                         if let imgData = selectedProvider.imageData, let nsImg = NSImage(data: imgData) {
                             Image(nsImage: nsImg)
@@ -73,13 +71,9 @@ struct FileShareView: View {
                         }
                     }
                     .frame(width: 34, height: 34)
-                        .foregroundStyle(
-                            vm.dropZoneTargeting ? Color.accentColor : Color.gray
-                        )
-                        .scaleEffect(
-                            vm.dropZoneTargeting ? 1.06 : 1.0
-                        )
-                        .animation(.spring(response: 0.36, dampingFraction: 0.7), value: vm.dropZoneTargeting)
+                    .foregroundStyle(vm.dropZoneTargeting ? Color.accentColor : Color.gray)
+                    .scaleEffect(vm.dropZoneTargeting ? 1.06 : 1.0)
+                    .animation(.spring(response: 0.36, dampingFraction: 0.7), value: vm.dropZoneTargeting)
                 }
 
                 Text(selectedProvider.id)
@@ -109,10 +103,6 @@ struct FileShareView: View {
         isProcessing = true
         defer { isProcessing = false }
         await quickShare.shareDroppedFiles(providers, using: selectedProvider, from: hostView)
-    }
-    
-    private func handleClick() async {
-        await quickShare.showFilePicker(for: selectedProvider, from: hostView)
     }
 }
 
