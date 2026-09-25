@@ -671,8 +671,8 @@ struct CalendarSettings: View {
         .navigationTitle("Calendar")
         .onAppear {
             Task {
-                await calendarManager.checkCalendarAuthorization()
-                await calendarManager.checkReminderAuthorization()
+                await calendarManager.checkAuthorization(for: .event)
+                await calendarManager.checkAuthorization(for: .reminder)
             }
         }
     }
