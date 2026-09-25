@@ -7,11 +7,7 @@
 
 import Foundation
 
-public protocol ImageServiceProtocol {
-    func fetchImageData(from url: URL) async throws -> Data
-}
-
-public final class ImageService: ImageServiceProtocol {
+public final class ImageService {
     public static let shared = ImageService()
 
     private let session: URLSession
