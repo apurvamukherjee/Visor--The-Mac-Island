@@ -16,18 +16,13 @@ final class FullscreenMediaDetector: ObservableObject {
     
     @Published var fullscreenStatus: [String: Bool] = [:]
     
-    private var monitorTask: Task<Void, Never>?
-    
     private init() {
         startMonitoring()
     }
     
-    deinit {
-        monitorTask?.cancel()
-    }
-    
     private func startMonitoring() {
-        monitorTask = Task { @MainActor in
+        // Visor: a singleton's monitor runs for the app's lifetime; nothing cancels it.
+        Task { @MainActor in
             let stream = await FullScreenMonitor.shared.spaceChanges()
             for await spaces in stream {
                 updateStatus(with: spaces)

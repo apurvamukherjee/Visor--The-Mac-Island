@@ -80,10 +80,6 @@ final class SharingLifecycleDelegate: NSObject, NSSharingServiceDelegate, NSShar
 		self.onFinish = onFinish
 	}
 	
-	deinit {
-		timeoutTask?.cancel()
-	}
-
 	func markPickerBegan() {
 		guard !pickerActive else { return }
 		pickerActive = true

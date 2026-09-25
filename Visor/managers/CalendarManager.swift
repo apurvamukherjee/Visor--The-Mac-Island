@@ -26,8 +26,6 @@ class CalendarManager: ObservableObject {
     private var selectedCalendars: [CalendarModel] = []
     private let calendarService = CalendarService()
 
-    private var eventStoreChangedObserver: NSObjectProtocol?
-
     private init() {
         self.currentWeekStartDate = CalendarManager.startOfDay(Date())
         setupEventStoreChangedObserver()
@@ -36,14 +34,9 @@ class CalendarManager: ObservableObject {
         }
     }
 
-    deinit {
-        if let observer = eventStoreChangedObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-
     private func setupEventStoreChangedObserver() {
-        eventStoreChangedObserver = NotificationCenter.default.addObserver(
+        // Visor: the manager is a singleton, so the observer is never removed.
+        NotificationCenter.default.addObserver(
             forName: .EKEventStoreChanged,
             object: nil,
             queue: .main
