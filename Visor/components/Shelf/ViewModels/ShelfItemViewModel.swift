@@ -886,21 +886,12 @@ final class ShelfItemViewModel: ObservableObject {
         (try? appURL.resourceValues(forKeys: [.localizedNameKey]).localizedName) ?? appURL.lastPathComponent
     }
 
-    private func nsAppIcon(for appURL: URL, size: CGFloat) -> NSImage? {
-        let baseIcon = NSWorkspace.shared.icon(forFile: appURL.path)
-        baseIcon.isTemplate = false
-
-        let targetSize = NSSize(width: size, height: size)
-        let rendered = NSImage(size: targetSize, flipped: false) { rect in
-            NSGraphicsContext.current?.imageInterpolation = .high
-            baseIcon.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1.0, respectFlipped: true, hints: [
-                .interpolation: NSImageInterpolation.high.rawValue
-            ])
-            return true
-        }
-
-        rendered.size = targetSize
-        return rendered
+    // Visor: an icon from NSWorkspace is a fresh multi-size image; setting its
+    // size picks the matching representation, as the hand-drawn copy did.
+    private func nsAppIcon(for appURL: URL, size: CGFloat) -> NSImage {
+        let icon = NSWorkspace.shared.icon(forFile: appURL.path)
+        icon.size = NSSize(width: size, height: size)
+        return icon
     }
 
     private func defaultAppURL() -> URL? {
