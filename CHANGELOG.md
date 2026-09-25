@@ -29,6 +29,26 @@ history are unchanged.
   the notch stays below the lock screen instead of crashing the app.
 - The notch's right-click menu no longer shows ⌘, beside Settings, the
   same change 3.1.0 made to the menu bar menu.
+- A second dead-code pass, with no visible change: about 340 Swift lines
+  removed. Gone: the slot editor's unused builders and write-only drag
+  state, the never-thrown `WebcamError`, `getScreenFrame`, the retroactive
+  `CGRect: Hashable`, `AudioPlayer`, `VisorAnimations`,
+  `NotchSpaceManager`, `ImageServiceProtocol`, four shortcut names nothing
+  handled, six battery callbacks nothing set, write-only flags (`isMuted`,
+  `isLoading`, `edgeAutoOpenActive`, and others), an `if false` PRO badge,
+  the XPC brightness-availability calls nobody made, and the unused
+  `AppIcons` struct. The never-written `releaseName` and
+  `musicControlSlotLimit` settings are now constants with the same values.
+
+### Left out on purpose
+
+- `Date.date` keeps its `DateFormatter`: `.formatted(.dateTime.day())`
+  renders "05." / "05일" / "05日" in Czech, Korean and Chinese, which Visor
+  ships.
+- ContentView's unread `VolumeManager`/`BrightnessManager` references and
+  AppDelegate's `quickShareService` stay: they start the volume listener
+  and the share-provider discovery at launch.
+- The YouTube Music controller stays; it is a user-selectable source.
 
 ## [3.1.2] — 2026-09-25 (build 37)
 
