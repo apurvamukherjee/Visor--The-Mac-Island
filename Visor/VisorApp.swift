@@ -125,17 +125,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @MainActor
     private func enableSkyLightOnAllWindows() {
-        if Defaults[.showOnAllDisplays] {
-            windows.values.forEach { window in
-                if let skyWindow = window as? SkyLightWindow {
-                    skyWindow.enableSkyLight()
-                }
-            }
-        } else {
-            if let skyWindow = window as? SkyLightWindow {
-                skyWindow.enableSkyLight()
-            }
-        }
+        notchWindowsForLockAnimation.forEach { ($0 as? SkyLightWindow)?.enableSkyLight() }
     }
     
     @MainActor
@@ -143,19 +133,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Delay disabling SkyLight to avoid flicker during unlock transition
         Task {
             try? await Task.sleep(for: .milliseconds(150))
-            await MainActor.run {
-                if Defaults[.showOnAllDisplays] {
-                    self.windows.values.forEach { window in
-                        if let skyWindow = window as? SkyLightWindow {
-                            skyWindow.disableSkyLight()
-                        }
-                    }
-                } else {
-                    if let skyWindow = self.window as? SkyLightWindow {
-                        skyWindow.disableSkyLight()
-                    }
-                }
-            }
+            self.notchWindowsForLockAnimation.forEach { ($0 as? SkyLightWindow)?.disableSkyLight() }
         }
     }
 
