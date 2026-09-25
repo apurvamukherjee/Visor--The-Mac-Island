@@ -27,9 +27,6 @@ packages:
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
     exactVersion: 2.4.0
-  MacroVisionKit:
-    url: https://github.com/TheBoredTeam/MacroVisionKit
-    exactVersion: 0.2.0
 targets:
   Visor:
     type: application
@@ -39,7 +36,6 @@ targets:
         embed: true
       - package: Defaults
       - package: KeyboardShortcuts
-      - package: MacroVisionKit
     sources:
       - path: Visor
     settings:

@@ -5,10 +5,9 @@
 //  Created by Apurva on 06/09/2024.
 //
 
-import Foundation
+import AppKit
 import Combine
 import Defaults
-import MacroVisionKit
 
 @MainActor
 final class FullscreenMediaDetector: ObservableObject {
@@ -16,36 +15,49 @@ final class FullscreenMediaDetector: ObservableObject {
     
     @Published var fullscreenStatus: [String: Bool] = [:]
     
+    private var spaces: [String: [String]]?
+    
+    // Visor: replaces MacroVisionKit's FullScreenMonitor stream with the same
+    // two triggers. The package registered the screen-parameters observer on
+    // NSWorkspace's center, where AppKit never posts it; it is on the default
+    // center here, so plugging in a display updates the status too. A
+    // singleton never removes its observers.
     private init() {
-        startMonitoring()
-    }
-    
-    private func startMonitoring() {
-        // Visor: a singleton's monitor runs for the app's lifetime; nothing cancels it.
-        Task { @MainActor in
-            let stream = await FullScreenMonitor.shared.spaceChanges()
-            for await spaces in stream {
-                updateStatus(with: spaces)
-            }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in FullscreenMediaDetector.shared.refresh() }
         }
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in FullscreenMediaDetector.shared.refresh() }
+        }
+        // Deferred like the package's first yield, so shared is set before
+        // updateStatus reads MusicManager.
+        Task { @MainActor in refresh() }
     }
     
-    private func updateStatus(with spaces: [MacroVisionKit.FullScreenMonitor.SpaceInfo]) {
+    private func refresh() {
+        let current = FullScreenSpaces.current()
+        guard current != spaces else { return }
+        spaces = current
+        updateStatus(with: current)
+    }
+    
+    private func updateStatus(with spaces: [String: [String]]) {
         var newStatus: [String: Bool] = [:]
         
-        for space in spaces {
-            if let uuid = space.screenUUID {
-                let shouldDetect: Bool
-                if Defaults[.hideNotchOption] == .nowPlayingOnly, let musicSourceBundle = MusicManager.shared.bundleIdentifier  {
-                    shouldDetect = space.runningApps.contains(musicSourceBundle)
-                } else {
-                    shouldDetect = true
-                }
-                newStatus[uuid] = shouldDetect
+        for (uuid, runningApps) in spaces {
+            let shouldDetect: Bool
+            if Defaults[.hideNotchOption] == .nowPlayingOnly, let musicSourceBundle = MusicManager.shared.bundleIdentifier  {
+                shouldDetect = runningApps.contains(musicSourceBundle)
+            } else {
+                shouldDetect = true
             }
+            newStatus[uuid] = shouldDetect
         }
         
         self.fullscreenStatus = newStatus
     }
 }
-
