@@ -6,24 +6,11 @@
 import SwiftUI
 
 struct NotchShape: Shape {
-    private var topCornerRadius: CGFloat
-    private var bottomCornerRadius: CGFloat
-
-    init(
-        topCornerRadius: CGFloat? = nil,
-        bottomCornerRadius: CGFloat? = nil
-    ) {
-        self.topCornerRadius = topCornerRadius ?? 6
-        self.bottomCornerRadius = bottomCornerRadius ?? 14
-    }
+    var topCornerRadius: CGFloat = 6
+    var bottomCornerRadius: CGFloat = 14
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get {
-            .init(
-                topCornerRadius,
-                bottomCornerRadius
-            )
-        }
+        get { .init(topCornerRadius, bottomCornerRadius) }
         set {
             topCornerRadius = newValue.first
             bottomCornerRadius = newValue.second
@@ -31,87 +18,17 @@ struct NotchShape: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
+        let t = topCornerRadius, b = bottomCornerRadius
         var path = Path()
-
-        path.move(
-            to: CGPoint(
-                x: rect.minX,
-                y: rect.minY
-            )
-        )
-
-        path.addQuadCurve(
-            to: CGPoint(
-                x: rect.minX + topCornerRadius,
-                y: rect.minY + topCornerRadius
-            ),
-            control: CGPoint(
-                x: rect.minX + topCornerRadius,
-                y: rect.minY
-            )
-        )
-
-        path.addLine(
-            to: CGPoint(
-                x: rect.minX + topCornerRadius,
-                y: rect.maxY - bottomCornerRadius
-            )
-        )
-
-        path.addQuadCurve(
-            to: CGPoint(
-                x: rect.minX + topCornerRadius + bottomCornerRadius,
-                y: rect.maxY
-            ),
-            control: CGPoint(
-                x: rect.minX + topCornerRadius,
-                y: rect.maxY
-            )
-        )
-
-        path.addLine(
-            to: CGPoint(
-                x: rect.maxX - topCornerRadius - bottomCornerRadius,
-                y: rect.maxY
-            )
-        )
-
-        path.addQuadCurve(
-            to: CGPoint(
-                x: rect.maxX - topCornerRadius,
-                y: rect.maxY - bottomCornerRadius
-            ),
-            control: CGPoint(
-                x: rect.maxX - topCornerRadius,
-                y: rect.maxY
-            )
-        )
-
-        path.addLine(
-            to: CGPoint(
-                x: rect.maxX - topCornerRadius,
-                y: rect.minY + topCornerRadius
-            )
-        )
-
-        path.addQuadCurve(
-            to: CGPoint(
-                x: rect.maxX,
-                y: rect.minY
-            ),
-            control: CGPoint(
-                x: rect.maxX - topCornerRadius,
-                y: rect.minY
-            )
-        )
-
-        path.addLine(
-            to: CGPoint(
-                x: rect.minX,
-                y: rect.minY
-            )
-        )
-
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + t, y: rect.minY + t), control: CGPoint(x: rect.minX + t, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + t, y: rect.maxY - b))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + t + b, y: rect.maxY), control: CGPoint(x: rect.minX + t, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX - t - b, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - t, y: rect.maxY - b), control: CGPoint(x: rect.maxX - t, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX - t, y: rect.minY + t))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY), control: CGPoint(x: rect.maxX - t, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
         return path
     }
 }
