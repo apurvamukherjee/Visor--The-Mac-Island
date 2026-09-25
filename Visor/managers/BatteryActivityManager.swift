@@ -64,71 +64,18 @@ class BatteryActivityManager {
         CFRunLoopAddSource(CFRunLoopGetCurrent(), powerSource, .defaultMode)
     }
 
-    /// Checks for changes in a property and notifies observers
-    private func checkAndNotify<T: Equatable>(
-        previous: T, 
-        current: T, 
-        eventGenerator: (T) -> BatteryEvent
-    ) {
-        if previous != current {
-            enqueueNotification(eventGenerator(current))
-        }
-    }
-    
-    /// Notifies the observers of battery changes
     /// Checks for changes in battery status and notifies observers
     private func notifyBatteryChanges() {
         let batteryInfo = getBatteryInfo()
-        
-        // Check for changes
-        if let previousInfo = previousBatteryInfo {
-            // Usar la función auxiliar para cada propiedad
-            checkAndNotify(
-                previous: previousInfo.isPluggedIn,
-                current: batteryInfo.isPluggedIn,
-                eventGenerator: { .powerSourceChanged(isPluggedIn: $0) }
-            )
-            
-            checkAndNotify(
-                previous: previousInfo.currentCapacity,
-                current: batteryInfo.currentCapacity,
-                eventGenerator: { .batteryLevelChanged(level: $0) }
-            )
-            
-            checkAndNotify(
-                previous: previousInfo.isCharging,
-                current: batteryInfo.isCharging,
-                eventGenerator: { .isChargingChanged(isCharging: $0) }
-            )
-            
-            checkAndNotify(
-                previous: previousInfo.isInLowPowerMode,
-                current: batteryInfo.isInLowPowerMode,
-                eventGenerator: { .lowPowerModeChanged(isEnabled: $0) }
-            )
-            
-            checkAndNotify(
-                previous: previousInfo.timeToFullCharge,
-                current: batteryInfo.timeToFullCharge,
-                eventGenerator: { .timeToFullChargeChanged(time: $0) }
-            )
-            
-            checkAndNotify(
-                previous: previousInfo.maxCapacity,
-                current: batteryInfo.maxCapacity,
-                eventGenerator: { .maxCapacityChanged(capacity: $0) }
-            )
-        } else {
-            // First time notification
-            enqueueNotification(.powerSourceChanged(isPluggedIn: batteryInfo.isPluggedIn))
-            enqueueNotification(.batteryLevelChanged(level: batteryInfo.currentCapacity))
-            enqueueNotification(.isChargingChanged(isCharging: batteryInfo.isCharging))
-            enqueueNotification(.lowPowerModeChanged(isEnabled: batteryInfo.isInLowPowerMode))
-            enqueueNotification(.timeToFullChargeChanged(time: batteryInfo.timeToFullCharge))
-            enqueueNotification(.maxCapacityChanged(capacity: batteryInfo.maxCapacity))
-        }
-
-        // Update previous battery info
+        // Visor: with no previous info every comparison is true, so the first
+        // run still sends all six events, in the same order.
+        let previous = previousBatteryInfo
+        if previous?.isPluggedIn != batteryInfo.isPluggedIn { enqueueNotification(.powerSourceChanged(isPluggedIn: batteryInfo.isPluggedIn)) }
+        if previous?.currentCapacity != batteryInfo.currentCapacity { enqueueNotification(.batteryLevelChanged(level: batteryInfo.currentCapacity)) }
+        if previous?.isCharging != batteryInfo.isCharging { enqueueNotification(.isChargingChanged(isCharging: batteryInfo.isCharging)) }
+        if previous?.isInLowPowerMode != batteryInfo.isInLowPowerMode { enqueueNotification(.lowPowerModeChanged(isEnabled: batteryInfo.isInLowPowerMode)) }
+        if previous?.timeToFullCharge != batteryInfo.timeToFullCharge { enqueueNotification(.timeToFullChargeChanged(time: batteryInfo.timeToFullCharge)) }
+        if previous?.maxCapacity != batteryInfo.maxCapacity { enqueueNotification(.maxCapacityChanged(capacity: batteryInfo.maxCapacity)) }
         previousBatteryInfo = batteryInfo
     }
 
