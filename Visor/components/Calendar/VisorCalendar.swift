@@ -342,81 +342,29 @@ struct EventListView: View {
         Spacer(minLength: 0)
     }
 
+    // Visor: a view builder instead of two AnyView branches.
+    @ViewBuilder
     private func eventRow(_ event: EventModel) -> some View {
-        if event.type.isReminder {
-            let isCompleted: Bool
-            if case .reminder(let completed) = event.type {
-                isCompleted = completed
-            } else {
-                isCompleted = false
-            }
-            return AnyView(
-                HStack(spacing: 8) {
-                    ReminderToggle(
-                        isOn: Binding(
-                            get: { isCompleted },
-                            set: { newValue in
-                                Task {
-                                    await calendarManager.setReminderCompleted(
-                                        reminderID: event.id, completed: newValue
-                                    )
-                                }
-                            }
-                        ),
-                        color: Color(event.calendar.color)
-                    )
-                    .opacity(1.0)  // Ensure the toggle is always fully opaque
-                    HStack {
-                        Text(event.title)
-                            .font(.callout)
-                            .foregroundColor(.white)
-                            .lineLimit(showFullEventTitles ? nil : 1)
-                        Spacer(minLength: 0)
-                        VStack(alignment: .trailing, spacing: 4) {
-                            if event.isAllDay {
-                                Text("All-day")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                            } else {
-                                Text(event.start, style: .time)
-                                    .foregroundColor(.white)
-                                    .font(.caption)
+        if case .reminder(let isCompleted) = event.type {
+            HStack(spacing: 8) {
+                ReminderToggle(
+                    isOn: Binding(
+                        get: { isCompleted },
+                        set: { newValue in
+                            Task {
+                                await calendarManager.setReminderCompleted(
+                                    reminderID: event.id, completed: newValue
+                                )
                             }
                         }
-                    }
-                    .opacity(
-                        isCompleted
-                            ? 0.4
-                            : event.start < Date.now && Calendar.current.isDateInToday(event.start)
-                                ? 0.6 : 1.0
-                    )
-                }
-                .padding(.vertical, 4)
-            )
-        } else {
-            return AnyView(
-                HStack(alignment: .top, spacing: 4) {
-                    Rectangle()
-                        .fill(Color(event.calendar.color))
-                        .frame(width: 3)
-                        .cornerRadius(1.5)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(event.title)
-                            .font(.callout)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                            .lineLimit(showFullEventTitles ? nil : 2)
-
-                        if let location = event.location, !location.isEmpty {
-                            Text(location)
-                                .font(.caption)
-                                .foregroundColor(Color(white: 0.65))
-                                .lineLimit(1)
-                        }
-                    }
+                    ),
+                    color: Color(event.calendar.color)
+                )
+                HStack {
+                    Text(event.title)
+                        .font(.callout)
+                        .foregroundColor(.white)
+                        .lineLimit(showFullEventTitles ? nil : 1)
                     Spacer(minLength: 0)
                     VStack(alignment: .trailing, spacing: 4) {
                         if event.isAllDay {
@@ -428,17 +376,60 @@ struct EventListView: View {
                         } else {
                             Text(event.start, style: .time)
                                 .foregroundColor(.white)
-                            Text(event.end, style: .time)
-                                .foregroundColor(Color(white: 0.65))
+                                .font(.caption)
                         }
                     }
-                    .font(.caption)
-                    .frame(minWidth: 44, alignment: .trailing)
                 }
                 .opacity(
-                    event.end <= Date() && Calendar.current.isDateInToday(event.start)
-                        ? 0.6 : 1.0)
-            )
+                    isCompleted
+                        ? 0.4
+                        : event.start < Date.now && Calendar.current.isDateInToday(event.start)
+                            ? 0.6 : 1.0
+                )
+            }
+            .padding(.vertical, 4)
+        } else {
+            HStack(alignment: .top, spacing: 4) {
+                Rectangle()
+                    .fill(Color(event.calendar.color))
+                    .frame(width: 3)
+                    .cornerRadius(1.5)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(event.title)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(showFullEventTitles ? nil : 2)
+
+                    if let location = event.location, !location.isEmpty {
+                        Text(location)
+                            .font(.caption)
+                            .foregroundColor(Color(white: 0.65))
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 4) {
+                    if event.isAllDay {
+                        Text("All-day")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    } else {
+                        Text(event.start, style: .time)
+                            .foregroundColor(.white)
+                        Text(event.end, style: .time)
+                            .foregroundColor(Color(white: 0.65))
+                    }
+                }
+                .font(.caption)
+                .frame(minWidth: 44, alignment: .trailing)
+            }
+            .opacity(
+                event.end <= Date() && Calendar.current.isDateInToday(event.start)
+                    ? 0.6 : 1.0)
         }
     }
 }
