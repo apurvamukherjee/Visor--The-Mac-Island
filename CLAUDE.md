@@ -33,8 +33,8 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
 - Generate: `xcodegen generate`
 - Build: `xcodebuild -scheme Visor -configuration Debug build | xcbeautify`
 - Test: none since 3.0.0 (VisorTests covered the replaced code and was removed)
-- Format: `swiftformat .`   Lint: `swiftlint`. Both exclude `Visor/` and
-  `VisorXPCHelper/` (ported verbatim, so reformatting would defeat the copy)
+- Format: `swiftformat .`   Lint: `swiftlint`. Both exclude `Visor/`
+  (ported verbatim, so reformatting would defeat the copy)
 - Release: `bash scripts/make-dmg.sh`
 - Run build, format and lint before saying a task is done.
 
@@ -99,10 +99,10 @@ License: GPL-3.0 (see `LICENSE`, added 2026-09-19 so GPL-licensed reference code
   to a bundled `mediaremote-adapter.pl`: that script was never bundled, and
   its absence was the "doesn't hear YouTube Music" bug.
 - Permissions: the upstream onboarding flow (explain first, then request);
-  Accessibility goes through `XPCHelperClient` -> the XPC service
-  `com.apurvamukherjee.visor.VisorXPCHelper` (target `VisorXPCHelper`,
-  upstream's helper copied verbatim, unsandboxed, embedded in
-  `Contents/XPCServices`). It also handles screen and keyboard brightness.
+  Accessibility is checked in-process by `helpers/AccessibilityPermission`,
+  brightness by `helpers/DisplayBrightness`. Upstream's XPC helper was
+  dropped after 3.1.2: the app is unsandboxed and TCC charges an embedded
+  helper's check to the host app anyway.
 - Branding: user-visible text says only Visor / "By Apurva"; links go to
   github.com/apurvamukherjee/Visor--The-Mac-Island. Keep upstream's GPL
   copyright headers in source files.
@@ -167,6 +167,10 @@ before `8b05dad`.
 - **Second dead-code pass (2026-09-25, unreleased):** 32 commits after
   `c0d3389`, ~340 Swift lines, no visible change; what was kept and why
   is in CHANGELOG [Unreleased].
+- **Ponytail audit pass (2026-09-25, unreleased):** item 1, the XPC helper
+  moved in-process (`45741fe`); brightness verified in-process on this Mac,
+  the Accessibility prompt not yet seen on hardware. Remaining items follow,
+  one commit each.
 - **Next:** the user tests 3.1.2 on hardware. After the release, Claude
   rewrites history to drop the old Co-Authored-By trailers (plan in
   memory) and the user force-pushes.
