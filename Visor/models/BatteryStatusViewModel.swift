@@ -92,9 +92,6 @@ class BatteryStatusViewModel: ObservableObject {
             withAnimation {
                 self.maxCapacity = capacity
             }
-
-        case .error(let description):
-            print("⚠️ Error: \(description)")
         }
     }
 

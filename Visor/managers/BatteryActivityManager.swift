@@ -19,7 +19,6 @@ class BatteryActivityManager {
         case isChargingChanged(isCharging: Bool)
         case timeToFullChargeChanged(time: Int)
         case maxCapacityChanged(capacity: Float)
-        case error(description: String)
     }
 
     private let defaultBatteryInfo = BatteryInfo(
