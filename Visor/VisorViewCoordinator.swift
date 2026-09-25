@@ -13,6 +13,20 @@ enum SneakContentType {
     case battery
     // Visor: the lock/unlock padlock. `ExpandedItem.value` is 1 while locked.
     case lock
+
+    // Visor: the HUD bars' drag handlers (closed, inline and open) each
+    // wrote this out.
+    /// Applies a HUD slider value to the system setting this type shows.
+    @MainActor func applySystemValue(_ value: CGFloat) {
+        switch self {
+        case .volume:
+            VolumeManager.shared.setAbsolute(Float32(value))
+        case .brightness:
+            BrightnessManager.shared.setAbsolute(value: Float32(value))
+        default:
+            break
+        }
+    }
 }
 
 struct sneakPeek {

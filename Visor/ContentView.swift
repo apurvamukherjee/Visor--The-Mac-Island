@@ -285,14 +285,7 @@ struct ContentView: View {
                                   value: $coordinator.sneakPeek.value,
                                   icon: $coordinator.sneakPeek.icon,
                                   sendEventBack: { newVal in
-                                      switch coordinator.sneakPeek.type {
-                                      case .volume:
-                                          VolumeManager.shared.setAbsolute(Float32(newVal))
-                                      case .brightness:
-                                          BrightnessManager.shared.setAbsolute(value: Float32(newVal))
-                                      default:
-                                          break
-                                      }
+                                      coordinator.sneakPeek.type.applySystemValue(newVal)
                                   }
                               )
                               .padding(.bottom, 10)

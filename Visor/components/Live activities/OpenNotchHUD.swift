@@ -43,7 +43,7 @@ struct OpenNotchHUD: View {
             
             // Slider
             DraggableProgressBar(value: $value, onChange: { newVal in
-                 updateSystemValue(newVal)
+                 type.applySystemValue(newVal)
             })
             .frame(width: showPercentage ? 65 : 108) // Fixed width for consistency
             
@@ -73,15 +73,5 @@ struct OpenNotchHUD: View {
             default: return "speaker.wave.3"
         }
     }
-    
-    func updateSystemValue(_ newVal: CGFloat) {
-        switch type {
-        case .volume:
-            VolumeManager.shared.setAbsolute(Float32(newVal))
-        case .brightness:
-            BrightnessManager.shared.setAbsolute(value: Float32(newVal))
-        default:
-            break
-        }
-    }
+
 }
