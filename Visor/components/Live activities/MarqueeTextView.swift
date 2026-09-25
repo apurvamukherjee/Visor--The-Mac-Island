@@ -7,21 +7,6 @@
 
 import SwiftUI
 
-struct SizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-        value = nextValue()
-    }
-}
-
-struct MeasureSizeModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content.background(GeometryReader { geometry in
-            Color.clear.preference(key: SizePreferenceKey.self, value: geometry.size)
-        })
-    }
-}
-
 struct MarqueeText: View {
     @Binding var text: String
     let font: Font
@@ -70,8 +55,8 @@ struct MarqueeText: View {
                     value: self.animate
                 )
                 .background(backgroundColor)
-                .modifier(MeasureSizeModifier())
-                .onPreferenceChange(SizePreferenceKey.self) { size in
+                // Visor: fires on first layout and on change, like the preference key did.
+                .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
                     self.textSize = CGSize(width: size.width / 2, height: NSFont.preferredFont(forTextStyle: nsFont).pointSize)
                     self.animate = false
                     self.offset = 0
