@@ -72,8 +72,6 @@ struct SettingsView: View {
                     Shelf()
                 case "Shortcuts":
                     Shortcuts()
-                case "Extensions":
-                    GeneralSettings()
                 case "Advanced":
                     Advanced()
                 case "About":
@@ -902,7 +900,7 @@ struct Appearance: View {
                 Defaults.Toggle(key: .showMirror) {
                     Text("Enable mirror")
                 }
-                    .disabled(!checkVideoInput())
+                    .disabled(AVCaptureDevice.default(for: .video) == nil)
                 Picker("Mirror shape", selection: $mirrorShape) {
                     Text("Circle")
                         .tag(MirrorShapeEnum.circle)
@@ -920,14 +918,6 @@ struct Appearance: View {
         }
         .accentColor(.effectiveAccent)
         .navigationTitle("Appearance")
-    }
-
-    func checkVideoInput() -> Bool {
-        if AVCaptureDevice.default(for: .video) != nil {
-            return true
-        }
-
-        return false
     }
 }
 
@@ -1012,7 +1002,6 @@ struct Advanced: View {
                                         selectedPresetColor = preset
                                         customAccentColor = preset.color
                                         saveCustomColor(preset.color)
-                                        forceUiUpdate()
                                     }
                                 }
                                 Spacer()
@@ -1039,7 +1028,6 @@ struct Advanced: View {
                                         customAccentColor = newColor
                                         selectedPresetColor = nil
                                         saveCustomColor(newColor)
-                                        forceUiUpdate()
                                     }
                                 ), supportsOpacity: false) {
                                     ZStack {
@@ -1067,9 +1055,6 @@ struct Advanced: View {
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
                     .font(.caption)
-            }
-            .onAppear {
-                initializeAccentColorState()
             }
             
             Section {
@@ -1107,6 +1092,8 @@ struct Advanced: View {
         }
     }
     
+    // Visor: saveCustomColor posts this itself; the preset and picker
+    // actions posted it a second time.
     private func forceUiUpdate() {
         // Force refresh the UI
         DispatchQueue.main.async {
@@ -1128,13 +1115,7 @@ struct Advanced: View {
             customAccentColor = Color(nsColor: nsColor)
             
             // Check if loaded color matches a preset
-            selectedPresetColor = nil
-            for preset in PresetAccentColor.allCases {
-                if colorsAreEqual(Color(nsColor: nsColor), preset.color) {
-                    selectedPresetColor = preset
-                    break
-                }
-            }
+            selectedPresetColor = PresetAccentColor.allCases.first { colorsAreEqual(Color(nsColor: nsColor), $0.color) }
         }
     }
     
@@ -1145,14 +1126,6 @@ struct Advanced: View {
         return abs(nsColor1.redComponent - nsColor2.redComponent) < 0.01 &&
                abs(nsColor1.greenComponent - nsColor2.greenComponent) < 0.01 &&
                abs(nsColor1.blueComponent - nsColor2.blueComponent) < 0.01
-    }
-    
-    private func initializeAccentColorState() {
-        if !useCustomAccentColor {
-            selectedPresetColor = nil // Multicolor is selected when useCustomAccentColor is false
-        } else {
-            loadCustomColor()
-        }
     }
 }
 
