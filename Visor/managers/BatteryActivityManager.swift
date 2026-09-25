@@ -22,12 +22,6 @@ class BatteryActivityManager {
         case error(description: String)
     }
 
-    enum BatteryError: Error {
-        case powerSourceUnavailable
-        case batteryInfoUnavailable(String)
-        case batteryParameterMissing(String)
-    }
-
     private let defaultBatteryInfo = BatteryInfo(
         isPluggedIn: false,
         isCharging: false,
@@ -168,87 +162,34 @@ class BatteryActivityManager {
     /// Initializes the battery information when the manager starts
     /// - Returns: Current battery information
     func initializeBatteryInfo() -> BatteryInfo {
-        previousBatteryInfo = getBatteryInfo()
-        guard let batteryInfo = previousBatteryInfo else {
-            return BatteryInfo(
-                isPluggedIn: false,
-                isCharging: false,
-                currentCapacity: 0,
-                maxCapacity: 0,
-                isInLowPowerMode: false,
-                timeToFullCharge: 0
-            )
-        }
-        return batteryInfo
+        let info = getBatteryInfo()
+        previousBatteryInfo = info
+        return info
     }
 
     /// Get the current battery information
     /// - Returns: The current battery information
     private func getBatteryInfo() -> BatteryInfo {
-        do {
-            // Get power source information
-            guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else {
-                throw BatteryError.powerSourceUnavailable
-            }
-            
-            guard let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef],
-                !sources.isEmpty else {
-                throw BatteryError.batteryInfoUnavailable("No power sources available")
-            }
-            
-            let source = sources.first!
-            
-            guard let description = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any] else {
-                throw BatteryError.batteryInfoUnavailable("Could not get power source description")
-            }
-            
-            // Extract required battery parameters with error handling
-            guard let currentCapacity = description[kIOPSCurrentCapacityKey] as? Float else {
-                throw BatteryError.batteryParameterMissing("Current capacity")
-            }
-            
-            guard let maxCapacity = description[kIOPSMaxCapacityKey] as? Float else {
-                throw BatteryError.batteryParameterMissing("Max capacity")
-            }
-            
-            guard let isCharging = description["Is Charging"] as? Bool else {
-                throw BatteryError.batteryParameterMissing("Charging state")
-            }
-            
-            guard let powerSource = description[kIOPSPowerSourceStateKey] as? String else {
-                throw BatteryError.batteryParameterMissing("Power source state")
-            }
-            
-            // Create battery info with the extracted parameters
-            var batteryInfo = BatteryInfo(
-                isPluggedIn: powerSource == kIOPSACPowerValue,
-                isCharging: isCharging,
-                currentCapacity: currentCapacity,
-                maxCapacity: maxCapacity,
-                isInLowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
-                timeToFullCharge: 0
-            )
-            
-            // Optional parameters
-            if let timeToFullCharge = description[kIOPSTimeToFullChargeKey] as? Int {
-                batteryInfo.timeToFullCharge = timeToFullCharge
-            }
-            
-            return batteryInfo
-            
-        } catch BatteryError.powerSourceUnavailable {
-            print("⚠️ Error: Power source information unavailable")
-            return defaultBatteryInfo
-        } catch BatteryError.batteryInfoUnavailable(let reason) {
-            print("⚠️ Error: Battery information unavailable - \(reason)")
-            return defaultBatteryInfo
-        } catch BatteryError.batteryParameterMissing(let parameter) {
-            print("⚠️ Error: Battery parameter missing - \(parameter)")
-            return defaultBatteryInfo
-        } catch {
-            print("⚠️ Error: Unexpected error getting battery info - \(error.localizedDescription)")
+        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let source = (IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef])?.first,
+              let description = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any],
+              let currentCapacity = description[kIOPSCurrentCapacityKey] as? Float,
+              let maxCapacity = description[kIOPSMaxCapacityKey] as? Float,
+              let isCharging = description["Is Charging"] as? Bool,
+              let powerSource = description[kIOPSPowerSourceStateKey] as? String
+        else {
+            // Visor: no battery, or one missing a required key. The typed
+            // errors thrown and caught here only picked which line to print.
             return defaultBatteryInfo
         }
+        return BatteryInfo(
+            isPluggedIn: powerSource == kIOPSACPowerValue,
+            isCharging: isCharging,
+            currentCapacity: currentCapacity,
+            maxCapacity: maxCapacity,
+            isInLowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
+            timeToFullCharge: description[kIOPSTimeToFullChargeKey] as? Int ?? 0
+        )
     }
     
     // Visor: BatteryStatusViewModel is the only observer, and both are
