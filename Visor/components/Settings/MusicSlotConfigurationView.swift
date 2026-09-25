@@ -225,13 +225,8 @@ struct MusicSlotConfigurationView: View {
                 provider.loadObject(ofClass: NSString.self) { item, error in
                     guard let raw = item as? String else { return }
                     DispatchQueue.main.async {
-                        if raw.hasPrefix("slot:") {
-                            // parse source slot index and clear it
-                            let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
-                            guard from >= 0 && from < MusicControlButton.maxSlotCount else { return }
-                            if musicControlSlots.indices.contains(from) {
-                                musicControlSlots[from] = .none
-                            }
+                        if let from = slotIndex(raw), musicControlSlots.indices.contains(from) {
+                            musicControlSlots[from] = .none
                         }
                     }
                 }
@@ -241,10 +236,15 @@ struct MusicSlotConfigurationView: View {
         return false
     }
 
+    // Visor: one parser for the "slot:N" payload both drop targets read.
+    private func slotIndex(_ raw: String) -> Int? {
+        guard raw.hasPrefix("slot:"), let index = Int(raw.dropFirst(5)),
+              (0..<MusicControlButton.maxSlotCount).contains(index) else { return nil }
+        return index
+    }
+
     private func processDropString(_ raw: String, toIndex: Int) {
-        if raw.hasPrefix("slot:") {
-            let from = Int(raw.replacingOccurrences(of: "slot:", with: "")) ?? -1
-            guard from >= 0 && from < MusicControlButton.maxSlotCount else { return }
+        if let from = slotIndex(raw) {
             var slots = musicControlSlots
             if from < slots.count && toIndex < slots.count {
                 slots.swapAt(from, toIndex)
