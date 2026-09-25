@@ -9,7 +9,6 @@ import SwiftUI
 import Defaults
 
 struct OpenNotchHUD: View {
-    @EnvironmentObject var vm: VisorViewModel
     @Binding var type: SneakContentType
     @Binding var value: CGFloat
     @Binding var icon: String
