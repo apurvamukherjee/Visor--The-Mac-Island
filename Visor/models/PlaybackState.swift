@@ -11,6 +11,15 @@ enum RepeatMode: Int, Codable {
     case off = 1
     case one = 2
     case all = 3
+
+    // Visor: the toggle order both controllers wrote out: off, all, one.
+    var next: RepeatMode {
+        switch self {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+    }
 }
 
 struct PlaybackState {

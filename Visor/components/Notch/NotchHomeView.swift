@@ -272,7 +272,11 @@ struct MusicControlsView: View {
                 MusicManager.shared.nextTrack()
             }
         case .repeatMode:
-            HoverButton(icon: repeatIcon, iconColor: repeatIconColor, scale: .medium) {
+            HoverButton(
+                icon: musicManager.repeatMode == .one ? "repeat.1" : "repeat",
+                iconColor: musicManager.repeatMode == .off ? .primary : .red,
+                scale: .medium
+            ) {
                 MusicManager.shared.toggleRepeat()
             }
         case .volume:
@@ -289,26 +293,6 @@ struct MusicControlsView: View {
             }
         case .none:
             Color.clear.frame(height: 1)
-        }
-    }
-
-    private var repeatIcon: String {
-        switch musicManager.repeatMode {
-        case .off:
-            return "repeat"
-        case .all:
-            return "repeat"
-        case .one:
-            return "repeat.1"
-        }
-    }
-
-    private var repeatIconColor: Color {
-        switch musicManager.repeatMode {
-        case .off:
-            return .primary
-        case .all, .one:
-            return .red
         }
     }
 }

@@ -117,11 +117,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
     
     func toggleRepeat() async {
-        let newRepeatMode: RepeatMode = switch playbackState.repeatMode {
-        case .off: .all
-        case .all: .one
-        case .one: .off
-        }
+        let newRepeatMode = playbackState.repeatMode.next
         playbackState.repeatMode = newRepeatMode
         mediaController.setRepeatMode(Self.adapterRepeatMode(newRepeatMode))
     }

@@ -335,14 +335,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
                     if let mode = json["mode"] as? String { updateRepeatMode(mode) }
                 }
             }  else if endpoint == "/switch-repeat" {
-                // Find next repeat mode
-                let nextMode: RepeatMode
-                switch playbackState.repeatMode {
-                case .off: nextMode = .all
-                case .all: nextMode = .one
-                case .one: nextMode = .off
-                }
-                playbackState.repeatMode = nextMode
+                playbackState.repeatMode = playbackState.repeatMode.next
             } else if refresh && webSocketClient == nil {
                 try? await Task.sleep(for: .milliseconds(100))
                 await updatePlaybackInfo()
