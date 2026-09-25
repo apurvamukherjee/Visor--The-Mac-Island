@@ -48,6 +48,25 @@ history are unchanged.
   the helper's Accessibility check as Visor's. The app no longer ships
   `Contents/XPCServices`, and the permission still appears as "Visor" in
   System Settings.
+- An audit pass, with no visible change: duplicated code is shared
+  (calendar and reminder access checks and settings sections, the camera
+  toggle, volume and mute reads, the Music/Spotify volume scripts, the
+  notch's close-after-hover task and closed-notch conditions, YouTube Music
+  state updates, temp-file writes); helpers with one caller are inline;
+  hand-rolled code uses the system's (`NSSound`, `onGeometryChange`,
+  QuickLook's `nsImage`, Swift `Regex`); deinits on singletons, which never
+  run, are gone, as are `EventStatus`, `BundleInfos`,
+  `ApplicationRelauncher`, `AssociatedObject`, `NSScreenUUIDCache`, the
+  YouTube Music auth actor, a dead screen-name migration and the orphaned
+  `%lld` string. The camera session no longer adds a video output that
+  nothing read.
+
+### Fixed
+
+- A failed lyrics lookup left the previous song's synced lyrics on screen.
+  Artist or title names containing "&" now reach the lyrics search intact.
+- Restart Visor relaunches the copy that is running, not whichever copy
+  macOS finds first by bundle ID.
 
 ### Left out on purpose
 
@@ -58,6 +77,11 @@ history are unchanged.
   AppDelegate's `quickShareService` stay: they start the volume listener
   and the share-provider discovery at launch.
 - The YouTube Music controller stays; it is a user-selectable source.
+- `lighterColor` keeps its sRGB math: `NSColor.blended(withFraction:of:)`
+  blends in another colour space and gives visibly different calendar
+  tints (systemBlue's red channel 0.23 instead of 0.14).
+- The player's `timeString` keeps its arithmetic: `Duration`'s time format
+  rounds seconds (5.6 s shows 0:06, not 0:05) and follows the locale.
 
 ## [3.1.2] — 2026-09-25 (build 37)
 

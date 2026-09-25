@@ -167,10 +167,11 @@ before `8b05dad`.
 - **Second dead-code pass (2026-09-25, unreleased):** 32 commits after
   `c0d3389`, ~340 Swift lines, no visible change; what was kept and why
   is in CHANGELOG [Unreleased].
-- **Ponytail audit pass (2026-09-25, unreleased):** item 1, the XPC helper
-  moved in-process (`45741fe`); brightness verified in-process on this Mac,
-  the Accessibility prompt not yet seen on hardware. Remaining items follow,
-  one commit each.
+- **Ponytail audit pass (2026-09-25, unreleased):** items 1–49 done, one
+  commit each, through `aaf1da9`; 42 and 45 skipped (CHANGELOG says why).
+  Found and fixed `250d5ab`'s regression (a `Set` of `CGRect` needs macOS
+  15). Not seen on hardware. Left: the tail (50–53); items 34 (lint rules
+  that match no file) and 54 (MacroVisionKit) need the user's call.
 - **Next:** the user tests 3.1.2 on hardware. After the release, Claude
   rewrites history to drop the old Co-Authored-By trailers (plan in
   memory) and the user force-pushes.
