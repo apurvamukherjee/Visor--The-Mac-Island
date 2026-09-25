@@ -68,11 +68,22 @@ struct ContentView: View {
             && !vm.hideOnClosed
     }
 
+    // Visor: the square beside the closed notch (album art, face, padlock).
+    private var wingSide: CGFloat {
+        max(0, vm.effectiveClosedNotchHeight - 12)
+    }
+
+    // Visor: the music sneak peek in its inline style, which widens the notch.
+    private var inlineExpanded: Bool {
+        coordinator.expandingView.show && coordinator.expandingView.type == .music
+            && Defaults[.sneakPeekStyles] == .inline
+    }
+
     private var computedChinWidth: CGFloat {
         // Lock and battery are exclusive (one expanding view type), so battery can go first.
         if showsBatteryActivity { return 640 }
         let hasWings = showsLockActivity || showsMusicActivity || showsFace
-        return vm.closedNotchSize.width + (hasWings ? 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20 : 0)
+        return vm.closedNotchSize.width + (hasWings ? 2 * wingSide + 20 : 0)
     }
 
     var body: some View {
@@ -230,7 +241,7 @@ struct ContentView: View {
                     if showsLockActivity {
                         LockLiveActivity(
                             isLocked: coordinator.expandingView.value == 1,
-                            side: max(0, vm.effectiveClosedNotchHeight - 12),
+                            side: wingSide,
                             centerWidth: vm.closedNotchSize.width + -cornerRadiusInsets.closed.top
                         )
                         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
@@ -341,10 +352,7 @@ struct ContentView: View {
             HStack {
                 Rectangle()
                     .fill(.clear)
-                    .frame(
-                        width: max(0, vm.effectiveClosedNotchHeight - 12),
-                        height: max(0, vm.effectiveClosedNotchHeight - 12)
-                    )
+                    .frame(width: wingSide, height: wingSide)
                 Rectangle()
                     .fill(.black)
                     .frame(width: vm.closedNotchSize.width - 20)
@@ -367,10 +375,7 @@ struct ContentView: View {
                         cornerRadius: MusicPlayerImageSizes.cornerRadiusInset.closed)
                 )
                 .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
-                .frame(
-                    width: max(0, vm.effectiveClosedNotchHeight - 12),
-                    height: max(0, vm.effectiveClosedNotchHeight - 12)
-                )
+                .frame(width: wingSide, height: wingSide)
 
             Rectangle()
                 .fill(.black)
@@ -386,11 +391,7 @@ struct ContentView: View {
                                 minDuration: 0.4,
                                 frameWidth: 100
                             )
-                            .opacity(
-                                (coordinator.expandingView.show
-                                    && Defaults[.sneakPeekStyles] == .inline)
-                                    ? 1 : 0
-                            )
+                            .opacity(inlineExpanded ? 1 : 0)
                             Spacer(minLength: vm.closedNotchSize.width)
                             // Song Artist
                             Text(musicManager.artistName)
@@ -401,23 +402,11 @@ struct ContentView: View {
                                         ? Color(nsColor: musicManager.avgColor)
                                         : Color.gray
                                 )
-                                .opacity(
-                                    (coordinator.expandingView.show
-                                        && coordinator.expandingView.type == .music
-                                        && Defaults[.sneakPeekStyles] == .inline)
-                                        ? 1 : 0
-                                )
+                                .opacity(inlineExpanded ? 1 : 0)
                         }
                     }
                 )
-                .frame(
-                    width: (coordinator.expandingView.show
-                        && coordinator.expandingView.type == .music
-                        && Defaults[.sneakPeekStyles] == .inline)
-                        ? 380
-                        : vm.closedNotchSize.width
-                            + -cornerRadiusInsets.closed.top
-                )
+                .frame(width: inlineExpanded ? 380 : vm.closedNotchSize.width + -cornerRadiusInsets.closed.top)
 
             HStack {
                 Rectangle()
@@ -439,10 +428,7 @@ struct ContentView: View {
                     vm.effectiveClosedNotchHeight - 12
                         + gestureProgress / 2
                 ),
-                height: max(
-                    0,
-                    vm.effectiveClosedNotchHeight - 12
-                ),
+                height: wingSide,
                 alignment: .center
             )
         }
