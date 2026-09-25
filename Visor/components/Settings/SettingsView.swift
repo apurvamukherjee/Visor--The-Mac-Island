@@ -346,7 +346,7 @@ struct Charge: View {
         }
         .onAppear {
             Task { @MainActor in
-                await XPCHelperClient.shared.isAccessibilityAuthorized()
+                await AccessibilityPermission.shared.isAuthorized()
             }
         }
         .accentColor(.effectiveAccent)
@@ -389,7 +389,7 @@ struct HUD: View {
 
                         HStack(spacing: 12) {
                             Button("Request Accessibility") {
-                                XPCHelperClient.shared.requestAccessibilityAuthorization()
+                                AccessibilityPermission.shared.request()
                             }
                             .buttonStyle(.borderedProminent)
                         }
@@ -465,13 +465,13 @@ struct HUD: View {
         .accentColor(.effectiveAccent)
         .navigationTitle("HUDs")
         .task {
-            accessibilityAuthorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+            accessibilityAuthorized = await AccessibilityPermission.shared.isAuthorized()
         }
         .onAppear {
-            XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
+            AccessibilityPermission.shared.startMonitoring()
         }
         .onDisappear {
-            XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+            AccessibilityPermission.shared.stopMonitoring()
         }
         .onReceive(NotificationCenter.default.publisher(for: .accessibilityAuthorizationChanged)) { notification in
             if let granted = notification.userInfo?["granted"] as? Bool {

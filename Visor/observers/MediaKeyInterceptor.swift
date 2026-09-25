@@ -32,14 +32,14 @@ final class MediaKeyInterceptor {
     
     private init() {}
     
-    // MARK: - Accessibility (via XPC)
+    // MARK: - Accessibility
     
     func requestAccessibilityAuthorization() {
-        XPCHelperClient.shared.requestAccessibilityAuthorization()
+        AccessibilityPermission.shared.request()
     }
     
     func ensureAccessibilityAuthorization(promptIfNeeded: Bool = false) async -> Bool {
-        await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: promptIfNeeded)
+        await AccessibilityPermission.shared.ensure(promptIfNeeded: promptIfNeeded)
     }
     
     // MARK: - Event Tap
@@ -54,7 +54,7 @@ final class MediaKeyInterceptor {
         }
         
         // Check accessibility authorization
-        let authorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
+        let authorized = await AccessibilityPermission.shared.isAuthorized()
         if !authorized {
             if promptIfNeeded {
                 let granted = await ensureAccessibilityAuthorization(promptIfNeeded: true)

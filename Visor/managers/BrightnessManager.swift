@@ -6,7 +6,7 @@
 import AppKit
 
 // Visor: screen brightness and the keyboard backlight were two copies of this
-// class, differing only in the XPC calls and the HUD they show.
+// class, differing only in the brightness calls and the HUD they show.
 final class BrightnessManager: ObservableObject {
 	enum Kind { case screen, keyboard }
 
@@ -16,7 +16,6 @@ final class BrightnessManager: ObservableObject {
 	@Published private(set) var rawBrightness: Float = 0
 
 	private let kind: Kind
-	private let client = XPCHelperClient.shared
 
 	private init(kind: Kind) {
 		self.kind = kind
@@ -58,17 +57,19 @@ final class BrightnessManager: ObservableObject {
 		}
 	}
 
+	// Visor: in-process since the XPC helper went; staying `async` keeps the
+	// private-framework calls off the main actor, as the XPC hop did.
 	private func read() async -> Float? {
 		switch kind {
-		case .screen: await client.currentScreenBrightness()
-		case .keyboard: await client.currentKeyboardBrightness()
+		case .screen: DisplayBrightness.screen()
+		case .keyboard: DisplayBrightness.keyboard()
 		}
 	}
 
 	private func write(_ value: Float) async -> Bool {
 		switch kind {
-		case .screen: await client.setScreenBrightness(value)
-		case .keyboard: await client.setKeyboardBrightness(value)
+		case .screen: DisplayBrightness.setScreen(value)
+		case .keyboard: DisplayBrightness.setKeyboard(value)
 		}
 	}
 

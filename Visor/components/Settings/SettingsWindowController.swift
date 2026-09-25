@@ -76,7 +76,7 @@ class SettingsWindowController: NSWindowController {
         
         if resumeAccessibilityMonitoring {
             resumeAccessibilityMonitoring = false
-            XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
+            AccessibilityPermission.shared.startMonitoring()
         }
 
         // Show the window with proper ordering
@@ -108,8 +108,8 @@ class SettingsWindowController: NSWindowController {
 
 extension SettingsWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        resumeAccessibilityMonitoring = XPCHelperClient.shared.isMonitoring
-        XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+        resumeAccessibilityMonitoring = AccessibilityPermission.shared.isMonitoring
+        AccessibilityPermission.shared.stopMonitoring()
         relinquishFocus()
     }
     

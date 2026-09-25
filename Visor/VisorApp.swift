@@ -72,7 +72,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         MusicManager.shared.destroy()
         cleanupDragDetectors()
         cleanupWindows()
-        XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+        AccessibilityPermission.shared.stopMonitoring()
     }
 
     @MainActor

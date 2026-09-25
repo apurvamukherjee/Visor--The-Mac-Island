@@ -157,6 +157,6 @@ struct OnboardingView: View {
     }
     
     func requestAccessibilityPermission() async {
-        _ = await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: true)
+        _ = await AccessibilityPermission.shared.ensure(promptIfNeeded: true)
     }
 }
