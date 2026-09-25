@@ -5,7 +5,6 @@
 //  Created by Apurva   on 02/08/24.
 //
 import AppKit
-import Cocoa
 import SwiftUI
 
 class AudioSpectrum: NSView {
@@ -38,8 +37,6 @@ class AudioSpectrum: NSView {
             let xPosition = CGFloat(i) * (barWidth + spacing)
             let barLayer = CAShapeLayer()
             barLayer.frame = CGRect(x: xPosition, y: 0, width: barWidth, height: totalHeight)
-            barLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            barLayer.position = CGPoint(x: xPosition + barWidth / 2, y: totalHeight / 2)
             barLayer.fillColor = NSColor.white.cgColor
             barLayer.backgroundColor = NSColor.white.cgColor
             barLayer.allowsGroupOpacity = false
