@@ -204,19 +204,15 @@ struct MusicSlotConfigurationView: View {
 
     // Visor: slots and the trash shared this loader as two copies; each now passes its action.
     private func handleDrop(_ providers: [NSItemProvider], perform action: @escaping (String) -> Void) -> Bool {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: NSString.self) {
-                // Visor: `as? String` bridges the NSString, so one branch covers both casts.
-                provider.loadObject(ofClass: NSString.self) { item, error in
-                    guard let raw = item as? String else { return }
-                    DispatchQueue.main.async {
-                        action(raw)
-                    }
-                }
-                return true
+        guard let provider = providers.first(where: { $0.canLoadObject(ofClass: NSString.self) }) else { return false }
+        // Visor: `as? String` bridges the NSString, so one branch covers both casts.
+        provider.loadObject(ofClass: NSString.self) { item, error in
+            guard let raw = item as? String else { return }
+            DispatchQueue.main.async {
+                action(raw)
             }
         }
-        return false
+        return true
     }
 
     private func clearSlot(_ raw: String) {
