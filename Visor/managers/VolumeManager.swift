@@ -14,7 +14,6 @@ final class VolumeManager: NSObject, ObservableObject {
     static let shared = VolumeManager()
 
     @Published private(set) var rawVolume: Float = 0
-    @Published private(set) var isMuted: Bool = false
 
     private let step: Float32 = 1.0 / 16.0
     // Fallback software if hardware mute is not supported
@@ -80,7 +79,7 @@ final class VolumeManager: NSObject, ObservableObject {
             toggleMuteInternal()
         }
 
-        publish(volume: clamped, muted: isMutedInternal())
+        publish(volume: clamped)
     }
 
     // MARK: - CoreAudio Helpers
@@ -118,28 +117,6 @@ final class VolumeManager: NSObject, ObservableObject {
             let avg = max(0, min(1, volumes.reduce(0, +) / Float32(volumes.count)))
             DispatchQueue.main.async {
                 self.rawVolume = avg
-            }
-        }
-
-        var muteAddr = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyMute,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        if AudioObjectHasProperty(deviceID, &muteAddr) {
-            var sizeNeeded: UInt32 = 0
-            if AudioObjectGetPropertyDataSize(deviceID, &muteAddr, 0, nil, &sizeNeeded) == noErr,
-                sizeNeeded == UInt32(MemoryLayout<UInt32>.size)
-            {
-                var muted: UInt32 = 0
-                var mSize = sizeNeeded
-                if AudioObjectGetPropertyData(deviceID, &muteAddr, 0, nil, &mSize, &muted) == noErr
-                {
-                    let newMuted = muted != 0
-                    DispatchQueue.main.async {
-                        self.isMuted = newMuted
-                    }
-                }
             }
         }
     }
@@ -282,7 +259,7 @@ final class VolumeManager: NSObject, ObservableObject {
             var newVal: UInt32 = muted == 0 ? 1 : 0
             AudioObjectSetPropertyData(deviceID, &muteAddr, 0, nil, size, &newVal)
             let vol = readVolumeInternal() ?? rawVolume
-            publish(volume: vol, muted: newVal != 0)
+            publish(volume: vol)
         } else {
             let currentVol = readVolumeInternal() ?? rawVolume
             performSoftwareMuteToggle(currentVolume: currentVol)
@@ -294,12 +271,12 @@ final class VolumeManager: NSObject, ObservableObject {
             let restore = max(0, min(1, previousVolumeBeforeMute))
             writeVolumeInternal(restore)
             softwareMuted = false
-            publish(volume: restore, muted: false)
+            publish(volume: restore)
         } else {
             if currentVolume > 0.001 { previousVolumeBeforeMute = currentVolume }
             writeVolumeInternal(0)
             softwareMuted = true
-            publish(volume: 0, muted: true)
+            publish(volume: 0)
         }
     }
 
@@ -337,10 +314,9 @@ final class VolumeManager: NSObject, ObservableObject {
         return AudioObjectSetPropertyData(deviceID, &addr, 0, nil, sizeNeeded, &val) == noErr
     }
 
-    private func publish(volume: Float32, muted: Bool) {
+    private func publish(volume: Float32) {
         DispatchQueue.main.async {
             self.rawVolume = volume
-            self.isMuted = muted
         }
     }
 }
