@@ -24,52 +24,6 @@ extension NSScreen {
     
     /// Find a screen by its UUID
     @MainActor static func screen(withUUID uuid: String) -> NSScreen? {
-        return NSScreenUUIDCache.shared.screen(forUUID: uuid)
-    }
-}
-
-/// Cache for UUID to NSScreen mappings to avoid repeated lookups
-@MainActor
-final class NSScreenUUIDCache {
-    static let shared = NSScreenUUIDCache()
-    
-    private var cache: [String: NSScreen] = [:]
-    private var observer: Any?
-    
-    private init() {
-        rebuildCache()
-        setupObserver()
-    }
-    
-    deinit {
-        if let observer = observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-    
-    private func setupObserver() {
-        observer = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.rebuildCache()
-        }
-    }
-    
-    private func rebuildCache() {
-        var newCache: [String: NSScreen] = [:]
-        
-        for screen in NSScreen.screens {
-            if let uuid = screen.displayUUID {
-                newCache[uuid] = screen
-            }
-        }
-        
-        cache = newCache
-    }
-    
-    func screen(forUUID uuid: String) -> NSScreen? {
-        return cache[uuid]
+        screens.first { $0.displayUUID == uuid }
     }
 }
