@@ -460,7 +460,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             currentScreens.count != previousScreens?.count
             || Set(currentScreens.compactMap { $0.displayUUID })
                 != Set(previousScreens?.compactMap { $0.displayUUID } ?? [])
-            || Set(currentScreens.map { $0.frame }) != Set(previousScreens?.map { $0.frame } ?? [])
+            // Visor: CGRect is Hashable only from macOS 15; NSValue compares the rect on 14.
+            || Set(currentScreens.map { NSValue(rect: $0.frame) })
+                != Set(previousScreens?.map { NSValue(rect: $0.frame) } ?? [])
 
         previousScreens = currentScreens
 
