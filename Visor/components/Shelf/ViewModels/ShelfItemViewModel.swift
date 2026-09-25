@@ -637,7 +637,7 @@ final class ShelfItemViewModel: ObservableObject {
                     }
                 } catch {
                     print("❌ Failed to remove background: \(error.localizedDescription)")
-                    await showErrorAlert(title: "Background Removal Failed", message: error.localizedDescription)
+                    showErrorAlert(title: "Background Removal Failed", message: error.localizedDescription)
                 }
             }
         }
@@ -659,7 +659,7 @@ final class ShelfItemViewModel: ObservableObject {
                     }
                 } catch {
                     print("❌ Failed to create PDF: \(error.localizedDescription)")
-                    await showErrorAlert(title: "PDF Creation Failed", message: error.localizedDescription)
+                    showErrorAlert(title: "PDF Creation Failed", message: error.localizedDescription)
                 }
             }
         }
@@ -688,7 +688,7 @@ final class ShelfItemViewModel: ObservableObject {
             accessoryView.addSubview(formatLabel)
             
             let formatPopup = NSPopUpButton(frame: NSRect(x: 120, y: 140, width: 250, height: 28))
-            formatPopup.addItems(withTitles: ["PNG", "JPEG", "HEIC", "TIFF", "BMP"])
+            formatPopup.addItems(withTitles: ImageConversionOptions.ImageFormat.allCases.map { $0.rawValue.uppercased() })
             formatPopup.selectItem(at: 0)
             formatPopup.font = .systemFont(ofSize: 12)
             accessoryView.addSubview(formatPopup)
@@ -750,8 +750,7 @@ final class ShelfItemViewModel: ObservableObject {
             // so running all of them on any change is the same as running one.
             let refresh = {
                 qualityValueLabel.stringValue = "\(Int(qualitySlider.doubleValue * 100))%"
-                let formatIndex = formatPopup.indexOfSelectedItem
-                let showCompression = formatIndex == 1 || formatIndex == 2 // JPEG or HEIC
+                let showCompression = ImageConversionOptions.ImageFormat.allCases[formatPopup.indexOfSelectedItem].usesCompression
                 qualitySlider.isHidden = !showCompression
                 qualityValueLabel.isHidden = !showCompression
                 qualityLabel.isHidden = !showCompression
@@ -784,16 +783,7 @@ final class ShelfItemViewModel: ObservableObject {
             
             if response == .alertFirstButtonReturn {
                 // Get selected options
-                let formatIndex = formatPopup.indexOfSelectedItem
-                let format: ImageConversionOptions.ImageFormat
-                switch formatIndex {
-                case 0: format = .png
-                case 1: format = .jpeg
-                case 2: format = .heic
-                case 3: format = .tiff
-                case 4: format = .bmp
-                default: format = .png
-                }
+                let format = ImageConversionOptions.ImageFormat.allCases[formatPopup.indexOfSelectedItem]
                 
                 let quality = qualitySlider.doubleValue
                 

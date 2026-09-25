@@ -16,18 +16,12 @@ import ImageIO
 
 /// Options for image conversion
 struct ImageConversionOptions {
-    enum ImageFormat {
+    // Visor: allCases is the convert dialog's popup order.
+    enum ImageFormat: String, CaseIterable {
         case png, jpeg, heic, tiff, bmp
         
-        var fileExtension: String {
-            switch self {
-            case .png: return "png"
-            case .jpeg: return "jpg"
-            case .heic: return "heic"
-            case .tiff: return "tiff"
-            case .bmp: return "bmp"
-            }
-        }
+        var fileExtension: String { self == .jpeg ? "jpg" : rawValue }
+        var usesCompression: Bool { self == .jpeg || self == .heic }
     }
     
     let format: ImageFormat
@@ -67,7 +61,7 @@ final class ImageProcessingService {
         
         let mask = try result.generateScaledMaskForImage(forInstances: result.allInstances, from: handler)
         
-        let output = try await applyMask(mask, to: cgImage)
+        let output = try applyMask(mask, to: cgImage)
         
         let processedImage = NSImage(cgImage: output, size: inputImage.size)
         
@@ -90,7 +84,7 @@ final class ImageProcessingService {
         return tempURL
     }
     
-    private func applyMask(_ mask: CVPixelBuffer, to image: CGImage) async throws -> CGImage {
+    private func applyMask(_ mask: CVPixelBuffer, to image: CGImage) throws -> CGImage {
         let ciImage = CIImage(cgImage: image)
         let maskImage = CIImage(cvPixelBuffer: mask)
         
@@ -103,8 +97,7 @@ final class ImageProcessingService {
             throw ImageProcessingError.backgroundRemovalFailed
         }
         
-        let context = CIContext()
-        guard let result = context.createCGImage(output, from: output.extent) else {
+        guard let result = ciContext.createCGImage(output, from: output.extent) else {
             throw ImageProcessingError.backgroundRemovalFailed
         }
         
@@ -124,22 +117,15 @@ final class ImageProcessingService {
             inputImage = scaleImage(inputImage, maxDimension: maxDim)
         }
         
-        // Get image data based on format
-        let imageData: Data?
-        
         if options.removeMetadata {
             // Create new image without metadata
             guard let cgImage = inputImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
                 throw ImageProcessingError.invalidImage
             }
-            
-            let newImage = NSImage(cgImage: cgImage, size: inputImage.size)
-            imageData = try convertToFormat(newImage, format: options.format, quality: options.compressionQuality)
-        } else {
-            imageData = try convertToFormat(inputImage, format: options.format, quality: options.compressionQuality)
+            inputImage = NSImage(cgImage: cgImage, size: inputImage.size)
         }
         
-        guard let data = imageData else {
+        guard let data = convertToFormat(inputImage, format: options.format, quality: options.compressionQuality) else {
             throw ImageProcessingError.conversionFailed
         }
         
@@ -156,7 +142,7 @@ final class ImageProcessingService {
         return tempURL
     }
     
-    private func convertToFormat(_ image: NSImage, format: ImageConversionOptions.ImageFormat, quality: Double) throws -> Data? {
+    private func convertToFormat(_ image: NSImage, format: ImageConversionOptions.ImageFormat, quality: Double) -> Data? {
         guard let tiffData = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiffData) else {
             return nil
@@ -183,12 +169,11 @@ final class ImageProcessingService {
                 return nil
             }
             let ciImage = CIImage(cgImage: cgImage)
-            let context = CIContext()
             let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
             let options: [CIImageRepresentationOption: Any] = [
                 CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): quality
             ]
-            return try? context.heifRepresentation(of: ciImage, format: .RGBA8, colorSpace: colorSpace, options: options)
+            return ciContext.heifRepresentation(of: ciImage, format: .RGBA8, colorSpace: colorSpace, options: options)
         }
     }
     
@@ -231,7 +216,7 @@ final class ImageProcessingService {
     // MARK: - Create PDF
     
     /// Creates a PDF from multiple image URLs
-    func createPDF(from imageURLs: [URL], outputName: String? = nil) async throws -> URL? {
+    func createPDF(from imageURLs: [URL]) async throws -> URL? {
         guard !imageURLs.isEmpty else {
             throw ImageProcessingError.noImagesProvided
         }
@@ -243,8 +228,7 @@ final class ImageProcessingService {
                 continue
             }
             
-            let pdfPage = PDFPage(image: image)
-            if let page = pdfPage {
+            if let page = PDFPage(image: image) {
                 pdfDocument.insert(page, at: index)
             }
         }
@@ -254,8 +238,7 @@ final class ImageProcessingService {
         }
         
         // Create temporary file
-        let name = outputName ?? "images_\(Date().timeIntervalSince1970).pdf"
-        let pdfName = name.hasSuffix(".pdf") ? name : "\(name).pdf"
+        let pdfName = "images_\(Date().timeIntervalSince1970).pdf"
         
         guard let pdfData = pdfDocument.dataRepresentation() else {
             throw ImageProcessingError.pdfCreationFailed
