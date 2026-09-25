@@ -84,6 +84,13 @@ struct ShelfItem: Identifiable, Codable, Equatable, Sendable {
         guard case .file = kind else { return nil }
         return ShelfStateViewModel.shared.resolveFileURL(for: self)
     }
+
+    // Visor: a file's resolved URL, or a link's URL.
+    var openableURL: URL? {
+        if let fileURL { return fileURL }
+        if case .link(let url) = kind { return url }
+        return nil
+    }
     
     var icon: NSImage {
         guard case .file = kind else {

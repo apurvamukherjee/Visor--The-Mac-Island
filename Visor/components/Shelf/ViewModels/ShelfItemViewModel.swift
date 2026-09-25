@@ -130,16 +130,8 @@ final class ShelfItemViewModel: ObservableObject {
 
         let selectedItems = selectedShelfItems
         let selectedFileURLs = selectedItems.compactMap { $0.fileURL }
-        let selectedLinkURLs: [URL] = selectedItems.compactMap { itm in
-            if case .link(let url) = itm.kind { return url }
-            return nil
-        }
         // URLs valid for Open/Open With (exclude folders)
-        let selectedOpenableURLs = selectedItems.compactMap { itm -> URL? in
-            if let u = itm.fileURL { return isDirectory(u) ? nil : u }
-            if case .link(let url) = itm.kind { return url }
-            return nil
-        }
+        let selectedOpenableURLs = selectedItems.compactMap(\.openableURL).filter { !isDirectory($0) }
 
         if !selectedOpenableURLs.isEmpty {
             addMenuItem(title: "Open")
@@ -150,11 +142,7 @@ final class ShelfItemViewModel: ObservableObject {
             let submenu = NSMenu()
 
             // Choose a representative URL to compute apps (prefer current item if not a folder)
-            let baseURLForApps: URL? = {
-                if let u = item.fileURL, !isDirectory(u) { return u }
-                if case .link(let u) = item.kind { return u }
-                return selectedOpenableURLs.first
-            }()
+            let baseURLForApps = item.openableURL.flatMap { isDirectory($0) ? nil : $0 } ?? selectedOpenableURLs.first
 
             let openWithApps: [URL] = {
                 guard let u = baseURLForApps else { return [] }
@@ -216,7 +204,7 @@ final class ShelfItemViewModel: ObservableObject {
 
         if !selectedFileURLs.isEmpty { addMenuItem(title: "Show in Finder") }
         // Allow Quick Look for files and link URLs
-        if !selectedFileURLs.isEmpty || !selectedLinkURLs.isEmpty {
+        if selectedItems.contains(where: { $0.openableURL != nil }) {
             // Add Quick Look menu item
             let quickLookItem = NSMenuItem(title: "Quick Look", action: nil, keyEquivalent: "")
             menu.addItem(quickLookItem)
@@ -464,20 +452,7 @@ final class ShelfItemViewModel: ObservableObject {
         @MainActor
         private func openWithPanel() {
             // Support both file items and link items
-            let targetURL: URL?
-            let needsSecurityScope: Bool
-            
-            if let fileURL = item.fileURL {
-                targetURL = fileURL
-                needsSecurityScope = true
-            } else if case .link(let url) = item.kind {
-                targetURL = url
-                needsSecurityScope = false
-            } else {
-                targetURL = nil
-                needsSecurityScope = false
-            }
-            guard let fileURL = targetURL else { return }
+            guard let fileURL = item.openableURL else { return }
 
             let panel = NSOpenPanel()
             panel.title = "Choose Application"
@@ -608,12 +583,9 @@ final class ShelfItemViewModel: ObservableObject {
                                 }
                             }
 
-                            if needsSecurityScope {
-                                _ = try await fileURL.accessSecurityScopedResource { accessibleURL in
-                                    try await NSWorkspace.shared.open([accessibleURL], withApplicationAt: appURL, configuration: config)
-                                }
-                            } else {
-                                try await NSWorkspace.shared.open([fileURL], withApplicationAt: appURL, configuration: config)
+                            // Visor: a link's startAccessingSecurityScopedResource returns false, so it just opens.
+                            _ = try await fileURL.accessSecurityScopedResource { accessibleURL in
+                                try await NSWorkspace.shared.open([accessibleURL], withApplicationAt: appURL, configuration: config)
                             }
                         } catch {
                             print("❌ Failed to open with application: \(error.localizedDescription)")
@@ -940,16 +912,6 @@ final class ShelfItemViewModel: ObservableObject {
 @MainActor
 private var selectedShelfItems: [ShelfItem] {
     ShelfSelectionModel.shared.selectedItems(in: ShelfStateViewModel.shared.items)
-}
-
-private extension ShelfItem {
-    // Visor: a file's resolved URL, or a link's URL.
-    @MainActor
-    var openableURL: URL? {
-        if let fileURL { return fileURL }
-        if case .link(let url) = kind { return url }
-        return nil
-    }
 }
 
 fileprivate extension Sequence {

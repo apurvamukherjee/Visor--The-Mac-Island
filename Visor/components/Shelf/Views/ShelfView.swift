@@ -43,15 +43,7 @@ struct ShelfView: View {
         guard quickLookService.isQuickLookOpen && !selection.selectedIDs.isEmpty else { return }
         
         let selectedItems = selection.selectedItems(in: tvm.items)
-        let urls: [URL] = selectedItems.compactMap { item in
-            if let fileURL = item.fileURL {
-                return fileURL
-            }
-            if case .link(let url) = item.kind {
-                return url
-            }
-            return nil
-        }
+        let urls = selectedItems.compactMap(\.openableURL)
         
         if !urls.isEmpty {
             quickLookService.updateSelection(urls: urls)
