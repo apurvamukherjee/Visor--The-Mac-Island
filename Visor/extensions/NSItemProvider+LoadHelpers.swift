@@ -78,15 +78,11 @@ extension NSItemProvider {
 
     /// Attempts to extract a URL (web link) from the provider
     func extractURL() async -> URL? {
-        if self.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-            if let url = await loadURL(typeIdentifier: UTType.url.identifier) {
-                //Validate URL
-                guard url.scheme != nil else { return nil }
-                return url
-            }
-        }
-
-        return nil
+        guard hasItemConformingToTypeIdentifier(UTType.url.identifier),
+              let url = await loadFileURL(typeIdentifier: UTType.url.identifier),
+              url.scheme != nil
+        else { return nil }
+        return url
     }
 
     func extractText() async -> String? {
@@ -110,70 +106,15 @@ extension NSItemProvider {
                     cont.resume(returning: nil)
                     return
                 }
-                var resolvedURL: URL?
-                if let url = item as? URL {
-                    // Direct URL provided
-                    resolvedURL = url
-                } else if let data = item as? Data {
-                    // Some providers hand out a UTF-8 file URL string, others a bookmark. Prefer parsing string first.
-                    if let string = String(data: data, encoding: .utf8) {
-                        if let url = URL(string: string) {
-                            resolvedURL = url
-                        } else if string.hasPrefix("/") {
-                            // Plain file system path
-                            resolvedURL = URL(fileURLWithPath: string)
-                        }
-                    }
-                    if resolvedURL == nil {
-                        // Fallback: try treating the data as a bookmark
-                        let bookmark = Bookmark(data: data)
-                        resolvedURL = bookmark.resolveURL()
-                    }
-                } else if let string = item as? String {
-                    if let url = URL(string: string) {
-                        resolvedURL = url
-                    } else if string.hasPrefix("/") {
-                        resolvedURL = URL(fileURLWithPath: string)
-                    }
-                }
-                cont.resume(returning: resolvedURL)
-            }
-        }
-    }
-
-    /// Loads a URL from the provider for the given type identifier.
-    func loadURL(typeIdentifier: String) async -> URL? {
-        await withCheckedContinuation { (cont: CheckedContinuation<URL?, Never>) in
-            self.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
-                if error != nil {
-                    cont.resume(returning: nil)
-                    return
-                }
-
                 if let url = item as? URL {
                     cont.resume(returning: url)
-                } else if let data = item as? Data {
-                    if let string = String(data: data, encoding: .utf8) {
-                        if let url = URL(string: string) {
-                            cont.resume(returning: url)
-                            return
-                        } else if string.hasPrefix("/") {
-                            cont.resume(returning: URL(fileURLWithPath: string))
-                            return
-                        }
-                    }
-                    cont.resume(returning: nil)
-                } else if let string = item as? String {
-                    if let url = URL(string: string) {
-                        cont.resume(returning: url)
-                    } else if string.hasPrefix("/") {
-                        cont.resume(returning: URL(fileURLWithPath: string))
-                    } else {
-                        cont.resume(returning: nil)
-                    }
-                } else {
-                    cont.resume(returning: nil)
+                    return
                 }
+                // Some providers hand out a UTF-8 file URL string, others a bookmark. Prefer parsing string first.
+                let data = item as? Data
+                let string = (item as? String) ?? data.flatMap { String(data: $0, encoding: .utf8) }
+                let parsed = string.flatMap { URL(string: $0) ?? ($0.hasPrefix("/") ? URL(fileURLWithPath: $0) : nil) }
+                cont.resume(returning: parsed ?? data.flatMap { Bookmark(data: $0).resolveURL() })
             }
         }
     }
