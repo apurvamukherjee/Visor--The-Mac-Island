@@ -243,8 +243,7 @@ struct MusicControlsView: View {
     private var activeSlots: [MusicControlButton] {
         // Visor: nothing ever wrote musicControlSlotLimit, so the limit was always its default of 5.
         let limit = MusicControlButton.maxSlotCount
-        let padded = slotConfig.padded(to: limit, filler: .none)
-        let result = Array(padded.prefix(limit))
+        let result = Array((slotConfig + Array(repeating: .none, count: limit)).prefix(limit))
         // If calendar and camera are both visible alongside music, hide the edge slots
         let shouldHideEdges = Defaults[.showCalendar] && Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
         if shouldHideEdges && result.count >= 5 {
@@ -332,13 +331,6 @@ struct FavoriteControlButton: View {
 
     private var iconColor: Color {
         musicManager.isFavoriteTrack ? .red : .primary
-    }
-}
-
-private extension Array where Element == MusicControlButton {
-    func padded(to length: Int, filler: MusicControlButton) -> [MusicControlButton] {
-        if count >= length { return self }
-        return self + Array(repeating: filler, count: length - count)
     }
 }
 
