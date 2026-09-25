@@ -32,7 +32,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
 
     func setFavorite(_ favorite: Bool) async {
         do {
-            let token = try await authManager.authenticate()
+            let token = try await authenticate()
             if favorite != playbackState.isFavorite {
                 _ = try await httpClient.toggleLike(token: token)
             }
@@ -46,7 +46,10 @@ final class YouTubeMusicController: MediaControllerProtocol {
     // MARK: - Private Properties
     private let configuration: YouTubeMusicConfiguration
     private let httpClient: YouTubeMusicHTTPClient
-    private let authManager: YouTubeMusicAuthManager
+    // Visor: replaces the YouTubeMusicAuthManager actor. One cached token
+    // task, shared by concurrent callers; main-actor isolation stands in for
+    // the actor, and a failure or a 401 clears it so the next call re-auths.
+    @MainActor private var authTask: Task<String, Error>?
     private var webSocketClient: YouTubeMusicWebSocketClient?
     
     private var updateTimer: Timer?
@@ -57,7 +60,6 @@ final class YouTubeMusicController: MediaControllerProtocol {
     init(configuration: YouTubeMusicConfiguration = .default) {
         self.configuration = configuration
         self.httpClient = YouTubeMusicHTTPClient(baseURL: configuration.baseURL)
-        self.authManager = YouTubeMusicAuthManager(httpClient: httpClient)
         
         setupAppStateObserver()
         
@@ -106,7 +108,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
         }
         
         do {
-            let token = try await authManager.authenticate()
+            let token = try await authenticate()
             let response = try await httpClient.getPlaybackInfo(token: token)
             await updatePlaybackState(with: response)
             // Fetch like state if supported
@@ -118,7 +120,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
                 // Don't treat it as an error if the like endpoint doesn't exist — just skip
             }
         } catch YouTubeMusicError.authenticationRequired {
-            await authManager.invalidateToken()
+            await invalidateToken()
         } catch {
             print("[YouTubeMusicController] Failed to update playback info: \(error)")
         }
@@ -183,7 +185,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
         guard isActive() else { return }
         
         do {
-            let token = try await authManager.authenticate()
+            let token = try await authenticate()
             await setupWebSocketIfPossible(token: token)
             await startPeriodicUpdates()
             await updatePlaybackInfo()
@@ -323,7 +325,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
         refresh: Bool = true
     ) async {
         do {
-            let token = try await authManager.authenticate()
+            let token = try await authenticate()
             
             let data = try await httpClient.sendCommand(
                 endpoint: endpoint,
@@ -356,7 +358,7 @@ final class YouTubeMusicController: MediaControllerProtocol {
                 await updatePlaybackInfo()
             }
         } catch YouTubeMusicError.authenticationRequired {
-            await authManager.invalidateToken()
+            await invalidateToken()
         } catch {
             print("[YouTubeMusicController] Command failed: \(error)")
         }
@@ -427,6 +429,22 @@ final class YouTubeMusicController: MediaControllerProtocol {
         }
     }
     
+    @MainActor private func authenticate() async throws -> String {
+        let task = authTask ?? Task { [httpClient] in try await httpClient.authenticate() }
+        authTask = task
+        do {
+            return try await task.value
+        } catch {
+            authTask = nil
+            throw error
+        }
+    }
+
+    @MainActor private func invalidateToken() {
+        authTask?.cancel()
+        authTask = nil
+    }
+
     private func resetPlaybackState() {
         playbackState = PlaybackState(
             bundleIdentifier: configuration.bundleIdentifier,
