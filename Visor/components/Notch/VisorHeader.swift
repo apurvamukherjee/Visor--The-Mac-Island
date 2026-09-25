@@ -43,39 +43,16 @@ struct VisorHeader: View {
                             .transition(.scale(scale: 0.8).combined(with: .opacity))
                     } else {
                         if Defaults[.showMirror] {
-                            Button(action: {
+                            headerButton(systemImage: "web.camera") {
                                 vm.toggleCameraPreview()
-                            }) {
-                                Capsule()
-                                    .fill(.black)
-                                    .frame(width: 30, height: 30)
-                                    .overlay {
-                                        Image(systemName: "web.camera")
-                                            .foregroundColor(.white)
-                                            .padding()
-                                            .imageScale(.medium)
-                                    }
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
                         if Defaults[.settingsIconInNotch] {
-                            Button(action: {
+                            headerButton(systemImage: "gear") {
                                 DispatchQueue.main.async {
                                     SettingsWindowController.shared.showWindow()
                                 }
-                                
-                            }) {
-                                Capsule()
-                                    .fill(.black)
-                                    .frame(width: 30, height: 30)
-                                    .overlay {
-                                        Image(systemName: "gear")
-                                            .foregroundColor(.white)
-                                            .padding()
-                                            .imageScale(.medium)
-                                    }
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
                         if Defaults[.showBatteryIndicator] {
                             VisorBatteryView(
@@ -100,6 +77,22 @@ struct VisorHeader: View {
         }
         .foregroundColor(.gray)
         .environmentObject(vm)
+    }
+
+    // Visor: the mirror and settings buttons were two copies of this.
+    private func headerButton(systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Capsule()
+                .fill(.black)
+                .frame(width: 30, height: 30)
+                .overlay {
+                    Image(systemName: systemImage)
+                        .foregroundColor(.white)
+                        .padding()
+                        .imageScale(.medium)
+                }
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 
     func isHUDType(_ type: SneakContentType) -> Bool {
