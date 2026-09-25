@@ -41,11 +41,8 @@ struct ShelfItemView: View {
 
             DraggableClickHandler(
                 item: item,
-                viewModel: viewModel,
-                cachedPreviewImage: $cachedPreviewImage,
-                dragPreviewContent: {
-                    DragPreviewView(thumbnail: viewModel.thumbnail ?? item.icon, displayName: item.displayName)
-                },
+                cachedPreviewImage: cachedPreviewImage,
+                renderPreview: renderDragPreview,
                 onRightClick: viewModel.handleRightClick,
                 onClick: { event, nsview in
                     viewModel.handleClick(event: event, view: nsview)
@@ -58,7 +55,7 @@ struct ShelfItemView: View {
             Task {
                 // Pre-render drag preview once on appear
                 if cachedPreviewImage == nil {
-                    cachedPreviewImage = await renderDragPreview()
+                    cachedPreviewImage = renderDragPreview()
                 }
             }
             viewModel.onQuickLookRequest = { urls in
@@ -68,7 +65,7 @@ struct ShelfItemView: View {
         .onChange(of: viewModel.thumbnail) { _, _ in
             // Invalidate cached preview when thumbnail changes
             Task {
-                cachedPreviewImage = await renderDragPreview()
+                cachedPreviewImage = renderDragPreview()
             }
         }
         .quickLookPreview($quickLookService.selectedURL, in: quickLookService.urls)
@@ -110,7 +107,7 @@ struct ShelfItemView: View {
     // MARK: - Drag Preview Rendering
     
     @MainActor
-    private func renderDragPreview() async -> NSImage {
+    private func renderDragPreview() -> NSImage {
         let content = DragPreviewView(thumbnail: viewModel.thumbnail ?? item.icon, displayName: item.displayName)
         let renderer = ImageRenderer(content: content)
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
@@ -121,19 +118,19 @@ struct ShelfItemView: View {
 }
 
 // MARK: - Draggable Click Handler with NSDraggingSource
-private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
+// Visor: it was generic over a preview view that it rendered with a copy of
+// ShelfItemView.renderDragPreview; it takes that function now.
+private struct DraggableClickHandler: NSViewRepresentable {
     let item: ShelfItem
-    let viewModel: ShelfItemViewModel
-    @Binding var cachedPreviewImage: NSImage?
-    @ViewBuilder let dragPreviewContent: () -> Content
+    let cachedPreviewImage: NSImage?
+    let renderPreview: () -> NSImage
     let onRightClick: (NSEvent, NSView) -> Void
     let onClick: (NSEvent, NSView) -> Void
     
     func makeNSView(context: Context) -> DraggableClickView {
         let view = DraggableClickView()
         view.item = item
-        view.viewModel = viewModel
-        view.dragPreviewImage = cachedPreviewImage ?? renderDragPreview()
+        view.dragPreviewImage = cachedPreviewImage ?? renderPreview()
         view.onRightClick = onRightClick
         view.onClick = onClick
         return view
@@ -141,7 +138,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     
     func updateNSView(_ nsView: DraggableClickView, context: Context) {
         nsView.item = item
-        nsView.viewModel = viewModel
         // Only update preview if cached version is available
         if let cached = cachedPreviewImage {
             nsView.dragPreviewImage = cached
@@ -150,22 +146,8 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         nsView.onClick = onClick
     }
     
-    private func renderDragPreview() -> NSImage {
-        let content = dragPreviewContent()
-        let renderer = ImageRenderer(content: content)
-        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
-        
-        if let nsImage = renderer.nsImage {
-            return nsImage
-        }
-        
-        // Fallback to icon if rendering fails
-        return viewModel.thumbnail ?? item.icon
-    }
-    
     final class DraggableClickView: NSView, NSDraggingSource {
         var item: ShelfItem!
-        weak var viewModel: ShelfItemViewModel?
         var dragPreviewImage: NSImage?
         var onRightClick: ((NSEvent, NSView) -> Void)?
         var onClick: ((NSEvent, NSView) -> Void)?
@@ -204,46 +186,24 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         }
         
         private func startDragSession(with event: NSEvent) {
-            // Prepare dragging items
+            // Drag the whole selection when this item is part of it
             let selectedItems = ShelfSelectionModel.shared.selectedItems(in: ShelfStateViewModel.shared.items)
-            let itemsToDrag: [ShelfItem]
-
-            if selectedItems.count > 1 && selectedItems.contains(where: { $0.id == item.id }) {
-                itemsToDrag = selectedItems
-            } else {
-                itemsToDrag = [item]
-            }
+            let itemsToDrag = selectedItems.count > 1 && selectedItems.contains(where: { $0.id == item.id }) ? selectedItems : [item]
 
             // Store items being dragged for auto-remove feature
             draggedItems = itemsToDrag
 
-            // Create dragging items for AppKit
-            var draggingItems: [NSDraggingItem] = []
-
-            for dragItem in itemsToDrag {
-                if let pasteboardItem = createPasteboardItem(for: dragItem) {
-                    let draggingItem = NSDraggingItem(pasteboardWriter: pasteboardItem)
-
-                    // Use the drag preview image
-                    let image = dragPreviewImage ?? dragItem.icon
-                    let imageFrame = NSRect(
-                        x: 0,
-                        y: 0,
-                        width: image.size.width,
-                        height: image.size.height
-                    )
-                    draggingItem.setDraggingFrame(imageFrame, contents: image)
-
-                    draggingItems.append(draggingItem)
-                }
+            let draggingItems = itemsToDrag.map { dragItem in
+                let draggingItem = NSDraggingItem(pasteboardWriter: createPasteboardItem(for: dragItem))
+                let image = dragPreviewImage ?? dragItem.icon
+                draggingItem.setDraggingFrame(NSRect(origin: .zero, size: image.size), contents: image)
+                return draggingItem
             }
-
-            guard !draggingItems.isEmpty else { return }
 
             beginDraggingSession(with: draggingItems, event: event, source: self)
         }
         
-        private func createPasteboardItem(for item: ShelfItem) -> NSPasteboardItem? {
+        private func createPasteboardItem(for item: ShelfItem) -> NSPasteboardItem {
             let pasteboardItem = NSPasteboardItem()
 
             switch item.kind {
@@ -314,10 +274,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
                 }
             }
             draggedItems.removeAll()
-        }
-        
-        func ignoreModifierKeys(for session: NSDraggingSession) -> Bool {
-            return false
         }
     }
 }
