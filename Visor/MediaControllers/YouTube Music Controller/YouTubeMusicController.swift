@@ -234,44 +234,36 @@ final class YouTubeMusicController: MediaControllerProtocol {
 
         case .positionChanged:
             let data = message.payload
-
-            var position: Double? = nil
-            if let pos = data["position"] as? Double {
-                position = pos
-            } else if let elapsed = data["elapsedSeconds"] as? Double {
-                position = elapsed
-            }
-            guard let newPosition = position else { return }
-
-            var copied = playbackState
-            copied.currentTime = newPosition
-            copied.lastUpdated = Date()
-            if copied != playbackState { playbackState = copied }
+            guard let newPosition = (data["position"] as? Double) ?? (data["elapsedSeconds"] as? Double) else { return }
+            updateState { $0.currentTime = newPosition }
 
         case .repeatChanged:
-            var copy = playbackState
-            if let name = message.payload["repeat"] as? String, let mode = RepeatMode(youTubeMusicName: name) {
-                copy.repeatMode = mode
+            updateState {
+                if let name = message.payload["repeat"] as? String, let mode = RepeatMode(youTubeMusicName: name) {
+                    $0.repeatMode = mode
+                }
             }
-            copy.lastUpdated = Date()
-            if copy != playbackState { playbackState = copy }
 
         case .shuffleChanged:
             let data = message.payload
-            var copy = playbackState
-            if let shuffle = data["shuffle"] as? Bool { copy.isShuffled = shuffle }
-            else if let shuffle = data["isShuffled"] as? Bool { copy.isShuffled = shuffle }
-            copy.lastUpdated = Date()
-            if copy != playbackState { playbackState = copy }
+            updateState {
+                if let shuffle = (data["shuffle"] as? Bool) ?? (data["isShuffled"] as? Bool) { $0.isShuffled = shuffle }
+            }
 
         case .volumeChanged:
-            var copy = playbackState
-            if let volume = message.payload["volume"] as? NSNumber {
-                copy.volume = volume.doubleValue / 100.0
+            updateState {
+                if let volume = message.payload["volume"] as? NSNumber { $0.volume = volume.doubleValue / 100.0 }
             }
-            copy.lastUpdated = Date()
-            if copy != playbackState { playbackState = copy }
         }
+    }
+
+    // Visor: each single-field websocket event stamped lastUpdated and
+    // published only a changed copy; the four copies share this now.
+    private func updateState(_ change: (inout PlaybackState) -> Void) {
+        var copy = playbackState
+        change(&copy)
+        copy.lastUpdated = Date()
+        if copy != playbackState { playbackState = copy }
     }
     
     private func handleWebSocketDisconnect() async {
@@ -366,40 +358,17 @@ final class YouTubeMusicController: MediaControllerProtocol {
         var newState = playbackState
         
         newState.isPlaying = !response.isPaused
-
-        if let title = response.title {
-            newState.title = title
-        }
-
-        if let artist = response.artist {
-            newState.artist = artist
-        }
-
-        if let album = response.album {
-            newState.album = album
-        }
-
-        if let elapsed = response.elapsedSeconds {
-            newState.currentTime = elapsed
-        }
-
-        if let duration = response.songDuration {
-            newState.duration = duration
-        }
-
+        newState.title = response.title ?? newState.title
+        newState.artist = response.artist ?? newState.artist
+        newState.album = response.album ?? newState.album
+        newState.currentTime = response.elapsedSeconds ?? newState.currentTime
+        newState.duration = response.songDuration ?? newState.duration
         newState.lastUpdated = Date()
-        
-        if let shuffled = response.isShuffled {
-            newState.isShuffled = shuffled
-        }
-        
+        newState.isShuffled = response.isShuffled ?? newState.isShuffled
         if let index = response.repeatMode, let mode = RepeatMode(youTubeMusicIndex: index) {
             newState.repeatMode = mode
         }
-
-        if let volume = response.volume {
-            newState.volume = volume / 100.0
-        }
+        newState.volume = response.volume.map { $0 / 100.0 } ?? newState.volume
 
         // Visor: lastUpdated is always new, so this branch runs on every poll
         // and websocket update; refetch the cover only when it changed (or
