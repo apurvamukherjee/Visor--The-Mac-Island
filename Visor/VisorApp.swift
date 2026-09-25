@@ -449,8 +449,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func playWelcomeSound() {
-        let audioPlayer = AudioPlayer()
-        audioPlayer.play(fileName: "visor", fileExtension: "m4a")
+        // Visor: inlined the one-method AudioPlayer, minus its force unwrap.
+        guard let url = Bundle.main.url(forResource: "visor", withExtension: "m4a") else { return }
+        NSSound(contentsOf: url, byReference: false)?.play()
     }
 
     @objc func screenConfigurationDidChange() {
