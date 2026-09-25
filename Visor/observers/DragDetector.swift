@@ -12,12 +12,8 @@ final class DragDetector {
 
     // MARK: - Callbacks
 
-    typealias VoidCallback = () -> Void
-    typealias PositionCallback = (_ globalPoint: CGPoint) -> Void
-
-    var onDragEntersNotchRegion: VoidCallback?
-    var onDragExitsNotchRegion: VoidCallback?
-    var onDragMove: PositionCallback?
+    // Visor: the exit and move callbacks were never set, so only entry remains.
+    var onDragEntersNotchRegion: (() -> Void)?
 
 
     private var mouseDownMonitor: Any?
@@ -74,17 +70,11 @@ final class DragDetector {
 
             // Only process position when content is being dragged
             if self.isContentDragging {
-                let mouseLocation = NSEvent.mouseLocation
-                self.onDragMove?(mouseLocation)
-                
-                // Track notch region entry/exit
-                let containsMouse = self.notchRegion.contains(mouseLocation)
-                if containsMouse && !self.hasEnteredNotchRegion {
-                    self.hasEnteredNotchRegion = true
-                    self.onDragEntersNotchRegion?()
-                } else if !containsMouse && self.hasEnteredNotchRegion {
-                    self.hasEnteredNotchRegion = false
-                    self.onDragExitsNotchRegion?()
+                // Track notch region entry/exit, so re-entering fires again
+                let containsMouse = self.notchRegion.contains(NSEvent.mouseLocation)
+                if containsMouse != self.hasEnteredNotchRegion {
+                    self.hasEnteredNotchRegion = containsMouse
+                    if containsMouse { self.onDragEntersNotchRegion?() }
                 }
             }
         }
