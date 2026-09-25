@@ -78,17 +78,3 @@ actor ThumbnailService {
         }
     }
 }
-
-// MARK: - Extensions
-
-extension QLThumbnailRepresentation {
-    var nsImage: NSImage {
-        return NSImage(cgImage: self.cgImage, size: self.cgImage.size)
-    }
-}
-
-extension CGImage {
-    var size: NSSize {
-        return NSSize(width: self.width, height: self.height)
-    }
-}
