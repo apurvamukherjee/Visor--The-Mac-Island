@@ -460,36 +460,35 @@ final class ShelfItemViewModel: ObservableObject {
                 return Set(apps.map { $0.standardizedFileURL })
             }()
 
-            // Delegate to filter entries when in "Recommended Applications" mode
+            // Delegate to filter entries when in "Recommended Applications" mode.
+            // Visor: it also follows the Enable popup, which a separate
+            // PopupBinder holding weak references to it and the panel did.
             final class AppChooserDelegate: NSObject, NSOpenSavePanelDelegate {
-                enum Mode { case recommended, all }
-                var mode: Mode = .recommended
+                var showsAll = false
                 let recommended: Set<URL>
+                weak var panel: NSOpenPanel?
                 init(recommended: Set<URL>) { self.recommended = recommended }
                 
                 func panel(_ sender: Any, shouldEnable url: URL) -> Bool {
-                    let ext = url.pathExtension.lowercased()
-                    if ext == "app" {
-                        switch mode {
-                        case .all:
-                            return true
-                        case .recommended:
-                            // Standardize URLs for reliable comparison
-                            let std = url.standardizedFileURL
-                            return recommended.contains(std)
-                        }
+                    if url.pathExtension.lowercased() == "app" {
+                        // Standardize URLs for reliable comparison
+                        return showsAll || recommended.contains(url.standardizedFileURL)
                     }
-
                     var isDirectory: ObjCBool = false
-                    if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
-                        return true
-                    }
-                    
-                    return false
+                    return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+                }
+
+                @MainActor @objc func modeChanged(_ sender: NSPopUpButton) {
+                    showsAll = sender.indexOfSelectedItem == 1
+                    guard let panel else { return }
+                    panel.validateVisibleColumns()
+                    let currentDir = panel.directoryURL
+                    panel.directoryURL = currentDir
                 }
             }
 
             let chooserDelegate = AppChooserDelegate(recommended: recommendedApps)
+            chooserDelegate.panel = panel
             panel.delegate = chooserDelegate
 
             let enableLabel = NSTextField(labelWithString: "Enable:")
@@ -526,31 +525,8 @@ final class ShelfItemViewModel: ObservableObject {
             panel.isAccessoryViewDisclosed = true
 
             // Wire up popup to switch filter mode
-            class PopupBinder: NSObject {
-                weak var popup: NSPopUpButton?
-                weak var chooserDelegate: AppChooserDelegate?
-                weak var panel: NSOpenPanel?
-                init(popup: NSPopUpButton, chooserDelegate: AppChooserDelegate, panel: NSOpenPanel) {
-                    self.popup = popup
-                    self.chooserDelegate = chooserDelegate
-                    self.panel = panel
-                }
-                @objc func changed(_ sender: Any?) {
-                    if popup?.indexOfSelectedItem == 1 {
-                        chooserDelegate?.mode = .all
-                    } else {
-                        chooserDelegate?.mode = .recommended
-                    }
-                    if let panel = panel {
-                        panel.validateVisibleColumns()
-                        let currentDir = panel.directoryURL
-                        panel.directoryURL = currentDir
-                    }
-                }
-            }
-            let binder = PopupBinder(popup: popup, chooserDelegate: chooserDelegate, panel: panel)
-            popup.target = binder
-            popup.action = #selector(PopupBinder.changed(_:))
+            popup.target = chooserDelegate
+            popup.action = #selector(AppChooserDelegate.modeChanged(_:))
 
             panel.begin { response in
                 if response == .OK, let appURL = panel.url {
@@ -576,8 +552,7 @@ final class ShelfItemViewModel: ObservableObject {
                         }
                     }
                 }
-                // Keep binder/delegate alive until panel finishes
-                _ = binder
+                // Keep the delegate alive until the panel finishes
                 _ = chooserDelegate
             }
         }
