@@ -353,16 +353,11 @@ final class ShelfItemViewModel: ObservableObject {
                 if selected.count == 1, let single = selected.first { showRenameDialog(for: single) }
 
             case "Show in Finder":
-                let selected = selectedShelfItems
-                Task {
-                    let urls = await selected.asyncCompactMap { item -> URL? in
-                        if case .file = item.kind {
-                            // Use immediate update for user-initiated menu action
-                            return await ShelfStateViewModel.shared.resolveAndUpdateBookmark(for: item)
-                        }
-                        return nil
-                    }
-                    if !urls.isEmpty {
+                // Visor: resolveAndUpdateBookmark is synchronous and nil for non-file items.
+                // Use immediate update for user-initiated menu action
+                let urls = selectedShelfItems.compactMap { ShelfStateViewModel.shared.resolveAndUpdateBookmark(for: $0) }
+                if !urls.isEmpty {
+                    Task {
                         await urls.accessSecurityScopedResources { accessibleURLs in
                             NSWorkspace.shared.activateFileViewerSelecting(accessibleURLs)
                         }
@@ -388,25 +383,18 @@ final class ShelfItemViewModel: ObservableObject {
                 ShelfItemViewModel.copiedURLs.removeAll()
                 
                 pb.clearContents()
-                Task {
-                    let fileURLs = await selected.asyncCompactMap { item -> URL? in
-                        if case .file = item.kind {
-                            return ShelfStateViewModel.shared.resolveAndUpdateBookmark(for: item)
-                        }
-                        return nil
-                    }
-                    if !fileURLs.isEmpty {
-                        // Start security-scoped access for all URLs and keep them active
-                        ShelfItemViewModel.copiedURLs = fileURLs.filter { $0.startAccessingSecurityScopedResource() }
-                        NSLog("🔐 Started security-scoped access for \(ShelfItemViewModel.copiedURLs.count) copied files")
-                        
-                        // Write to pasteboard
-                        pb.writeObjects(fileURLs as [NSURL])
-                    } else {
-                        let strings = selected.map { $0.displayName }
-                        if !strings.isEmpty {
-                            pb.setString(strings.joined(separator: "\n"), forType: .string)
-                        }
+                let fileURLs = selected.compactMap { ShelfStateViewModel.shared.resolveAndUpdateBookmark(for: $0) }
+                if !fileURLs.isEmpty {
+                    // Start security-scoped access for all URLs and keep them active
+                    ShelfItemViewModel.copiedURLs = fileURLs.filter { $0.startAccessingSecurityScopedResource() }
+                    NSLog("🔐 Started security-scoped access for \(ShelfItemViewModel.copiedURLs.count) copied files")
+                    
+                    // Write to pasteboard
+                    pb.writeObjects(fileURLs as [NSURL])
+                } else {
+                    let strings = selected.map { $0.displayName }
+                    if !strings.isEmpty {
+                        pb.setString(strings.joined(separator: "\n"), forType: .string)
                     }
                 }
 
@@ -429,18 +417,14 @@ final class ShelfItemViewModel: ObservableObject {
                 guard !fileURLs.isEmpty else { break }
 
                 Task {
-                    do {
-                        // Create ZIP in a temporary location while holding access to selected resources
-                        if let zipTempURL = try await fileURLs.accessSecurityScopedResources(accessor: { urls in
-                            await TemporaryFileStorageService.shared.createZip(from: urls)
-                        }) {
-                            if !addTemporaryItem(at: zipTempURL) {
-                                // Fallback: reveal the temporary file in Finder
-                                NSWorkspace.shared.activateFileViewerSelecting([zipTempURL])
-                            }
+                    // Create ZIP in a temporary location while holding access to selected resources
+                    if let zipTempURL = await fileURLs.accessSecurityScopedResources(accessor: { urls in
+                        await TemporaryFileStorageService.shared.createZip(from: urls)
+                    }) {
+                        if !addTemporaryItem(at: zipTempURL) {
+                            // Fallback: reveal the temporary file in Finder
+                            NSWorkspace.shared.activateFileViewerSelecting([zipTempURL])
                         }
-                    } catch {
-                        print("❌ Compress failed: \(error)")
                     }
                 }
                 
@@ -903,16 +887,4 @@ final class ShelfItemViewModel: ObservableObject {
 @MainActor
 private var selectedShelfItems: [ShelfItem] {
     ShelfSelectionModel.shared.selectedItems(in: ShelfStateViewModel.shared.items)
-}
-
-fileprivate extension Sequence {
-    func asyncCompactMap<T>(_ transform: (Element) async -> T?) async -> [T] {
-        var result: [T] = []
-        for element in self {
-            if let transformed = await transform(element) {
-                result.append(transformed)
-            }
-        }
-        return result
-    }
 }
