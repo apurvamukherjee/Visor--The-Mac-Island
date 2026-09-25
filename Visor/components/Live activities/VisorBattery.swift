@@ -102,45 +102,33 @@ struct BatteryMenuView: View {
 
             HStack {
                 Text("Battery Status")
-                    .font(.headline)
-                    .fontWeight(.semibold)
                 Spacer()
                 Text("\(Int(levelBattery))%")
-                    .font(.headline)
-                    .fontWeight(.semibold)
             }
+            // Visor: set once per group instead of on every line.
+            .font(.headline)
+            .fontWeight(.semibold)
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("Max Capacity: \(Int(maxCapacity))%")
-                    .font(.subheadline)
-                    .fontWeight(.regular)
                 if isInLowPowerMode {
                     Label("Low Power Mode", systemImage: "bolt.circle")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
                 }
                 if isCharging {
                     Label("Charging", systemImage: "bolt.fill")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
                 }
                 if isPluggedIn {
                     Label("Plugged In", systemImage: "powerplug.fill")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
                 }
                 if timeToFullCharge > 0 {
                     Label("Time to Full Charge: \(timeToFullCharge) min", systemImage: "clock")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
                 }
                 if !isCharging && isPluggedIn && levelBattery >= 80 {
                     Label("Charging on Hold: Desktop Mode", systemImage: "desktopcomputer")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
                 }
-                    
             }
+            .font(.subheadline)
+            .fontWeight(.regular)
             .padding(.vertical, 8)
 
             Divider().background(Color.white)
