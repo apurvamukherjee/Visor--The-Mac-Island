@@ -51,44 +51,30 @@ class TemporaryFileStorageService {
     func createTempFile(for type: TempFileType) async -> URL? {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
         let uuid = UUID().uuidString
-        
+        let data: Data
+        let filename: String
         switch type {
-        case .data(let data, let suggestedName):
-            let filename = suggestedName ?? ".dat"
-            let dirURL = tempDir.appendingPathComponent(uuid, isDirectory: true)
-            let fileURL = dirURL.appendingPathComponent(filename)
-            
-            do {
-                try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
-                try data.write(to: fileURL)
-                return fileURL
-            } catch {
-                print("Error: \(error)")
-                return nil
-            }
-            
+        case .data(let fileData, let suggestedName):
+            data = fileData
+            filename = suggestedName ?? ".dat"
         case .text(let string):
-            let filename = "\(uuid).txt"
-            let dirURL = tempDir.appendingPathComponent(uuid, isDirectory: true)
-            let fileURL = dirURL.appendingPathComponent(filename)
-            
-            guard let data = string.data(using: .utf8) else {
-                print("❌ Failed to convert text to data")
-                return nil
-            }
-            
-            do {
-                try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
-                try data.write(to: fileURL)
-                return fileURL
-            } catch {
-                print("Error: \(error)")
-                return nil
-            }
+            data = Data(string.utf8)
+            filename = "\(uuid).txt"
+        }
+
+        let dirURL = tempDir.appendingPathComponent(uuid, isDirectory: true)
+        let fileURL = dirURL.appendingPathComponent(filename)
+        do {
+            try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            print("Error: \(error)")
+            return nil
         }
     }
     
-    func createZip(from urls: [URL], suggestedName: String? = nil) async -> URL? {
+    func createZip(from urls: [URL]) async -> URL? {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
         let uuid = UUID().uuidString
         let workingDir = tempDir.appendingPathComponent("zip_\(uuid)", isDirectory: true)
@@ -120,34 +106,10 @@ class TemporaryFileStorageService {
         if urls.count == 1, let src = urls.first {
             let isDir = (try? src.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
             let baseName = src.lastPathComponent
-            let archiveName: String
-            if isDir {
-                // Folder: name as FolderName.zip and include the folder itself in the archive
-                archiveName = "\(baseName).zip"
-                let archiveURL = workingDir.appendingPathComponent(archiveName)
-                // Run zip from the parent directory so the folder is stored as top-level entry
-                let parent = src.deletingLastPathComponent()
-                let args = ["-r", "-q", archiveURL.path, baseName]
-                let ok = runZip(arguments: args, currentDirectory: parent)
-                if ok {
-                    return archiveURL
-                } else {
-                    return nil
-                }
-            } else {
-                // File: include the file only (no parent folders). Name should include original extension.
-                archiveName = "\(baseName).zip"
-                let archiveURL = workingDir.appendingPathComponent(archiveName)
-                let parent = src.deletingLastPathComponent()
-                // -j to junk paths and store only the file
-                let args = ["-j", "-q", archiveURL.path, baseName]
-                let ok = runZip(arguments: args, currentDirectory: parent)
-                if ok {
-                    return archiveURL
-                } else {
-                    return nil
-                }
-            }
+            let archiveURL = workingDir.appendingPathComponent("\(baseName).zip")
+            // Visor: run from the parent; -r stores a folder as the top-level entry, -j stores a file without its path.
+            let args = [isDir ? "-r" : "-j", "-q", archiveURL.path, baseName]
+            return runZip(arguments: args, currentDirectory: src.deletingLastPathComponent()) ? archiveURL : nil
         }
 
         // Multi-item: copy items into working dir (so their relative structure is preserved), zip, then remove copies.
@@ -166,8 +128,7 @@ class TemporaryFileStorageService {
             }
         }
 
-        let archiveName = suggestedName ?? "Archive.zip"
-        let archiveURL = workingDir.appendingPathComponent(archiveName)
+        let archiveURL = workingDir.appendingPathComponent("Archive.zip")
         let args = ["-r", "-q", archiveURL.path, "."]
         let ok = runZip(arguments: args, currentDirectory: workingDir)
         if ok {
