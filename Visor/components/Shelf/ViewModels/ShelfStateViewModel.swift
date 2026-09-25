@@ -15,7 +15,6 @@ final class ShelfStateViewModel: ObservableObject {
         didSet { ShelfPersistenceService.shared.save(items) }
     }
 
-    @Published var isLoading: Bool = false
 
     var isEmpty: Bool { items.isEmpty }
 
@@ -79,12 +78,10 @@ final class ShelfStateViewModel: ObservableObject {
 
     func load(_ providers: [NSItemProvider]) {
         guard !providers.isEmpty else { return }
-        isLoading = true
         Task { [weak self] in
             let dropped = await ShelfDropService.items(from: providers)
             await MainActor.run {
                 self?.add(dropped)
-                self?.isLoading = false
             }
         }
     }
