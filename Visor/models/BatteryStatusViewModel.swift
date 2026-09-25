@@ -7,7 +7,6 @@ import SwiftUI
 /// A view model that manages and monitors the battery status of the device
 class BatteryStatusViewModel: ObservableObject {
 
-    private var runLoopSource: Unmanaged<CFRunLoopSource>?
 
     @ObservedObject var coordinator = VisorViewCoordinator.shared
 
