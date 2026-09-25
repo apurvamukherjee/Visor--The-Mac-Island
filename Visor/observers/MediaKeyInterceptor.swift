@@ -172,12 +172,12 @@ final class MediaKeyInterceptor {
         case .soundUp:
             Task { @MainActor in
                 self.playFeedbackSound()
-                VolumeManager.shared.increase(stepDivisor: stepDivisor)
+                VolumeManager.shared.stepVolume(up: true, stepDivisor: stepDivisor)
             }
         case .soundDown:
             Task { @MainActor in
                 self.playFeedbackSound()
-                VolumeManager.shared.decrease(stepDivisor: stepDivisor)
+                VolumeManager.shared.stepVolume(up: false, stepDivisor: stepDivisor)
             }
         case .mute:
             Task { @MainActor in
