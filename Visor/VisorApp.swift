@@ -43,6 +43,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var quickShareService = QuickShareService.shared
     var timer: Timer?
     var closeNotchTask: Task<Void, Never>?
+    // Visor: was NotchSpaceManager, a singleton holding only this space.
+    private static let notchSpace = CGSSpace(level: 2147483647) // Max level
     private var previousScreens: [NSScreen]?
     private var onboardingWindowController: NSWindowController?
     private var screenLockedObserver: Any?
@@ -175,7 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func closeNotchWindow(_ window: NSWindow) {
         window.close()
-        NotchSpaceManager.shared.notchSpace.windows.remove(window)
+        Self.notchSpace.windows.remove(window)
         if let obs = windowScreenDidChangeObservers.removeValue(forKey: ObjectIdentifier(window)) {
             NotificationCenter.default.removeObserver(obs)
         }
@@ -266,7 +268,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         window.orderFrontRegardless()
-        NotchSpaceManager.shared.notchSpace.windows.insert(window)
+        Self.notchSpace.windows.insert(window)
 
         // Observe when the window's screen changes so we can update drag detectors
         windowScreenDidChangeObservers[ObjectIdentifier(window)] = NotificationCenter.default.addObserver(
