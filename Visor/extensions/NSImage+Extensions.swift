@@ -7,104 +7,73 @@
 
 import SwiftUI
 import AppKit
-import Cocoa
-import Foundation
-import CoreImage
-import CoreGraphics
-import CoreImage.CIFilterBuiltins
 
 extension NSImage {
-
-    
+    // Visor: one hop back to main for every exit, instead of one per failure.
     func averageColor(completion: @escaping (NSColor?) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-            
-            // Visor: an average survives downscaling, so a 64 px copy gives the
-            // same colour as walking every pixel of 3000 px artwork (36 MB).
-            let width = min(cgImage.width, 64)
-            let height = min(cgImage.height, 64)
-            let totalPixels = width * height
-            
-            guard let context = CGContext(data: nil,
-                                          width: width,
-                                          height: height,
-                                          bitsPerComponent: 8,
-                                          bytesPerRow: width * 4,
-                                          space: CGColorSpaceCreateDeviceRGB(),
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-            
-            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-            
-            guard let data = context.data else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-            
-            let pointer = data.bindMemory(to: UInt32.self, capacity: totalPixels)
-            
-            var totalRed: UInt64 = 0
-            var totalGreen: UInt64 = 0
-            var totalBlue: UInt64 = 0
-            
-            for i in 0..<totalPixels {
-                let color = pointer[i]
-                totalRed += UInt64(color & 0xFF)
-                totalGreen += UInt64((color >> 8) & 0xFF)
-                totalBlue += UInt64((color >> 16) & 0xFF)
-            }
-            
-            let averageRed = CGFloat(totalRed) / CGFloat(totalPixels) / 255.0
-            let averageGreen = CGFloat(totalGreen) / CGFloat(totalPixels) / 255.0
-            let averageBlue = CGFloat(totalBlue) / CGFloat(totalPixels) / 255.0
-            
-            let minBrightness: CGFloat = 0.5
-            let isNearBlack = averageRed < 0.03 && averageGreen < 0.03 && averageBlue < 0.03
-            
-            var finalColor: NSColor
-            
-            if isNearBlack {
-                // If it's near black, just return a gray color with the minimum brightness
-                finalColor = NSColor(white: minBrightness, alpha: 1.0)
-            } else {
-                var color = NSColor(red: averageRed, green: averageGreen, blue: averageBlue, alpha: 1.0)
-                
-                var hue: CGFloat = 0
-                var saturation: CGFloat = 0
-                var brightness: CGFloat = 0
-                var alpha: CGFloat = 0
-                
-                color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-                
-                if brightness < minBrightness {
-                    // Increase brightness while maintaining hue and reducing saturation
-                    let saturationScale = brightness / minBrightness
-                    color = NSColor(hue: hue,
-                                    saturation: saturation * saturationScale,
-                                    brightness: minBrightness,
-                                    alpha: alpha)
-                }
-                
-                finalColor = color
-            }
-            
+            let color = self.computeAverageColor()
             DispatchQueue.main.async {
-                completion(finalColor)
+                completion(color)
             }
         }
+    }
+
+    private func computeAverageColor() -> NSColor? {
+        guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
         
+        // Visor: an average survives downscaling, so a 64 px copy gives the
+        // same colour as walking every pixel of 3000 px artwork (36 MB).
+        let width = min(cgImage.width, 64)
+        let height = min(cgImage.height, 64)
+        let totalPixels = width * height
+        
+        guard let context = CGContext(data: nil,
+                                      width: width,
+                                      height: height,
+                                      bitsPerComponent: 8,
+                                      bytesPerRow: width * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        guard let data = context.data else { return nil }
+        
+        let pointer = data.bindMemory(to: UInt32.self, capacity: totalPixels)
+        
+        var totalRed: UInt64 = 0
+        var totalGreen: UInt64 = 0
+        var totalBlue: UInt64 = 0
+        
+        for i in 0..<totalPixels {
+            let color = pointer[i]
+            totalRed += UInt64(color & 0xFF)
+            totalGreen += UInt64((color >> 8) & 0xFF)
+            totalBlue += UInt64((color >> 16) & 0xFF)
+        }
+        
+        let averageRed = CGFloat(totalRed) / CGFloat(totalPixels) / 255.0
+        let averageGreen = CGFloat(totalGreen) / CGFloat(totalPixels) / 255.0
+        let averageBlue = CGFloat(totalBlue) / CGFloat(totalPixels) / 255.0
+        
+        let minBrightness: CGFloat = 0.5
+        
+        // If it's near black, just return a gray color with the minimum brightness
+        if averageRed < 0.03 && averageGreen < 0.03 && averageBlue < 0.03 {
+            return NSColor(white: minBrightness, alpha: 1.0)
+        }
+        
+        let color = NSColor(red: averageRed, green: averageGreen, blue: averageBlue, alpha: 1.0)
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        
+        guard brightness < minBrightness else { return color }
+        // Increase brightness while maintaining hue and reducing saturation
+        return NSColor(hue: hue, saturation: saturation * (brightness / minBrightness), brightness: minBrightness, alpha: alpha)
     }
 }
 

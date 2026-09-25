@@ -60,7 +60,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
                     end try
                 end tell
                 """
-                try? await AppleScriptHelper.executeVoid(script)
+                try? await AppleScriptHelper.execute(script)
             }
         }
         
@@ -135,7 +135,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         let bundleID = playbackState.bundleIdentifier
         if let appName = AppleScriptHelper.volumeScriptableApps[bundleID],
            !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
-            try? await AppleScriptHelper.executeVoid("tell application \"\(appName)\" to set sound volume to \(volumePercentage)")
+            try? await AppleScriptHelper.execute("tell application \"\(appName)\" to set sound volume to \(volumePercentage)")
         }
         
         playbackState.volume = clampedLevel

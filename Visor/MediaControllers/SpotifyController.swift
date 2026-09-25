@@ -162,7 +162,7 @@ class SpotifyController: MediaControllerProtocol {
     
     private func executeCommand(_ command: String) async {
         let script = "tell application \"Spotify\" to \(command)"
-        try? await AppleScriptHelper.executeVoid(script)
+        try? await AppleScriptHelper.execute(script)
     }
 
     private func executeAndRefresh(_ command: String) async {

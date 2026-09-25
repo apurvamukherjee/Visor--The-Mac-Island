@@ -8,9 +8,6 @@
 import SwiftUI
 import Defaults
 
-let bundleIdentifier = Bundle.main.bundleIdentifier!
-
-let temporaryDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
 let spacing: CGFloat = 16
 
 enum CalendarSelectionState: Codable, Defaults.Serializable {

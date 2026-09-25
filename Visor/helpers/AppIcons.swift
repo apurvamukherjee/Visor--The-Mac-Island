@@ -8,17 +8,10 @@
 import SwiftUI
 import AppKit
 
+// Visor: the generic application icon when the bundle ID has no app.
 func AppIcon(for bundleID: String) -> Image {
-    let workspace = NSWorkspace.shared
-    
-    if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleID) {
-        let appIcon = workspace.icon(forFile: appURL.path)
-        return Image(nsImage: appIcon)
-    }
-    
-    return Image(nsImage: workspace.icon(for: .applicationBundle))
+    Image(nsImage: AppIconAsNSImage(for: bundleID) ?? NSWorkspace.shared.icon(for: .applicationBundle))
 }
-
 
 func AppIconAsNSImage(for bundleID: String) -> NSImage? {
     let workspace = NSWorkspace.shared
