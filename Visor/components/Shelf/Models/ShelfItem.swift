@@ -64,45 +64,7 @@ struct ShelfItem: Identifiable, Codable, Equatable, Sendable {
         case .file(let bookmarkData):
             let bookmark = Bookmark(data: bookmarkData)
             guard let resolvedURL = bookmark.resolveURL() else { return "" }
-            
-            // Check for stored data files (text blocks, weblocs, etc.) to provide friendly names
-            if resolvedURL.pathExtension.lowercased() == "json" && resolvedURL.path.contains("TextBlocks") {
-                do {
-                    let data = try Data(contentsOf: resolvedURL)
-                    let decoder = JSONDecoder()
-                    decoder.dateDecodingStrategy = .iso8601
-                    struct TextBlockData: Codable {
-                        let content: String
-                        let title: String?
-                        var displayTitle: String {
-                            if let title = title, !title.isEmpty {
-                                return title
-                            }
-                            let firstLine = content.components(separatedBy: .newlines).first ?? content
-                            if firstLine.count > 50 {
-                                return String(firstLine.prefix(47)) + "..."
-                            }
-                            return firstLine
-                        }
-                    }
-                    if let textData = try? decoder.decode(TextBlockData.self, from: data) {
-                        return textData.displayTitle
-                    }
-                } catch {
-                    // Fall through to default naming
-                }
-            } else if resolvedURL.pathExtension.lowercased() == "webloc" && resolvedURL.path.contains("WebLocs") {
-                do {
-                    let data = try Data(contentsOf: resolvedURL)
-                    if let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-                       let urlString = plist["URL"] as? String {
-                        let title = plist["Title"] as? String
-                        return title ?? urlString
-                    }
-                } catch {
-                    // Fall through to default naming
-                }
-            }
+
             return (try? resolvedURL.resourceValues(forKeys: [.localizedNameKey]).localizedName) ?? resolvedURL.lastPathComponent
         case .text(let string):
             return string.trimmingCharacters(in: .whitespacesAndNewlines)
