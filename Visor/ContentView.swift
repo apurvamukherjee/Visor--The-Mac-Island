@@ -140,16 +140,7 @@ struct ContentView: View {
                     }
                     .onReceive(NotificationCenter.default.publisher(for: .sharingDidFinish)) { _ in
                         if vm.notchState == .open && !isHovering && !vm.isBatteryPopoverActive {
-                            hoverTask?.cancel()
-                            hoverTask = Task {
-                                try? await Task.sleep(for: .milliseconds(100))
-                                guard !Task.isCancelled else { return }
-                                await MainActor.run {
-                                    if self.vm.notchState == .open && !self.isHovering && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose {
-                                        self.vm.close()
-                                    }
-                                }
-                            }
+                            closeSoonIfIdle()
                         }
                     }
                     .onChange(of: vm.notchState) { _, newState in
@@ -161,16 +152,7 @@ struct ContentView: View {
                     }
                     .onChange(of: vm.isBatteryPopoverActive) {
                         if !vm.isBatteryPopoverActive && !isHovering && vm.notchState == .open && !SharingStateManager.shared.preventNotchClose {
-                            hoverTask?.cancel()
-                            hoverTask = Task {
-                                try? await Task.sleep(for: .milliseconds(100))
-                                guard !Task.isCancelled else { return }
-                                await MainActor.run {
-                                    if !self.vm.isBatteryPopoverActive && !self.isHovering && self.vm.notchState == .open && !SharingStateManager.shared.preventNotchClose {
-                                        self.vm.close()
-                                    }
-                                }
-                            }
+                            closeSoonIfIdle()
                         }
                     }
                     .sensoryFeedback(.alignment, trigger: haptics)
@@ -522,31 +504,41 @@ struct ContentView: View {
             
             hoverTask = Task {
                 try? await Task.sleep(for: .seconds(Defaults[.minimumHoverDuration]))
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled,
+                      vm.notchState == .closed,
+                      isHovering,
+                      !coordinator.sneakPeek.show else { return }
                 
-                await MainActor.run {
-                    guard self.vm.notchState == .closed,
-                          self.isHovering,
-                          !self.coordinator.sneakPeek.show else { return }
-                    
-                    self.doOpen()
-                }
+                doOpen()
             }
         } else {
             hoverTask = Task {
                 try? await Task.sleep(for: .milliseconds(100))
                 guard !Task.isCancelled else { return }
                 
-                await MainActor.run {
-                    withAnimation(animationSpring) {
-                        self.isHovering = false
-                    }
-                    
-                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose {
-                        self.vm.close()
-                    }
+                withAnimation(animationSpring) {
+                    isHovering = false
+                }
+                
+                if vm.notchState == .open && !vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose {
+                    vm.close()
                 }
             }
+        }
+    }
+
+    // Visor: the share-finished and battery-popover handlers both closed the
+    // notch this way. ContentView is @MainActor, so its Tasks already are.
+    private func closeSoonIfIdle() {
+        hoverTask?.cancel()
+        hoverTask = Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled,
+                  vm.notchState == .open,
+                  !isHovering,
+                  !vm.isBatteryPopoverActive,
+                  !SharingStateManager.shared.preventNotchClose else { return }
+            vm.close()
         }
     }
 
