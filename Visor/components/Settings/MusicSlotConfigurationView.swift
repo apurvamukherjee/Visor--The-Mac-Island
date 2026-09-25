@@ -12,7 +12,6 @@ import UniformTypeIdentifiers
 struct MusicSlotConfigurationView: View {
     @Default(.musicControlSlots) private var musicControlSlots
     @ObservedObject private var musicManager = MusicManager.shared
-    @State private var draggedSlot: MusicControlButton?
 
     private let fixedSlotCount: Int = 5
 
@@ -47,24 +46,17 @@ struct MusicSlotConfigurationView: View {
                             slotPreview(for: slot)
                                 .frame(maxWidth: 44)
                                 .onDrag {
-                                    // remember what's being dragged for UX
-                                    DispatchQueue.main.async { draggedSlot = slot }
-                                    return NSItemProvider(object: NSString(string: "slot:\(index)"))
+                                    NSItemProvider(object: NSString(string: "slot:\(index)"))
                                 }
                                 .onDrop(of: [UTType.plainText.identifier], isTargeted: nil) { providers in
-                                    let handled = handleDrop(providers, toIndex: index)
-                                    // clear drag state
-                                    DispatchQueue.main.async { draggedSlot = nil }
-                                    return handled
+                                    handleDrop(providers, toIndex: index)
                                 }
                         } else {
                             // empty slot: allow drops but do not allow dragging
                             slotPreview(for: slot)
                                 .frame(maxWidth: 44)
                                 .onDrop(of: [UTType.plainText.identifier], isTargeted: nil) { providers in
-                                    let handled = handleDrop(providers, toIndex: index)
-                                    DispatchQueue.main.async { draggedSlot = nil }
-                                    return handled
+                                    handleDrop(providers, toIndex: index)
                                 }
                         }
                     }
