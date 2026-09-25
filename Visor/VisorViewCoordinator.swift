@@ -60,10 +60,6 @@ class VisorViewCoordinator: ObservableObject {
     
     @Default(.hudReplacement) var hudReplacement: Bool
     
-    // Legacy storage for migration
-    @AppStorage("preferred_screen_name") private var legacyPreferredScreenName: String?
-    
-    // New UUID-based storage
     @AppStorage("preferred_screen_uuid") var preferredScreenUUID: String? {
         didSet {
             if let uuid = preferredScreenUUID {
@@ -79,22 +75,9 @@ class VisorViewCoordinator: ObservableObject {
     private var hudReplacementCancellable: AnyCancellable?
 
     private init() {
-        // Perform migration from name-based to UUID-based storage
-        if preferredScreenUUID == nil, let legacyName = legacyPreferredScreenName {
-            // Try to find screen by name and migrate to UUID
-            if let screen = NSScreen.screens.first(where: { $0.localizedName == legacyName }),
-               let uuid = screen.displayUUID {
-                preferredScreenUUID = uuid
-                NSLog("✅ Migrated display preference from name '\(legacyName)' to UUID '\(uuid)'")
-            } else {
-                // Fallback to main screen if legacy screen not found
-                preferredScreenUUID = NSScreen.main?.displayUUID
-                NSLog("⚠️ Could not find display named '\(legacyName)', falling back to main screen")
-            }
-            // Clear legacy value after migration
-            legacyPreferredScreenName = nil
-        } else if preferredScreenUUID == nil {
-            // No legacy value, use main screen
+        // Visor: upstream migrated a name-based preferred_screen_name here;
+        // nothing in Visor ever wrote that key, so only the default remains.
+        if preferredScreenUUID == nil {
             preferredScreenUUID = NSScreen.main?.displayUUID
         }
         
