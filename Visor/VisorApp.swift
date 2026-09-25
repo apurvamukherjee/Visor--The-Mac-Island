@@ -8,7 +8,6 @@ import SwiftUI
 struct VisorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Default(.menubarIcon) var showMenuBarIcon
-    @Environment(\.openWindow) var openWindow
 
     var body: some Scene {
         // Visor: a record, for the music-first island (and vinyl mode).
